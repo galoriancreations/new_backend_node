@@ -18,6 +18,7 @@ let lastSender;
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
+const { Z_UNKNOWN } = require("zlib");
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -601,89 +602,77 @@ app.post("/api", (req, res) => {
       data = req.body
       const names = data["getChallengesByName"];
 
-        // Fetch and filter challenges
-        const challenges = await Challenges.aggregate([{$project:{  
-          //  platforms:1,
-            // date: 1,
-            // name: 1,
-            days: 0,
-            preMessages: 0,
-            preDays: 0,
-            selections: 0,
-            scores: 0
-        }}]);
+      // Fetch challenges
+      const challenges = await Challenges.aggregate([{$project:{  
+        days: 0,
+        preMessages: 0,
+        preDays: 0,
+        selections: 0,
+        scores: 0
+      }}]);
 
-        const filteredChallenges = [];
+      const filteredChallenges = [];
 
+      const calculateDayDifference = (date) => {
+        // change variable into a JavaScript Date object
+        const challengeDateObj = new Date(date);
+        // Get the current date
+        const todayDate = new Date();
+        const timeDifference = todayDate - challengeDateObj;
+        // Convert to days
+        const dayDifference = Math.floor(timeDifference / (24 * 60 * 60 * 1000));
 
-
-      
-
-
-          for (let i = 0; i < challenges.length; i++) {
-              console.log(challenges[i]);
-            
-            
-          
-            if ( 
-                challenges[i].date &&
-
-                challenges[i].platforms
-                &&
-                // challenges[i].platforms.includes("wa") 
-                // &&
-                names.includes(challenges[i].name)
-            ) {
-                // const templateId = challenges[i].template;
-                
-                // try {
-                //     const template = await TemplatesDB.findOne(
-                //         { _id: templateId },
-                //         { language: 1 }
-                //     );
-                //     if (template) {
-                //         challenges[i].language = template.language;
-                //         // challenges[i].dayDiff = calculateDayDifference(challenges[i].date);
-
-                //         // if (challenges[i].dayDiff <= 0) {
-                            filteredChallenges.push(challenges[i]);
-                //         // }
-                //     }
-                // } catch (error) {
-                //     console.error("Error fetching template:", error);
-                // }
+        return dayDifference;
+      }
+      //checks challnge has a date and platforms fields and that name is the same as the challenge picked
+      for (let i = 0; i < challenges.length; i++) {
+        if ( 
+          challenges[i].date &&
+          challenges[i].platforms &&
+          names.includes(challenges[i].name)
+          // when activted code below crashes server
+          // challenges[i].platforms.includes("wa") 
+        ) {
+          //gives the challenge a language and checks if it started
+          const templateId = challenges[i].template;
+          const template = await TemplatesDB.findOne(
+            { _id: templateId },
+            { language: 1 }
+          );
+          if (template) {
+            challenges[i].language = template.language;
+            challenges[i].dayDiff = calculateDayDifference(challenges[i].date);
+            if (challenges[i].dayDiff <= 1000) {//1000 for now no new challnges,change to 0 when you have new challnges
+              filteredChallenges.push(challenges[i]);
             }
+          }
         }
-
-        // // Sort filteredChallenges by dayDiff in descending order
-        // filteredChallenges.sort((a, b) => b.dayDiff - a.dayDiff);
-
-        // // Modify creator field
-
-        //   for (let i = 0; i < filteredChallenges.length; i++) {
+      }
+      //sorts the challenges by dates
+      filteredChallenges.sort((a, b) => a.dayDiff - b.dayDiff);
+      //searchs for the creator of the challenge to set as a username 
+      for (let i = 0; i < filteredChallenges.length; i++) {
+        //can make a more efficient way only calling db once
+        const creator = await PlayersDB.findOne(
+          { phone: filteredChallenges[i].creator },
+          { organization: 1, fullName: 1, username: 1 }
+        );
+        if (creator) {
+          filteredChallenges[i].creator = creator.organization || creator.fullName || creator.username;
+        }else{//90% made by sharon which doesnt have an account so it returns unknown still needs testing
+          filteredChallenges[i].creator = 'unknown'
+        }
             
-            
-          
-        //     try {
-        //         const creator = await PlayersDB.findOne(
-        //             { _id: filteredChallenges[i].creator },
-        //             { organization: 1, fullName: 1, username: 1 }
-        //         );
+      }
+      //returns challenges after validations
+      return res
+        .status(200)
+        .json(filteredChallenges);
 
-        //         if (creator) {
-        //           filteredChallenges[i].creator = creator.organization || creator.fullName || creator.username;
-        //         }
-        //     } catch (error) {
-        //         console.error("Error fetching creator:", error);
-            // }
-        // }
-
-        // Assuming you are using Express.js for handling HTTP responses
-        return res
-          .status(200)
-          .json(filteredChallenges);
-
-
+      // to do list:
+        //1. .dayDiff <= 1000
+        //2. .creator = 'unknown'
+        //3. .check login
     }
   }
   //התחלה
