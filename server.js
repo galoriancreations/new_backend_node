@@ -489,7 +489,7 @@ app.post("/api", (req, res) => {
       }
     } else if (req.body.hasOwnProperty("getChallengeData")) {
       data = req.body;
-      challengeData = await Challenges.findOne({
+      let challengeData = await Challenges.findOne({
         _id: `${data["getChallengeData"]}`,
       });
       if (challengeData == null) {
@@ -572,8 +572,120 @@ app.post("/api", (req, res) => {
       users.reverse();
       res.status(200).json(users);
     }
-  };
+    if (req.body.hasOwnProperty("getPublicTemplateID")) {
+      data = req.body; // all the names/title of the challenge
+      let templates = await TemplatesDB.find({//find all public templates with language and name set as 1
+        // isPublic: true 
+        // gives only 2 challnges unclear why it was used in old code
+      });
+      let challengeID;
+      for (let i = 0; i < templates.length; i++) {
+        // console.log(templates[i].name);
+        // console.log(templates[i].language);
+        if (data["getPublicTemplateID"].includes(templates[i].name) && templates[i].language == "English"){// if the template name is in the names of the template you picked
+          challengeID = templates[i]._id //return its id and stop
+          break
+        }
+      }
+      if (challengeID == null) {
+        return res
+          .status(404)
+          .json({ msg: `Challenge ${data["getPublicTemplateID"]} was not found` });
+      }else{
+        return res
+          .status(200)
+          .json(challengeID);
+      }
+    }
+    if (req.body.hasOwnProperty("getChallengesByName")) {
+      data = req.body
+      const names = data["getChallengesByName"];
 
+        // Fetch and filter challenges
+        const challenges = await Challenges.aggregate([{$project:{  
+          //  platforms:1,
+            // date: 1,
+            // name: 1,
+            days: 0,
+            preMessages: 0,
+            preDays: 0,
+            selections: 0,
+            scores: 0
+        }}]);
+
+        const filteredChallenges = [];
+
+
+
+      
+
+
+          for (let i = 0; i < challenges.length; i++) {
+              console.log(challenges[i]);
+            
+            
+          
+            if ( 
+                challenges[i].date &&
+
+                challenges[i].platforms
+                &&
+                // challenges[i].platforms.includes("wa") 
+                // &&
+                names.includes(challenges[i].name)
+            ) {
+                // const templateId = challenges[i].template;
+                
+                // try {
+                //     const template = await TemplatesDB.findOne(
+                //         { _id: templateId },
+                //         { language: 1 }
+                //     );
+                //     if (template) {
+                //         challenges[i].language = template.language;
+                //         // challenges[i].dayDiff = calculateDayDifference(challenges[i].date);
+
+                //         // if (challenges[i].dayDiff <= 0) {
+                            filteredChallenges.push(challenges[i]);
+                //         // }
+                //     }
+                // } catch (error) {
+                //     console.error("Error fetching template:", error);
+                // }
+            }
+        }
+
+        // // Sort filteredChallenges by dayDiff in descending order
+        // filteredChallenges.sort((a, b) => b.dayDiff - a.dayDiff);
+
+        // // Modify creator field
+
+        //   for (let i = 0; i < filteredChallenges.length; i++) {
+            
+            
+          
+        //     try {
+        //         const creator = await PlayersDB.findOne(
+        //             { _id: filteredChallenges[i].creator },
+        //             { organization: 1, fullName: 1, username: 1 }
+        //         );
+
+        //         if (creator) {
+        //           filteredChallenges[i].creator = creator.organization || creator.fullName || creator.username;
+        //         }
+        //     } catch (error) {
+        //         console.error("Error fetching creator:", error);
+            // }
+        // }
+
+        // Assuming you are using Express.js for handling HTTP responses
+        return res
+          .status(200)
+          .json(filteredChallenges);
+
+
+    }
+  }
   //התחלה
   start();
 });
