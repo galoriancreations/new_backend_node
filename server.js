@@ -669,10 +669,7 @@ app.post("/api", (req, res) => {
         .status(200)
         .json(filteredChallenges);
 
-      // to do list:
-        //1. .dayDiff <= 1000
-        //2. .creator = 'unknown'
-        //3. .check login
+
     }
   }
   //התחלה
