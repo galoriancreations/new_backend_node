@@ -392,7 +392,22 @@ app.post("/api", (req, res) => {
         return pData;
       }
       res.status(200).json(newPlayers);
-    }
+    }else if (req.body.hasOwnProperty("search")) {
+       const { permissions, input,isAuth } = req.body
+       try {
+         if (permissions === 'players') {
+          const players = await PlayersDB.find({ userName: { $regex: `.*${input}.*`, $options: 'i' } });
+          res.status(200).json(players);
+         } else if (permissions === 'courses') {
+          const challenges = await Challenges.find({ name: { $regex: `.*${input}.*`, $options: 'i' } });
+          res.status(200).json(challenges);
+         }
+
+       } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'An error occurred while searching.' });
+      }
+     }
     else if (req.body.hasOwnProperty("checkUsername")) {
       let check = await UsersTest.findOne({
         username: `${req.body.checkUsername}`,
