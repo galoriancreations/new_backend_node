@@ -12,19 +12,19 @@ const cors = require("cors");
 // --photo test -----------------------------------
 
 const multer = require("multer");
-const storage = multer.diskStorage({
-	destination: function (req, file, cb) {
-		cb(null, "uploads/"); // The directory where uploaded files will be stored
-	},
-	filename: function (req, file, cb) {
-		cb(null, Date.now() + "-" + file.originalname); // Define the filename for the uploaded file
-	},
-});
-const upload = multer({ storage });
-// i need to change from storaging to folder to storage to memory:
 
-// const storage = multer.memoryStorage(); //store file in memory
+// const storage = multer.diskStorage({
+// 	destination: function (req, file, cb) {
+// 		cb(null, "uploads/"); // The directory where uploaded files will be stored
+// 	},
+// 	filename: function (req, file, cb) {
+// 		cb(null, Date.now() + "-" + file.originalname); // Define the filename for the uploaded file
+// 	},
+// });
 // const upload = multer({ storage });
+
+const storage = multer.memoryStorage(); //store file in memory
+const upload = multer({ storage });
 // -- end photo test -----------------------------------
 
 let client;
@@ -233,6 +233,11 @@ const UsersTestSchema = new db.Schema(
 		createdChallenges: Array,
 		isAdmin: Boolean,
 		players: Array,
+		photo: {
+			name: String,
+			data: String,
+			contentType: String,
+		},
 	},
 	{ versionKey: false }
 );
@@ -386,73 +391,101 @@ app.post("/sendMessage", (req, res) => {
 
 	sendReply(temp);
 });
+// ---test if i can take a photo from database----
+// app.get("/photo", async (req, res) => {
+// 	// Create a file path where you want to save the photo
+// 	const testPhoto = await UsersTest.findOne({ username: "YanaTest" });
+// 	console.log(testPhoto);
+// 	// const filePath = `./uploads/${photo.name}`;
+
+// 	// // Convert the Base64 data back to a Buffer
+// 	// const buffer = Buffer.from(testPhoto.photo.data, "base64");
+
+// 	// // Write the Buffer to the file
+// 	// fs.writeFileSync(filePath, buffer);
+// });
+// ----end test----
 
 app.post("/api", upload.single("photo"), (req, res) => {
 	const start = async () => {
-		//this section is instead ""req.body.hasOwnProperty("register")
-		// its only work like this- inside "if (req.file)". i dont understand why
-		if (req.file) {
-			console.log("file uploaded");
+		//i cant use hasOwnProperty method like i use in below
+		if (req.body.register != null) {
+			console.log("this works");
+			
+			const photo = {
+				name: "",
+				data: "",
+				contentType: "",
+			};
+
+			if (req.file) {
+				// Read the uploaded file as a Buffer
+				const fileBuffer = req.file.buffer;
+				// Convert the Buffer to a Base64-encoded string
+				const base64Data = fileBuffer.toString("base64");
+				// structure how photo will be stored in DB
+				photo = {
+					name: req.file.originalname,
+					data: base64Data,
+					contentType: req.file.mimetype,
+				};
+
+				console.log("photo uploaded");
+			}
+			//parse body from JSON to object
 			let parseredRegister = JSON.parse(req.body.register);
-			if (req.body.register != null) {
-				// console if its working:
-				console.log("iam in");
-				//check all propertise of parseredRegister object:
-				for (const keyTest in parseredRegister) {
-					console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
-				}
-				//end
 
-				let _username = parseredRegister.username;
-				let _phone = parseredRegister.phone;
-				console.log(_username);
-				_phone = _phone.replace("+", "");
-				if ((await UsersTest.findOne({ username: `${_username}` })) == null) {
-					if ((await UsersTest.findOne({ phone: `${_phone}` })) == null) {
-						//temporarily commented, need to be adjusted:
+			//check all propertise of parseredRegister object:
+			for (const keyTest in parseredRegister) {
+				console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
+			}
 
-						// let temp = {
-						// 	_id: _phone,
-						// 	username: _username,
-						// 	phone: _phone,
-						// 	fullName: req.body.register.fullName,
-						// 	organization: req.body.register.organization,
-						// 	country: req.body.register.country,
-						// 	memberName: "",
-						// 	memberRole: "",
-						// 	email: req.body.register.email,
-						// 	language: req.body.register.language,
-						// 	accountType: req.body.register.accountType,
-						// 	templates: [],
-						// 	drafts: [],
-						// 	challenges: [],
-						// 	createdChallenges: [],
-						// 	players: [],
-						// 	isAdmin: false,
-						// };
-
-						console.log("all properties for a new used assigned");
-
-						// do Not create new user or do res, for Photo Test only:
-						// addUserToDb(temp);
-						// let [token, exp] = getToken(temp.phone);
-						// res.status(200).json({ access_token: token, exp: exp, user: temp });
-					} else {
-						res
-							.status(200)
-							.json(
-								"Oops! This phone is already taken,\nplease choose another :)"
-							);
-						return;
-					}
+			let _username = parseredRegister.username;
+			let _phone = parseredRegister.phone;
+			_phone = _phone.replace("+", "");
+			//if a name dosent already exists in DB
+			if ((await UsersTest.findOne({ username: `${_username}` })) == null) {
+				//if a phone dosent already exists in DB
+				if ((await UsersTest.findOne({ phone: `${_phone}` })) == null) {
+					let temp = {
+						_id: _phone,
+						username: _username,
+						phone: _phone,
+						fullName: parseredRegister.fullName,
+						organization: parseredRegister.organization,
+						country: parseredRegister.country,
+						memberName: "",
+						memberRole: "",
+						email: parseredRegister.email,
+						language: parseredRegister.language,
+						accountType: parseredRegister.accountType,
+						templates: [],
+						drafts: [],
+						challenges: [],
+						createdChallenges: [],
+						players: [],
+						isAdmin: false,
+						photo: photo,
+					};
+					console.log("all properties for a new user assigned");
+					addUserToDb(temp);
+					let [token, exp] = getToken(temp.phone);
+					res.status(200).json({ access_token: token, exp: exp, user: temp });
 				} else {
 					res
 						.status(200)
 						.json(
-							"Oops! This username is already taken,\nplease choose another :)"
+							"Oops! This phone is already taken,\nplease choose another :)"
 						);
 					return;
 				}
+			} else {
+				res
+					.status(200)
+					.json(
+						"Oops! This username is already taken,\nplease choose another :)"
+					);
+				return;
 			}
 		} else {
 			if (req.body.hasOwnProperty("getTopPlayers")) {
