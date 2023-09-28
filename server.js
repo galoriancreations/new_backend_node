@@ -233,7 +233,7 @@ const UsersTestSchema = new db.Schema(
 		createdChallenges: Array,
 		isAdmin: Boolean,
 		players: Array,
-		photo: {
+		image: {
 			name: String,
 			data: String,
 			contentType: String,
@@ -391,28 +391,14 @@ app.post("/sendMessage", (req, res) => {
 
 	sendReply(temp);
 });
-// ---test if i can take a photo from database----
-// app.get("/photo", async (req, res) => {
-// 	// Create a file path where you want to save the photo
-// 	const testPhoto = await UsersTest.findOne({ username: "YanaTest" });
-// 	console.log(testPhoto);
-// 	// const filePath = `./uploads/${photo.name}`;
 
-// 	// // Convert the Base64 data back to a Buffer
-// 	// const buffer = Buffer.from(testPhoto.photo.data, "base64");
-
-// 	// // Write the Buffer to the file
-// 	// fs.writeFileSync(filePath, buffer);
-// });
-// ----end test----
-
-app.post("/api", upload.single("photo"), (req, res) => {
+app.post("/api", upload.single("image"), (req, res) => {
 	const start = async () => {
 		//i cant use hasOwnProperty method like i use in below
 		if (req.body.register != null) {
 			console.log("this works");
-			
-			const photo = {
+
+			const image = {
 				name: "",
 				data: "",
 				contentType: "",
@@ -423,14 +409,12 @@ app.post("/api", upload.single("photo"), (req, res) => {
 				const fileBuffer = req.file.buffer;
 				// Convert the Buffer to a Base64-encoded string
 				const base64Data = fileBuffer.toString("base64");
-				// structure how photo will be stored in DB
-				photo = {
-					name: req.file.originalname,
-					data: base64Data,
-					contentType: req.file.mimetype,
-				};
+				// structure how image will be stored in DB
+				image.name = req.file.originalname;
+				image.data = base64Data;
+				image.contentType = req.file.mimetype;
 
-				console.log("photo uploaded");
+				console.log("image uploaded");
 			}
 			//parse body from JSON to object
 			let parseredRegister = JSON.parse(req.body.register);
@@ -465,9 +449,10 @@ app.post("/api", upload.single("photo"), (req, res) => {
 						createdChallenges: [],
 						players: [],
 						isAdmin: false,
-						photo: photo,
+						image: image,
 					};
 					console.log("all properties for a new user assigned");
+					//add new user to DB
 					addUserToDb(temp);
 					let [token, exp] = getToken(temp.phone);
 					res.status(200).json({ access_token: token, exp: exp, user: temp });
