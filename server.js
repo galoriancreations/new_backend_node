@@ -645,10 +645,66 @@ app.post("/api", upload.single("photo"), (req, res) => {
 				res.status(200).json(users);
 			}
 		}
+		
+		if ('getChallengesByName' in req.body) {
+			const names = req.body.getChallengesByName;
+		
+			const challenges = await Challenges.find(
+				{ name: { $in: names }, platforms: { $exists: true } },
+				{ days: 0, preMessages: 0, preDays: 0, selections: 0, scores: 0 }
+			);
+		
+			let final = await Promise.all(
+				challenges.map(async (challenge) => {
+				const templateId = challenge.template;
+				const template = await TemplatesDB.findOne(
+					{ _id: templateId },
+					{ language: 1 }
+				);
+				if (template !== null) {
+					challenge.language = template.language;
+					challenge.dayDiff = calculateDayDifference(challenge.date);
+					if (challenge.dayDiff <= 0) {
+					return challenge;
+					}
+				}
+				})
+			);
+			// final has undefined values, need to filter them, can't be done in the map
+			final = final.filter((challenge) => challenge !== undefined);
+			// also sort method doesn't work in the map
+			final.sort((a, b) => b.dayDiff - a.dayDiff);
+		
+			for (let i = 0; i < final.length; i++) {
+				const creator = await UsersTest.findOne(
+					// Crash sometimes because creator is null, need to check
+					{ _id: final[i]?.creator },
+					{ organization: 1, fullName: 1, username: 1 }
+				);
+		
+				if (!creator) {
+					final[i].creator = 'unknown';
+					continue;
+				}
+		
+				final[i].creator =
+					creator.organization || creator.fullName || creator.username;
+			}
+			
+		return res.status(200).json(final);
+		}
 	};
 	//התחלה
 	start();
 });
+	
+function calculateDayDifference(date) {
+    const today = new Date();
+    const challengeDate = new Date(date);
+    const timeDiff = challengeDate.getTime() - today.getTime();
+    const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return dayDiff;
+}
 
 app.post("/xapi", async (req, res) => {
 	data = req.body;
