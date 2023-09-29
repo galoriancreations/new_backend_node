@@ -647,6 +647,12 @@ app.post("/api", upload.single("photo"), (req, res) => {
 		}
 		
 		if ('getChallengesByName' in req.body) {
+			// check if user loggedin
+			const { loggedIn, msg } = isUserLoggedIn(req);
+			if (!loggedIn) {
+				return res.status(401).json({ msg });
+			}
+			
 			const names = req.body.getChallengesByName;
 
 			const challenges = await Challenges.find(
@@ -693,6 +699,12 @@ app.post("/api", upload.single("photo"), (req, res) => {
 
 			return res.status(200).json(final);
 		} else if ('getPublicTemplateID' in req.body) {
+			// check if user loggedin
+			const { loggedIn, msg } = isUserLoggedIn(req);
+			if (!loggedIn) {
+				return res.status(401).json({ msg });
+			}
+			
 			const names = req.body.getPublicTemplateID;
 			const template = await TemplatesDB.findOne(
 				{
@@ -709,13 +721,48 @@ app.post("/api", upload.single("photo"), (req, res) => {
 	//התחלה
 	start();
 });
-	
+
+/**
+ * Calculate the difference between two dates
+ *
+ * @param {String} date The date to calculate the difference from
+ * @returns {Number} The difference in days
+ * 
+ * @example
+ * const dayDiff = calculateDayDifference('2021-01-01');
+ * console.log(dayDiff); // 10
+ */ 
 function calculateDayDifference(date) {
     const today = new Date();
     const challengeDate = new Date(date);
     const timeDiff = challengeDate.getTime() - today.getTime();
     const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
     return dayDiff;
+}
+
+/**
+ * Check if user is logged in
+ * 
+ * @param {Request} req The request object
+ * @returns {Object} { loggedIn: Boolean, msg: String }
+ */ 
+function isUserLoggedIn(req) {
+	if (!req.headers.authorization) {
+		return {
+			loggedIn: false,
+			msg: 'Invalid or expired token. Please refresh the page and login',
+		};
+	}
+	// check if token is valid
+	const current_user = decode_auth_token(req.headers.authorization.split(' ')[1], secretKey);
+	if (!current_user) {
+		return res.status(401).json({
+			loggedIn: false,
+			msg: 'Invalid or expired token. Please refresh the page and login',
+		});
+	}
+
+	return { mesg: null, loggedIn: true };
 }
 
 app.post("/xapi", async (req, res) => {
