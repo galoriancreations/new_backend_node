@@ -292,6 +292,21 @@ const PlayerSchema = new db.Schema(
   { versionKey: false }
 );
 
+const StarsSchema = new db.Schema(
+  {
+    _id: String,
+    image: String,
+    title: String,
+    names: Array,
+    text: String,
+    link: String,
+    linkText: String,
+    totalRateing: Number,
+    users: Array,
+  },
+  { versionKey: false }
+);
+
 ///צריך לרשום לו עוד פרמטר עם אותו השם של הקולקשן כדי להגיד לו שאתה מתכוון למה שאתה מתכוון...
 const WaGroup = db.model("waGroups", waGroupSchema, "waGroups");
 
@@ -304,6 +319,8 @@ const Challenges = db.model("challenges", ChallengeSchema, "challenges");
 const TemplatesDB = db.model("templates", TemplateSchema, "templates");
 
 const PlayersDB = db.model("players", PlayerSchema, "players");
+
+const StarsDB = db.model("stars", StarsSchema, "stars");
 
 // function start(client) { ///פונקציית ההתחלה שמקבלת את הקליינט
 
@@ -576,13 +593,9 @@ app.post("/api", (req, res) => {
     if (req.body.hasOwnProperty("getPublicTemplateID")) {
       data = req.body; // all the names/title of the challenge
       let templates = await TemplatesDB.find({//find all public templates with language and name set as 1
-        // isPublic: true 
-        // gives only 2 challnges unclear why it was used in old code
       });
       let challengeID;
       for (let i = 0; i < templates.length; i++) {
-        // console.log(templates[i].name);
-        // console.log(templates[i].language);
         if (data["getPublicTemplateID"].includes(templates[i].name) && templates[i].language == "English"){// if the template name is in the names of the template you picked
           challengeID = templates[i]._id //return its id and stop
           break
@@ -671,6 +684,66 @@ app.post("/api", (req, res) => {
 
 
     }
+    if (req.body.hasOwnProperty("rankStars")) {
+      data = req.body
+      let stars = await StarsDB.find({
+      });
+      let goodToGo = false
+      let challengeID;
+      let userid
+      try{
+        userid = data["rankStars"].user.toString()
+        goodToGo = !goodToGo
+      }catch(error){
+        console.error(error);
+      }
+      if (goodToGo) {
+        let user = {id:userid,stars:data["rankStars"].star}//data from client data["rankStars"].userId
+        let savedUsers;
+        let foundId = false
+        
+        for (let i = 0; i < stars.length; i++) {
+          if (data["rankStars"].names.includes(stars[i].title)){
+            challengeID = stars[i]._id//return its id and stop
+            savedUsers = stars[i].users
+            for (let v = 0; v < savedUsers.length; v++) {
+              // console.log(savedUsers[v].id);
+              // console.log(user.id);
+              if (savedUsers[v].id == user.id) {
+                savedUsers[v] = user
+                foundId = !foundId
+                await StarsDB.findOneAndUpdate({_id:challengeID},{users:savedUsers});
+                break
+              }
+            }
+            if (!foundId) {
+              savedUsers.push(user)
+              await StarsDB.findOneAndUpdate({_id:challengeID},{users:savedUsers});
+            }
+            break
+          }
+        }
+        if (challengeID == null) {
+          return res
+            .status(404)
+            .json({ msg: `Challenge ${data["rankStars"].names} was not found` });
+        }else{
+
+          return res
+            .status(200)
+            .json(challengeID);
+        }
+      }
+    }
+    /////////////////////////
+    if (req.body.hasOwnProperty("getRankings")) {
+      let stars = await StarsDB.find({});
+        return res
+          .status(200)
+          .json(stars);
+      // }
+    }
+    
   }
   //התחלה
   start();
