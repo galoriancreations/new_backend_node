@@ -28,28 +28,168 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+interface OutputFormat {
+  [key: string]: string | string[] | OutputFormat;
+}
+
+type Article = {
+  title: string;
+  image: string;
+  text: string;
+};
+
 // Define a function to generate an article using the OpenAI CHATGPT-3 API
 async function generateArticle({
   topic = 'a topic of your choice',
   wordsCount = 500,
 }) {
-  console.log('generateArticle');
+  console.log('Generating article...');
+  const response = await strict_output(
+    `You are a helpful AI that is able to generate articles with title image and text, the length of the text should not be more than ${wordsCount} words, store article in a JSON array`,
+    `Write an article about: ${topic}.`,
+    {
+      title: 'title',
+      image: 'a link to relative image start with https://',
+      text: `text not more than ${wordsCount} words`,
+    }
+  );
 
-  const prompt = `Write an article about: ${topic}.
-  The article should have a title, image, and text.
-  The text of the article should be at ${wordsCount} words.
-  The image should be a link to a related image that starts with https://.`;
-  console.log('prompt:', prompt);
-
-  const response = await openai.chat.completions.create({
-    messages: [{ role: 'user', content: prompt }],
-    model: 'gpt-3.5-turbo',
-  });
-
-  console.log('response');
+  console.log('GPT Response:');
   console.log(response);
 
-  return response.choices[0].message.content!;
+  return response;
+}
+
+export async function strict_output(
+  system_prompt: string,
+  user_prompt: string | string[],
+  output_format: OutputFormat,
+  default_category: string = '',
+  output_value_only: boolean = false,
+  model: string = 'gpt-3.5-turbo',
+  temperature: number = 1,
+  num_tries: number = 3,
+  verbose: boolean = false
+): Promise<Article | null> {
+  // if the user input is in a list, we also process the output as a list of json
+  const list_input: boolean = Array.isArray(user_prompt);
+  // if the output format contains dynamic elements of < or >, then add to the prompt to handle dynamic elements
+  const dynamic_elements: boolean = /<.*?>/.test(JSON.stringify(output_format));
+  // if the output format contains list elements of [ or ], then we add to the prompt to handle lists
+  const list_output: boolean = /\[.*?\]/.test(JSON.stringify(output_format));
+
+  // start off with no error message
+  let error_msg: string = '';
+
+  for (let i = 0; i < num_tries; i++) {
+    let output_format_prompt: string = `\nYou are to output the following in json format: ${JSON.stringify(
+      output_format
+    )}. \nDo not put quotation marks or escape character \\ in the output fields.`;
+
+    if (list_output) {
+      output_format_prompt += `\nIf output field is a list, classify output into the best element of the list.`;
+    }
+
+    // if output_format contains dynamic elements, process it accordingly
+    if (dynamic_elements) {
+      output_format_prompt += `\nAny text enclosed by < and > indicates you must generate content to replace it. Example input: Go to <location>, Example output: Go to the garden\nAny output key containing < and > indicates you must generate the key name to replace it. Example input: {'<location>': 'description of location'}, Example output: {school: a place for education}`;
+    }
+
+    // if input is in a list format, ask it to generate json in a list
+    if (list_input) {
+      output_format_prompt += `\nGenerate a list of json, one json for each input element.`;
+    }
+
+    // Use OpenAI to get a response
+    const response = await openai.chat.completions.create({
+      temperature: temperature,
+      model: model,
+      messages: [
+        {
+          role: 'system',
+          content: system_prompt + output_format_prompt + error_msg,
+        },
+        { role: 'user', content: user_prompt.toString() },
+      ],
+    });
+
+    let res: string =
+      response.choices[0].message?.content?.replace(/'/g, '"') ?? '';
+
+    // ensure that we don't replace away apostrophes in text
+    res = res.replace(/(\w)"(\w)/g, "$1'$2");
+
+    if (verbose) {
+      console.log(
+        'System prompt:',
+        system_prompt + output_format_prompt + error_msg
+      );
+      console.log('\nUser prompt:', user_prompt);
+      console.log('\nGPT response:', res);
+    }
+
+    // try-catch block to ensure output format is adhered to
+    try {
+      let output: any = JSON.parse(res);
+
+      if (list_input) {
+        if (!Array.isArray(output)) {
+          throw new Error('Output format not in a list of json');
+        }
+      } else {
+        output = [output];
+      }
+
+      // check for each element in the output_list, the format is correctly adhered to
+      for (let index = 0; index < output.length; index++) {
+        for (const key in output_format) {
+          // unable to ensure accuracy of dynamic output header, so skip it
+          if (/<.*?>/.test(key)) {
+            continue;
+          }
+
+          // if output field missing, raise an error
+          if (!(key in output[index])) {
+            throw new Error(`${key} not in json output`);
+          }
+
+          // check that one of the choices given for the list of words is an unknown
+          if (Array.isArray(output_format[key])) {
+            const choices = output_format[key] as string[];
+            // ensure output is not a list
+            if (Array.isArray(output[index][key])) {
+              output[index][key] = output[index][key][0];
+            }
+            // output the default category (if any) if GPT is unable to identify the category
+            if (!choices.includes(output[index][key]) && default_category) {
+              output[index][key] = default_category;
+            }
+            // if the output is a description format, get only the label
+            if (output[index][key].includes(':')) {
+              output[index][key] = output[index][key].split(':')[0];
+            }
+          }
+        }
+
+        // if we just want the values for the outputs
+        if (output_value_only) {
+          output[index] = Object.values(output[index]);
+          // just output without the list if there is only one element
+          if (output[index].length === 1) {
+            output[index] = output[index][0];
+          }
+        }
+      }
+
+      return list_input ? output : output[0];
+    } catch (e) {
+      error_msg = `\n\nResult: ${res}\n\nError message: ${e}`;
+      console.log('An exception occurred:', e);
+      console.log('Current invalid json format:', res);
+    }
+  }
+
+  return null;
 }
 
 // define a function to genereate an article when click on button and log it
@@ -63,20 +203,27 @@ async function generateArticleLog() {
 // define a function to genereate an article and save it in a file via fs
 async function generateArticleFile() {
   const article = await generateArticle({ wordsCount: 100 });
-  fs.writeFile('genereted_article.txt', article, (err) => {
+  if (article === null) {
+    return console.log('Error generating article');
+  }
+  const articleString = JSON.stringify(article);
+  fs.writeFile('genereted_article.json', articleString, (err) => {
     if (err) throw err;
-    console.log('The article has been saved in file article_chatgpt.txt!');
+    console.log('The article has been saved in file article_chatgpt.json!');
   });
   return article;
 }
-// generateArticleFile();
+generateArticleFile();
 
 // Define a function to send an article to a subscriber via WhatsApp
 async function sendArticleViaWhatsApp(
-  article: string,
+  article: Article,
   phoneNumber: string | number
 ) {
-  const message = `Here's your weekly article:\n\n${article}`;
+  const articleString = JSON.stringify(article);
+  console.log('Article string:', articleString);
+
+  const message = `Here's your weekly article:\n\n${articleString}`;
   const response = await twilioClient.messages.create({
     body: message,
     from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
@@ -86,12 +233,12 @@ async function sendArticleViaWhatsApp(
 }
 
 // Define a function to send an article to a subscriber via email
-async function sendArticleViaEmail(article: string, emailAddress: string) {
+async function sendArticleViaEmail(article: Article, emailAddress: string) {
   const message = {
     from: 'YOUR_EMAIL_ADDRESS',
     to: emailAddress,
     subject: 'Your Weekly Article',
-    text: article,
+    text: JSON.stringify(article),
   };
   await transporter.sendMail(message);
 }
@@ -109,10 +256,13 @@ async function generateAndSendArticles() {
   ];
 
   // Generate an article
-  // const article = await generateArticle({ wordsCount: 100 });
+  const article = await generateArticle({ wordsCount: 100 });
+  if (article === null) {
+    return console.log('Error generating article');
+  }
 
   // Take the article from the file generated_article.txt for less API calls and testing
-  const article = fs.readFileSync('genereted_article.txt', 'utf8');
+  // const article = fs.readFileSync('genereted_article.txt', 'utf8');
 
   // Send the article to each subscriber
   for (const subscriber of subscribers) {
@@ -132,10 +282,10 @@ async function generateAndSendArticles() {
     }
   }
 }
-generateAndSendArticles();
+// generateAndSendArticles();
 
-/*
 // Schedule the generateAndSendArticles function to run every Monday at 9:00 AM
+/*
 const rule = new schedule.RecurrenceRule();
 rule.dayOfWeek = 1; // Monday
 rule.hour = 9; // 9:00 AM
