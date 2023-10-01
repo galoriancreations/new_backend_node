@@ -695,7 +695,7 @@ app.post("/api", (req, res) => {
         userid = data["rankStars"].user.toString()
         goodToGo = !goodToGo
       }catch(error){
-        console.error(error);
+
       }
       if (goodToGo) {
         let user = {id:userid,stars:data["rankStars"].star}//data from client data["rankStars"].userId
