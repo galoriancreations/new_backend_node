@@ -395,7 +395,7 @@ app.post("/sendMessage", (req, res) => {
 app.post("/api", upload.single("image"), (req, res) => {
 	const start = async () => {
 		//i cant use hasOwnProperty method like i use in below
-		if (req.body.register != null) {
+		if (Object.hasOwn(req.body, "register")) {
 			console.log("this works");
 
 			const image = {
@@ -662,17 +662,17 @@ app.post("/xapi", async (req, res) => {
 
 		let final = {};
 
-		if (!data.hasOwnProperty("userID")) {
+		if (!Object.hasOwn(data, "userID")) {
 			data["userID"] = current_user;
 		}
 
-		if (data.hasOwnProperty("userID")) {
+		if (Object.hasOwn(data, "userID")) {
 			console.log(`data's userID is now ${data["userID"]}`);
 			if (String(current_user).trim() === String(data["userID"]).trim()) {
 				///אנחנו בסוף נשלח את את זה חזרה לפרונט
 				let userData = {};
 
-				if (data.hasOwnProperty("editProfile")) {
+				if (Object.hasOwn(data, "editProfile")) {
 					let newData = data["editProfile"];
 					let allowedChanges = [
 						"username",
@@ -760,7 +760,7 @@ app.post("/xapi", async (req, res) => {
 					final["logged_in_as"] = current_user;
 
 					final["user"] = userData;
-				} else if (data.hasOwnProperty("getAvailableTemplates")) {
+				} else if (Object.hasOwn(data, "getAvailableTemplates")) {
 					let publicTemplates = await TemplatesDB.find({ isPublic: true });
 
 					let privateTemplates = await Promise.all(
@@ -778,7 +778,7 @@ app.post("/xapi", async (req, res) => {
 					templates.filter((val) => val !== null);
 
 					final = { templates: templates };
-				} else if (data.hasOwnProperty("addPlayer")) {
+				} else if (Object.hasOwn(data, "addPlayer")) {
 					let phoneNum = req.body.addPlayer.phone;
 					phoneNum = phoneNum.replace("+", "");
 					if (user["accountType"] == "individual") {
@@ -873,7 +873,7 @@ app.post("/xapi", async (req, res) => {
 						msg: `${findIndividual.username}`,
 						playerId: `${findIndividual["_id"]}`,
 					};
-				} else if (data.hasOwnProperty("deletePlayer")) {
+				} else if (Object.hasOwn(data, "deletePlayer")) {
 					let playerToRemove = await PlayersDB.findOne({
 						_id: `${data.deletePlayer}`,
 					});
@@ -897,13 +897,13 @@ app.post("/xapi", async (req, res) => {
 						msg: `sucessfully deleted user '${playerToRemove.username}`,
 						playerId: `${playerToRemove["_id"]}`,
 					};
-				} else if (data.hasOwnProperty("getTemplateData")) {
+				} else if (Object.hasOwn(data, "getTemplateData")) {
 					let template = await TemplatesDB.findOne({
 						_id: `${data["getTemplateData"]}`,
 					});
 					final = template;
 					console.log("Template Ready!");
-				} else if (data.hasOwnProperty("saveTemplate")) {
+				} else if (Object.hasOwn(data, "saveTemplate")) {
 					let templateId = data["saveTemplate"]["templateId"];
 					console.log("template id is : " + templateId);
 					let templateData = data["saveTemplate"]["templateData"];
@@ -992,7 +992,7 @@ app.post("/xapi", async (req, res) => {
 					}
 					updateUserInDB(user);
 					final = { logged_in_as: current_user, templateId: templateId };
-				} else if (data.hasOwnProperty("deleteTemplate")) {
+				} else if (Object.hasOwn(data, "deleteTemplate")) {
 					let templateId = data["deleteTemplate"]["templateId"];
 					if (
 						!isAdmin &&
@@ -1015,7 +1015,7 @@ app.post("/xapi", async (req, res) => {
 						msg: `Successfully deleted template: ${templateId}`,
 						templateId: templateId,
 					};
-				} else if (data.hasOwnProperty("cloneTemplate")) {
+				} else if (Object.hasOwn(data, "cloneTemplate")) {
 					let originId = data["cloneTemplate"];
 					let originTemplate = await TemplatesDB.findOne({
 						_id: `${originId}`,
@@ -1061,7 +1061,7 @@ app.post("/xapi", async (req, res) => {
 					newTemplate["creator"] = user["phone"];
 
 					final = newTemplate;
-				} else if (data.hasOwnProperty("getAllTemplates")) {
+				} else if (Object.hasOwn(data, "getAllTemplates")) {
 					if (isAdmin == false) {
 						return res
 							.status(403)
