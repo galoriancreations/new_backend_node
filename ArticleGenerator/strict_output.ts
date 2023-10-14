@@ -1,67 +1,21 @@
-require('dotenv').config();
-
 import OpenAI from 'openai';
-import fs from 'fs';
-import nodemailer from 'nodemailer';
-import { Twilio } from 'twilio';
-// import schedule from 'node-schedule';
 
-// Need to set up OpenAI API credentials
 const openai = new OpenAI({
   // organization: "YOUR_ORG_ID",
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Set up Twilio API credentials
-const twilioClient = new Twilio(
-  process.env.TWILIO_ACCOUNTSID,
-  process.env.TWILIO_AUTHTOKEN,
-  { accountSid: process.env.TWILIO_ACCOUNTSID }
-);
-
-// Set up Nodemailer credentials
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_ADDRESS,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
-
-interface OutputFormat {
+export type OutputFormat = {
   [key: string]: string | string[] | OutputFormat;
-}
+};
 
-type Article = {
+export type Article = {
   title: string;
   image: string;
   text: string;
 };
 
-// Function to generate an article using the OpenAI CHATGPT-3 API
-async function generateArticle({
-  topic = 'a topic of your choice',
-  wordsCount = 500,
-}) {
-  console.log('Generating article...');
-  const response = await strict_output(
-    `You are a helpful AI that is able to generate articles with title image and text, the length of the text should not be more than ${wordsCount} words, store article in a JSON array`,
-    `You are to generate an article about ${topic}.`,
-    {
-      title: 'title',
-      image: 'a link to relative image start with https://',
-      text: `text not more than ${wordsCount} words`,
-    },
-    { verbose: true }
-  );
-
-  console.log('GPT Response:');
-  console.log(response);
-
-  return response;
-}
-
-// Function to generate an article using the OpenAI CHATGPT-3 API with strict output format checking
+// Function to generate a output from the OpenAI CHATGPT-3 API with a strict output format checking
 export async function strict_output(
   system_prompt: string,
   user_prompt: string | string[],
@@ -195,105 +149,3 @@ export async function strict_output(
 
   return null;
 }
-
-// Function to genereate an article when click on button and log it
-async function generateArticleLog() {
-  const article = await generateArticle({ wordsCount: 100 });
-  console.log(article);
-  return article;
-}
-// generateArticleLog();
-
-// Function to genereate an article and save it in a file via fs
-async function generateArticleFile() {
-  const article = await generateArticle({ wordsCount: 100 });
-  if (article === null) {
-    return console.log('Error generating article');
-  }
-  const articleString = JSON.stringify(article);
-  fs.writeFile('genereted_article.json', articleString, (err) => {
-    if (err) throw err;
-    console.log('The article has been saved in file article_chatgpt.json!');
-  });
-  return article;
-}
-generateArticleFile();
-
-// Function to send an article to a subscriber via WhatsApp
-async function sendArticleViaWhatsApp(
-  article: Article,
-  phoneNumber: string | number
-) {
-  const articleString = JSON.stringify(article);
-  console.log('Article string:', articleString);
-
-  const message = `Here's your weekly article:\n\n${articleString}`;
-  const response = await twilioClient.messages.create({
-    body: message,
-    from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
-    to: `whatsapp:${phoneNumber}`,
-  });
-  console.log(response);
-}
-
-// Function to send an article to a subscriber via email
-async function sendArticleViaEmail(article: Article, emailAddress: string) {
-  const message = {
-    from: 'YOUR_EMAIL_ADDRESS',
-    to: emailAddress,
-    subject: 'Your Weekly Article',
-    text: JSON.stringify(article),
-  };
-  await transporter.sendMail(message);
-}
-
-// Function to generate and send articles to subscribers
-async function generateAndSendArticles() {
-  // Get a list of subscribers from a database or other source
-  const subscribers = [
-    {
-      name: 'John Doe',
-      phoneNumber: '+972521234567',
-      // phoneNumber: '+972525444634',
-      emailAddress: 'example@mail.com', // Need to set up Nodemailer credentials
-    },
-  ];
-
-  // Generate an article
-  const article = await generateArticle({ wordsCount: 100 });
-  if (article === null) {
-    return console.log('Error generating article');
-  }
-
-  // Take the article from the file generated_article.txt for less API calls and testing
-  // const article = fs.readFileSync('genereted_article.txt', 'utf8');
-
-  // Send the article to each subscriber
-  for (const subscriber of subscribers) {
-    try {
-      await sendArticleViaWhatsApp(article, subscriber.phoneNumber);
-      // Need to set up Nodemailer credentials
-      // await sendArticleViaEmail(article, subscriber.emailAddress);
-      console.log(`Article sent to ${subscriber.name}`);
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(
-          `Error sending article to ${subscriber.name}: ${error.message}`
-        );
-      } else {
-        console.error(`Error sending article to ${subscriber.name}`);
-      }
-    }
-  }
-}
-// generateAndSendArticles();
-
-// Schedule the generateAndSendArticles function to run every Monday at 9:00 AM
-/*
-const rule = new schedule.RecurrenceRule();
-rule.dayOfWeek = 1; // Monday
-rule.hour = 9; // 9:00 AM
-rule.minute = 0; // 00 seconds
-const job = schedule.scheduleJob(rule, generateAndSendArticles);
-console.log('Scheduled job to run every Monday at 9:00 AM');
-*/
