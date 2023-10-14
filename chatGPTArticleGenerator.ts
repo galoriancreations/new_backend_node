@@ -38,7 +38,7 @@ type Article = {
   text: string;
 };
 
-// Define a function to generate an article using the OpenAI CHATGPT-3 API
+// Function to generate an article using the OpenAI CHATGPT-3 API
 async function generateArticle({
   topic = 'a topic of your choice',
   wordsCount = 500,
@@ -46,12 +46,13 @@ async function generateArticle({
   console.log('Generating article...');
   const response = await strict_output(
     `You are a helpful AI that is able to generate articles with title image and text, the length of the text should not be more than ${wordsCount} words, store article in a JSON array`,
-    `Write an article about: ${topic}.`,
+    `You are to generate an article about ${topic}.`,
     {
       title: 'title',
       image: 'a link to relative image start with https://',
       text: `text not more than ${wordsCount} words`,
-    }
+    },
+    { verbose: true }
   );
 
   console.log('GPT Response:');
@@ -60,16 +61,19 @@ async function generateArticle({
   return response;
 }
 
+// Function to generate an article using the OpenAI CHATGPT-3 API with strict output format checking
 export async function strict_output(
   system_prompt: string,
   user_prompt: string | string[],
   output_format: OutputFormat,
-  default_category: string = '',
-  output_value_only: boolean = false,
-  model: string = 'gpt-3.5-turbo',
-  temperature: number = 1,
-  num_tries: number = 3,
-  verbose: boolean = false
+  {
+    default_category = '',
+    output_value_only = false,
+    model = 'gpt-3.5-turbo',
+    temperature = 1,
+    num_tries = 3,
+    verbose = false,
+  }
 ): Promise<Article | null> {
   // if the user input is in a list, we also process the output as a list of json
   const list_input: boolean = Array.isArray(user_prompt);
@@ -192,7 +196,7 @@ export async function strict_output(
   return null;
 }
 
-// define a function to genereate an article when click on button and log it
+// Function to genereate an article when click on button and log it
 async function generateArticleLog() {
   const article = await generateArticle({ wordsCount: 100 });
   console.log(article);
@@ -200,7 +204,7 @@ async function generateArticleLog() {
 }
 // generateArticleLog();
 
-// define a function to genereate an article and save it in a file via fs
+// Function to genereate an article and save it in a file via fs
 async function generateArticleFile() {
   const article = await generateArticle({ wordsCount: 100 });
   if (article === null) {
@@ -215,7 +219,7 @@ async function generateArticleFile() {
 }
 generateArticleFile();
 
-// Define a function to send an article to a subscriber via WhatsApp
+// Function to send an article to a subscriber via WhatsApp
 async function sendArticleViaWhatsApp(
   article: Article,
   phoneNumber: string | number
@@ -232,7 +236,7 @@ async function sendArticleViaWhatsApp(
   console.log(response);
 }
 
-// Define a function to send an article to a subscriber via email
+// Function to send an article to a subscriber via email
 async function sendArticleViaEmail(article: Article, emailAddress: string) {
   const message = {
     from: 'YOUR_EMAIL_ADDRESS',
@@ -243,7 +247,7 @@ async function sendArticleViaEmail(article: Article, emailAddress: string) {
   await transporter.sendMail(message);
 }
 
-// Define a function to generate and send articles to subscribers
+// Function to generate and send articles to subscribers
 async function generateAndSendArticles() {
   // Get a list of subscribers from a database or other source
   const subscribers = [
