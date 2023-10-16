@@ -238,6 +238,7 @@ const UsersTestSchema = new db.Schema(
 			data: String,
 			contentType: String,
 		},
+		articleSubscribed: Boolean,
 	},
 	{ versionKey: false }
 );
