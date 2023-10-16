@@ -8,6 +8,10 @@ import {
   waGroupSchema,
 } from './schemas';
 
+db.connect(
+	"mongodb+srv://Yinon:Challenge18@challenge18.hclji.mongodb.net/challenge"
+);
+
 export const WaGroup = db.model('waGroups', waGroupSchema, 'waGroups');
 
 export const UsersTest = db.model('users', UsersTestSchema, 'users');
