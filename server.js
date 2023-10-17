@@ -395,6 +395,7 @@ app.post("/sendMessage", (req, res) => {
 app.post("/api", upload.single("image"), (req, res) => {
 	const start = async () => {
 		//i cant use hasOwnProperty method like i use in below
+		// instead i using Object.hasOwn
 		if (Object.hasOwn(req.body, "register")) {
 			console.log("this works");
 
@@ -635,7 +636,7 @@ app.post("/api", upload.single("image"), (req, res) => {
 	start();
 });
 
-app.post("/xapi", async (req, res) => {
+app.post("/xapi", upload.single("image"), async (req, res) => {
 	data = req.body;
 	console.log("XAPI START");
 	goodToken = false;
@@ -660,6 +661,7 @@ app.post("/xapi", async (req, res) => {
 
 		const isAdmin = user["isAdmin"];
 
+		// value that xapi returns:
 		let final = {};
 
 		if (!Object.hasOwn(data, "userID")) {
@@ -669,11 +671,11 @@ app.post("/xapi", async (req, res) => {
 		if (Object.hasOwn(data, "userID")) {
 			console.log(`data's userID is now ${data["userID"]}`);
 			if (String(current_user).trim() === String(data["userID"]).trim()) {
-				///אנחנו בסוף נשלח את את זה חזרה לפרונט
+				//object that will return to front
 				let userData = {};
-
+				// must have this field when entering dashboard
 				if (Object.hasOwn(data, "editProfile")) {
-					let newData = data["editProfile"];
+					console.log("test in xapi editProfile");
 					let allowedChanges = [
 						"username",
 						"phone",
@@ -687,10 +689,51 @@ app.post("/xapi", async (req, res) => {
 						"city",
 						"country",
 					];
+					// 	this value is needed when editing profile, because user data is send in json
+					let parseredBody = null;
+					//  this value is needed in another cases
+					let newData = null;
+					//  try, catch is for two cases:
+					//  1. if user is editing profile
+					//  2. any another case
+					try {
+						//parse body from JSON to object
+						JSON.parse(req.body.editProfile);
+						parseredBody = JSON.parse(req.body.editProfile);
 
-					for (let key in allowedChanges) {
-						if (newData.hasOwnProperty(allowedChanges[key])) {
-							user[allowedChanges[key]] = newData[allowedChanges[key]];
+						// image variable structer
+						const image = {
+							name: "",
+							data: "",
+							contentType: "",
+						};
+						// if user sended image to update
+						if (req.file) {
+							// Read the uploaded image as a Buffer
+							const fileBuffer = req.file.buffer;
+							// Convert the Buffer to a Base64-encoded string
+							const base64Data = fileBuffer.toString("base64");
+							// structure how image will be stored in DB
+							image.name = req.file.originalname;
+							image.data = base64Data;
+							image.contentType = req.file.mimetype;
+						}
+						// copy all user data that sended from front to user variable
+						for (let key in allowedChanges) {
+							if (parseredBody.hasOwnProperty(allowedChanges[key])) {
+								user[allowedChanges[key]] = parseredBody[allowedChanges[key]];
+							}
+						}
+						// copy image
+						user.image = image;
+						// if it is not edit profile case:
+					} catch (error) {
+						newData = data["editProfile"];
+						// copy all user data that sended from front to user variable
+						for (let key in allowedChanges) {
+							if (newData.hasOwnProperty(allowedChanges[key])) {
+								user[allowedChanges[key]] = newData[allowedChanges[key]];
+							}
 						}
 					}
 
@@ -698,6 +741,8 @@ app.post("/xapi", async (req, res) => {
 					// if (!(user.hasOwnProperty('players'))) {
 					//   user['players'] = []
 					// }
+
+					// update DataBase
 					await updateUserInDB(user);
 
 					const userDoc = user.toObject();
@@ -760,7 +805,10 @@ app.post("/xapi", async (req, res) => {
 					final["logged_in_as"] = current_user;
 
 					final["user"] = userData;
+
+					//----------------end of editProfile-----------------------
 				} else if (Object.hasOwn(data, "getAvailableTemplates")) {
+					console.log("test in xapi getAvailableTemplates");
 					let publicTemplates = await TemplatesDB.find({ isPublic: true });
 
 					let privateTemplates = await Promise.all(
