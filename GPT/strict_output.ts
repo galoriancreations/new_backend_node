@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { type Article } from './chatGPTArticleGenerator';
 
 const openai = new OpenAI({
   // organization: "YOUR_ORG_ID",
@@ -7,12 +8,6 @@ const openai = new OpenAI({
 
 export type OutputFormat = {
   [key: string]: string | string[] | OutputFormat;
-};
-
-export type Article = {
-  title: string;
-  image: string;
-  text: string;
 };
 
 // Function to generate a output from the OpenAI CHATGPT-3 API with a strict output format checking
@@ -27,7 +22,7 @@ export async function strict_output(
     temperature = 1,
     num_tries = 3,
     verbose = false,
-  }
+  } = {}
 ): Promise<Article | null> {
   // if the user input is in a list, we also process the output as a list of json
   const list_input: boolean = Array.isArray(user_prompt);

@@ -29,6 +29,6 @@ export async function sendMessageViaWhatsApp(
         error instanceof Error ? error.message : 'Something went wrong'
       }`
     );
-    return error;
+    return error as Error;
   }
 }
