@@ -1573,7 +1573,6 @@ app.post("/xapi", async (req, res) => {
             if (!("isPublic" in challengeData)) {
               challengeData.isPublic = true;
             }
-            // console.log(Date.now());
             challengeData.createdOn = Date.now();
             challengeData.creator = current_user;
             challengeData.scores = {};
@@ -1656,36 +1655,39 @@ app.post("/xapi", async (req, res) => {
             const hourmin = time.getHours()
             const msg = data["sendMessage"]["message"]
             const message = {msg:msg,time:hourmin,user:user._id} 
+            console.log(groupId);
+            console.log(group);
+            console.log(message);
             group.messages.push(message)
             
             
             //group bot response
             
-            const challengeID = data["sendMessage"]["challengeID"]
-            const challenge = await Challenges.findOne({_id:challengeID})
-            const challengeArray = challenge.selections
+            // const challengeID = data["sendMessage"]["challengeID"]
+            // const challenge = await Challenges.findOne({_id:challengeID})
+            // const challengeArray = challenge.selections
             //code to figure out how many days have passed since challnge started
             //
             //
             //used to check imojis
             //
             //wait until selection sys rework
-            const date = 5     ////////////////////////////////////////////////////////////////////////////////////placeholder
-            if (challengeArray[date].imoji == msg) {
-              //give points
-              //set player mission for challnge finished
-              //give response
-              const msg = 'placeholder'     /////////////////////////////////////////////////////////////////////placeholder
-              const messageFromBot = {msg:msg,time:hourmin,user:'Ting_Global_BOT'} 
-              group.messages.push(messageFromBot)
-            }
+            // const date = 5     ////////////////////////////////////////////////////////////////////////////////////placeholder
+            // if (challengeArray[date].imoji == msg) {
+            //   //give points
+            //   //set player mission for challnge finished
+            //   //give response
+            //   const msg = 'placeholder'     /////////////////////////////////////////////////////////////////////placeholder
+            //   const messageFromBot = {msg:msg,time:hourmin,user:'Ting_Global_BOT'} 
+            //   group.messages.push(messageFromBot)
+            // }
 
 
 
             await GroupsDB.updateOne({_id:groupId},{messages:group.messages})
 
 
-            final = message
+            final = group.messages
           }else{
             return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
           }
