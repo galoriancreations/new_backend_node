@@ -19,7 +19,8 @@ async function generateArticle({
   wordsCount = 500,
 }) {
   console.log('Generating article...');
-  const response = await strict_output(
+
+  const response = (await strict_output(
     `You are a helpful AI that is able to generate articles with title image and text, the length of the text should not be more than ${wordsCount} words, store article in a JSON array`,
     `You are to generate an article about ${topic}.`,
     {
@@ -28,7 +29,8 @@ async function generateArticle({
       text: `text not more than ${wordsCount} words`,
     }
     // { verbose: true }
-  );
+  )) as Article;
+
   // console.log('GPT Response:');
   // console.log(response);
 
@@ -137,7 +139,7 @@ async function sendArticleToAllSubscribers(
 
   // Take the article from the file generated_article.json for less API calls and testing
   const article: Article = JSON.parse(
-    fs.readFileSync('ArticleGenerator/genereted_article.json', 'utf8')
+    fs.readFileSync('GPT/genereted_article.json', 'utf8')
   );
 
   if (article === null) {
@@ -160,4 +162,4 @@ rule.dayOfWeek = 1; // Monday
 rule.hour = 9; // 9:00 AM
 rule.minute = 0; // 00 seconds
 const job = schedule.scheduleJob(rule, () => sendArticleToAllSubscribers());
-console.log('Scheduled job to run every Monday at 9:00 AM');
+console.log('Scheduled article generator job to run every Monday at 9:00 AM');

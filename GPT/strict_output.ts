@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
-import { type Article } from './chatGPTArticleGenerator';
+import { type ChallengeOutput } from './ChallengeGenerator';
+import { type Article } from './ArticleGenerator';
 
 const openai = new OpenAI({
   // organization: "YOUR_ORG_ID",
@@ -23,7 +24,7 @@ export async function strict_output(
     num_tries = 3,
     verbose = false,
   } = {}
-): Promise<Article | null> {
+): Promise<null | Article | ChallengeOutput> {
   // if the user input is in a list, we also process the output as a list of json
   const list_input: boolean = Array.isArray(user_prompt);
   // if the output format contains dynamic elements of < or >, then add to the prompt to handle dynamic elements
