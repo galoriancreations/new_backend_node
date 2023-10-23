@@ -1,9 +1,9 @@
 const express = require("express");
-//test
+
 const app = express();
 const bodyParser = require("body-parser");
 
-// const TelegramBot = require('node-telegram-bot-api');
+
 const { Telegraf } = require('telegraf')
 
 const db = require("mongoose");
@@ -12,7 +12,7 @@ const cors = require("cors");
 
 let client;
 
-//
+
 
 let lastSender;
 
@@ -215,6 +215,7 @@ const UsersTestSchema = new db.Schema(
     drafts: Array,
     challenges: Array,
     createdChallenges: Array,
+    groups: Array,
     isAdmin: Boolean,
     players: Array,
     telegramId: String,
@@ -310,12 +311,13 @@ const StarsSchema = new db.Schema(
 );
   const GroupSchema = new db.Schema(
     {
-      groupID: String,
+      _id: String,
       challengeID: String,
       invite: String,
       name: String,
       users: [Object],
       messages:[Object],
+      botMessage:String
     },
 );
 
@@ -1533,7 +1535,29 @@ app.post("/xapi", async (req, res) => {
             }
             final = templates;
           }
-        } else if (data.hasOwnProperty("createChallenge")) {
+          
+        }else if (data.hasOwnProperty("deleteChallenge")) {
+          challengeId = data["deleteChallenge"]
+          if (!user.isAdmin && !user["createdChallenges"].includes(challengeId)) {
+            return res
+              .status(404)
+              .json({ msg: `No challenge found with this ID: ${challengeId}` });
+          }
+          await Challenges.deleteOne({_id:challengeId})
+          if (user["createdChallenges"].includes(challengeId)) {
+            user["createdChallenges"] = user["createdChallenges"].filter(id => id != challengeId)
+          }
+          if (user["challenges"].includes(challengeId)) {
+            user["challenges"] = user["challenges"].filter(id => id != challengeId)
+          }
+          updateUserInDB(user);
+
+          final = {
+            msg: `Successfully deleted challenge: ${challengeId}`,
+            challengeId: challengeId
+          }
+        }else if (data.hasOwnProperty("createChallenge")) {
+            
 
             const templateId = data['createChallenge']['templateId'];
             const challengeData = {
@@ -1581,26 +1605,100 @@ app.post("/xapi", async (req, res) => {
         
             user.challenges.push(challengeId);
             user.createdChallenges.push(challengeId);
+            //////////////////////////////////////////dont want new challnges remove // when ready
             await Challenges.insertMany(challengeData);
         
             if (verifyNow) {
               console.log(`::: VERIFING Challenge ${challengeId}`);
-              // const [verified, err] = verifyChallenge(challengeId, challengeData.creator, challengeData.name, image, challengeData.date);
-              // console.log(`::: VERIFIED ${verified}, ${err}`);
+              //// const [verified, err] = verifyChallenge(challengeId, challengeData.creator, challengeData.name, image, challengeData.date);
+              //// console.log(`::: VERIFIED ${verified}, ${err}`);
             }
         
             const draftId = data['createChallenge']['draftId'];
 
-            // database.user_drafts.deleteOne({ _id: draftId });
             await UsersDrafts.deleteOne({ _id: draftId });
             user['drafts'] = user['drafts'].filter((draft) => draft !== draftId);
         
-            updateUserInDB(user);
+            
         
-            final = challengeData;
-            // res.json(final);
-          
+            
+
+            const groupID = "g_" + generateRandomString();
+
+            const groupChatInfo = {
+              _id:groupID,
+              challengeID: challengeId,
+              invite: '',
+              name: `${challengeData.name} group chat`,
+              users: [{userid:user._id,role:'admin'}],
+              messages:[],
+              botMessage:'welcome to the group'
+            }
+
+            user.groups.push(groupID)
+
+            await GroupsDB.insertMany(groupChatInfo);
+            updateUserInDB(user);
+            final = groupChatInfo;
+        }else if (data.hasOwnProperty("loadGroup")) {
+          const groupId = data["loadGroup"]["_id"]
+          const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1})
+          if (group) {
+            final = group
+          }else{
+            return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+          }
+        }else if (data.hasOwnProperty("sendMessage")) {
+          const groupId = data["sendMessage"]["_id"]
+          const group = await GroupsDB.findOne({_id:groupId})
+          if (group) {
+            const time = new Date
+            const hourmin = time.getHours()
+            const msg = data["sendMessage"]["message"]
+            const message = {msg:msg,time:hourmin,user:user._id} 
+            group.messages.push(message)
+            
+            
+            //group bot response
+            
+            const challengeID = data["sendMessage"]["challengeID"]
+            const challenge = await Challenges.findOne({_id:challengeID})
+            const challengeArray = challenge.selections
+            //code to figure out how many days have passed since challnge started
+            //
+            //
+            //used to check imojis
+            //
+            //wait until selection sys rework
+            const date = 5     ////////////////////////////////////////////////////////////////////////////////////placeholder
+            if (challengeArray[date].imoji == msg) {
+              //give points
+              //set player mission for challnge finished
+              //give response
+              const msg = 'placeholder'     /////////////////////////////////////////////////////////////////////placeholder
+              const messageFromBot = {msg:msg,time:hourmin,user:'Ting_Global_BOT'} 
+              group.messages.push(messageFromBot)
+            }
+
+
+
+            await GroupsDB.updateOne({_id:groupId},{messages:group.messages})
+
+
+            final = message
+          }else{
+            return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+          }
+        }else if (data.hasOwnProperty("deleteGroup")) {
+          const groupId = data["deleteGroup"]["_id"]
+          // const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1})
+          // if (group) {
+          //   final = group
+          // }else{
+          //   return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+          // }
         }
+        // sendMessage
         res.status(200).json(final);
       }
     }
