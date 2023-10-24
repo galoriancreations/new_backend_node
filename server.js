@@ -971,6 +971,8 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 								isPublic: templateData.isPublic,
 							};
 							user["templates"] = [...user["templates"], temp];
+							// to save templets in model "users" in drafts arr but not in model "user_drafts"
+							user["drafts"] = [...user["drafts"], temp];
 							// user['templates'] = [...user['templates'], templateId]
 						}
 					} else {
