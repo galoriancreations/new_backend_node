@@ -392,6 +392,10 @@ app.post("/sendMessage", (req, res) => {
 	sendReply(temp);
 });
 
+// ----------------------------------------------------------------------------------------------
+//  ----------------------------------!!-- API --!!---------------------------------------------
+// ----------------------------------------------------------------------------------------------
+
 app.post("/api", upload.single("image"), (req, res) => {
 	const start = async () => {
 		//i cant use hasOwnProperty method like i use in below
@@ -636,6 +640,10 @@ app.post("/api", upload.single("image"), (req, res) => {
 	start();
 });
 
+// ----------------------------------------------------------------------------------------------
+//  ----------------------------------!!-- XAPI --!!---------------------------------------------
+// ----------------------------------------------------------------------------------------------
+
 app.post("/xapi", upload.single("image"), async (req, res) => {
 	data = req.body;
 	console.log("XAPI START");
@@ -701,7 +709,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 						JSON.parse(req.body.editProfile);
 						parseredBody = JSON.parse(req.body.editProfile);
 
-						// image variable structer
+						// image variable structure
 						const image = {
 							name: "",
 							data: "",
@@ -802,6 +810,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 
 					userData["createdChallenges"] = createdChallenges;
 
+					// send back to front:
 					final["logged_in_as"] = current_user;
 
 					final["user"] = userData;
@@ -811,6 +820,9 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 					console.log("test in xapi getAvailableTemplates");
 					let publicTemplates = await TemplatesDB.find({ isPublic: true });
 
+					//  in user collection storages only three parametors of template.
+					//  all details storages in templates collection
+					// get all details for each users template:
 					let privateTemplates = await Promise.all(
 						user.templates.map(async (val) => {
 							return await TemplatesDB.find({
@@ -825,7 +837,10 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 					let templates = publicTemplates.concat(privateTemplates);
 					templates.filter((val) => val !== null);
 
+					// send back to front:
 					final = { templates: templates };
+
+					//---------------------end of getAvailableTemplates-----------------------
 				} else if (Object.hasOwn(data, "addPlayer")) {
 					let phoneNum = req.body.addPlayer.phone;
 					phoneNum = phoneNum.replace("+", "");
@@ -1053,16 +1068,23 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 							.status(404)
 							.json({ msg: `Template not found ${templateId}` });
 					}
+					// delete template from DB, collection templates:
 					await TemplatesDB.deleteOne({ _id: `${templateId}` });
+					// update user virable:
 					user.templates = user.templates.filter(
 						(val) => val._id !== templateId
 					);
 					console.log("user templates:", user.templates);
+					// delete template from DB, collection users:
 					updateUserInDB(user);
+
+					// send back to front:
 					final = {
 						msg: `Successfully deleted template: ${templateId}`,
 						templateId: templateId,
 					};
+
+					//---------------------end of deleteTemplate-----------------------
 				} else if (Object.hasOwn(data, "cloneTemplate")) {
 					let originId = data["cloneTemplate"];
 					let originTemplate = await TemplatesDB.findOne({
@@ -1078,9 +1100,12 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 							.status(404)
 							.json({ msg: `Template not found ${originId}` });
 					}
+					// create new object for the copy of a template:
 					let newTemplate = {};
 
+					// toObject is not a native methos in JS. where it is gets from?:)
 					const originDoc = originTemplate.toObject();
+					// cope all the property of a template to a new one:
 					for (let key in originDoc) {
 						newTemplate[`${key}`] = originTemplate[`${key}`];
 					}
@@ -1090,13 +1115,16 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 					newTemplate["isPublic"] = originTemplate["isPublic"] && isAdmin;
 					newTemplate["name"] = `${originTemplate["name"]} (copy)`;
 					newTemplate["creator"] = current_user;
+					// place cloned template in DB, collection templates:
 					await TemplatesDB.create(newTemplate);
 					let temp = {
 						_id: newId,
 						name: newTemplate["name"],
 						isPublic: newTemplate["isPublic"],
 					};
+					// update user virable:
 					user["templates"] = [...user["templates"], temp];
+					// place cloned template in DB, collection users:
 					updateUserInDB(user);
 					let excludedKeys = ["days", "preDays", "preMessages"];
 
@@ -1108,7 +1136,10 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 
 					newTemplate["creator"] = user["phone"];
 
+					// send back to front:
 					final = newTemplate;
+
+					//---------------------end of cloneTemplate-----------------------
 				} else if (Object.hasOwn(data, "getAllTemplates")) {
 					if (isAdmin == false) {
 						return res
