@@ -1,1 +1,71 @@
-{"_id":"c_TKw2WyQMjciv2ju6jQVxJC","active":true,"createdOn":1698586590061,"creator":"AI Generated Challenge","date":"10/29/2023","declined":false,"invite":"AI Generated Challenge","isPublic":true,"scores":{},"channels":{},"template":"","verified":false,"days":[],"preMessages":[],"preDays":[],"name":"Healthy Habits Challenge","selections":{"1":{"1":"*Drink More Water* - Set a goal to drink at least 8 glasses of water every day for the next week. Keep track of your progress and share your experiences with the group. 🚰","2":"*Morning Stretch* - Start your day with a 5-minute stretching routine. Choose 3 simple stretches and perform them every morning. Share how it makes you feel in the discussion group. 🧘‍♀️","3":"*Vegetable Challenge* - Incorporate a variety of vegetables into your meals for the next 3 days. Take a photo of one of your nutrient-packed meals and share it with the group. 🥦","4":"*💥💥💥 Bonus 💥💥💥* - Create a healthy meal plan for the week. Include breakfast, lunch, dinner, and snacks. Share your plan with the group and inspire others to eat well. 🍽️","5":"*💥💥💥 Double Bonus 💥💥💥* - Take a cooking class or watch a tutorial on preparing a healthy dish. Share the recipe and your cooking experience with the group. 🍳"},"2":{"1":"*Home Workout* - Design a 15-minute workout routine that you can do at home. Include exercises for cardio, strength, and flexibility. Share your workout plan with the group and invite others to join you. 💪","2":"*Sleep Tracker* - Keep a sleep journal for one week. Record your bedtime, wake-up time, and the quality of your sleep. Share any insights or tips for better sleep with the group. 😴","3":"*Mindfulness Practice* - Set aside 10 minutes each day for meditation or deep breathing exercises. Reflect on how it improves your mental well-being and share your experiences in the discussion group. 🧘‍♂️","4":"*💥💥💥 Bonus 💥💥💥* - Create a motivational workout playlist. Share your favorite songs that keep you energized and motivated during exercise. 🎵","5":"*💥💥💥 Double Bonus 💥💥💥* - Organize a virtual fitness challenge for your challenge group. Choose a fitness activity and set a collective goal to achieve together. Share updates and encourage each other. 🏋️‍♀️"},"3":{"1":"*Healthy Snacking* - Replace unhealthy snacks with nutritious alternatives for the next 5 days. Share your favorite healthy snacks and how they satisfy your cravings. 🍎","2":"*Screen Time Break* - Take a break from screens for at least 1 hour each day. Use this time to engage in a hobby, read a book, or go for a walk. Share the activities you choose in the discussion group. 📱🚫","3":"*Meal Prep* - Plan and prepare your meals for the next 3 days. Share a photo of your prepped meals and any time-saving tips you discovered. 🍲","4":"*💥💥💥 Bonus 💥💥💥* - Research and try a new healthy recipe. Share the recipe and your experience with the group. 🥗","5":"*💥💥💥 Double Bonus 💥💥💥* - Organize a virtual fitness class for your challenge group. Choose a workout style (e.g., yoga, dance, HIIT) and lead a session for everyone to follow along. 🏋️‍♂️"}}}
+{
+  "_id": "c_syaU9wZE2LT4G9VSR9IPZh",
+  "active": true,
+  "createdOn": 1698700362114,
+  "creator": "AI Generated Challenge",
+  "date": "10/30/2023",
+  "declined": false,
+  "invite": "",
+  "isPublic": false,
+  "scores": [],
+  "template": "",
+  "verified": false,
+  "days": [],
+  "preMessages": [],
+  "preDays": [],
+  "name": "Sustainable Living Challenge",
+  "selections": [
+    {
+      "day": "1",
+      "text": "*Reduce, Reuse, Recycle* - Take a look at your daily habits and identify one area where you can reduce waste. It could be using a reusable water bottle instead of buying plastic bottles, or bringing your own shopping bags. Share with the group what change you are committing to make!",
+      "emoji": "♻️",
+      "score": "2"
+    },
+    {
+      "day": "2",
+      "text": "*Meatless Monday* - Challenge yourself to have a meat-free day today. Try cooking a delicious and nutritious vegetarian meal and share the recipe with the group. Let's discover the amazing flavors of plant-based food!",
+      "emoji": "🥦",
+      "score": "3"
+    },
+    {
+      "day": "3",
+      "text": "*Eco-friendly transportation* - Instead of driving or taking a cab, choose a more sustainable mode of transportation today. It could be biking, walking, or taking public transportation. Share a photo of your eco-friendly journey!",
+      "emoji": "🚴‍♀️",
+      "score": "4"
+    },
+    {
+      "day": "4",
+      "text": "*Plastic-free challenge* - Avoid using single-use plastics for the day. Bring your own reusable cup for coffee, refuse plastic straws, and opt for products with minimal packaging. Share your plastic-free tips with the group!",
+      "emoji": "🌍",
+      "score": "5"
+    },
+    {
+      "day": "5",
+      "text": "*Sustainable fashion* - Take a look at your wardrobe and choose an outfit made from sustainable materials or pre-loved clothing. Share a photo of your sustainable fashion choice and let's inspire each other!",
+      "emoji": "👗",
+      "score": "6"
+    },
+    {
+      "day": "6",
+      "text": "*Energy-saving challenge* - Make a conscious effort to reduce your energy consumption today. Turn off lights and appliances when not in use, unplug electronics, and use natural light whenever possible. Let's conserve energy together!",
+      "emoji": "💡",
+      "score": "5"
+    },
+    {
+      "day": "7",
+      "text": "*Grow your own* - Start a small herb garden or grow a plant from a seed. Share a photo of your green thumb success and let's connect with nature!",
+      "emoji": "🌱",
+      "score": "4"
+    },
+    {
+      "day": "8",
+      "text": "💥💥💥 Bonus 💥💥💥   Organize an eco-friendly cleaning day with your friends or family. Use natural cleaning products, reduce water usage, and recycle or repurpose items instead of throwing them away. Share your eco-cleaning tips with the group!",
+      "emoji": "🧼"
+    },
+    {
+      "day": "9",
+      "text": "💥💥💥 Double Bonus 💥💥💥   Collaborate with another challenge participant to create a DIY project using recycled materials. Share the process and the final product with the group!",
+      "emoji": "♻️"
+    }
+  ]
+}

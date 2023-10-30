@@ -24,9 +24,9 @@ async function generateArticle({
     `You are a helpful AI that is able to generate articles with title image and text, the length of the text should not be more than ${wordsCount} words, store article in a JSON array`,
     `You are to generate an article about ${topic}.`,
     {
-      title: 'title',
-      image: 'a link to relative image start with https://',
-      text: `text not more than ${wordsCount} words`,
+      title: '<title>',
+      image: '<a link to relative image>',
+      text: `<text not more than ${wordsCount} words>`,
     }
     // { verbose: true }
   )) as Article;
