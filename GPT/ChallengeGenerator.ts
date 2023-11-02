@@ -46,8 +46,9 @@ export async function generateChallenge({
 
   const response = (await strict_output2(
     `You are a helpful AI that is able to generate a challenge with ${minSelections} to ${MaxSelections} selections,
+Selection is a task that the user should do in the challenge.
 ${/*Each selection contain between 3 to 5 tasks.*/ ''}
-Minimum ${minSelections} selections and maximum ${MaxSelections} selections.
+You need to create a minimum of ${minSelections} selections at least and maximum of ${MaxSelections} selections.
 Each selection should have a day, text, emoji and score.
 Some selection should be additional bonus and double bonus selection.
 Bonus and double bonus selections should be the last selections in the array.
@@ -140,8 +141,8 @@ Store the challenge in a JSON array.`,
 
 async function generateAndAddChallenge() {
   const challenge = await generateChallenge({
-    minSelections: 5,
-    MaxSelections: 14,
+    minSelections: 30,
+    MaxSelections: 60,
   });
   if (challenge) {
     // addChallengeToDb(challenge);

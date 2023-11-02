@@ -1,3 +1,8 @@
+/**
+ * This file contain functions that generate output from the OpenAI API
+ * The output is strictly checked to ensure that it adheres to the output format
+*/
+
 import OpenAI from 'openai';
 import { type ChallengeOutput } from './ChallengeGenerator';
 import { type Article } from './ArticleGenerator';
@@ -12,8 +17,8 @@ export type OutputFormat = {
   [key: string]: string | string[] | OutputFormat;
 };
 
-// Function to generate a output from the OpenAI CHATGPT-3 API with a strict output format checking
-// Version 2 of the function, which is more robust, less output_format and output checking, cause it to less likely to fail
+// Function to generate output from the OpenAI CHATGPT-3 API with a strict output format checking
+// Version 2 of the function, which is more robust, accept any type of output_format, but less output checking
 export async function strict_output2(
   system_prompt: string,
   user_prompt: string | string[],
@@ -117,7 +122,7 @@ export async function strict_output2(
   return null;
 }
 
-// Function to generate a output from the OpenAI CHATGPT-3 API with a strict output format checking
+// Function to generate output from the OpenAI CHATGPT-3 API with a strict output format checking
 export async function strict_output(
   system_prompt: string,
   user_prompt: string | string[],
@@ -252,7 +257,7 @@ export async function strict_output(
   return null;
 }
 
-// Function to generate an image from the OpenAI DALL-E API
+// Function to generate image from the OpenAI DALL-E API
 export async function strict_image(
   prompt: string,
   n = 1,

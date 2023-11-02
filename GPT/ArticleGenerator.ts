@@ -34,10 +34,10 @@ async function generateArticle({
   return response;
 }
 
-async function generateImage(prompt: string) {
-  console.log(`Generete image for article (prompt: ${prompt})`);
+async function generateAndSaveImage(prompt: string) {
+  console.log(`Generete image (prompt: ${prompt})`);
 
-  // create image for article with the title as prompt
+  // create image
   const blob = await strict_image(prompt);
   const imageBlob = blob[0].url;
 
@@ -170,8 +170,11 @@ async function sendArticleToAllSubscribers(
   }
 
   // Generate image for article
-  const image = await generateImage(article.title);
-  article.image = image!;
+  const image = await generateAndSaveImage(article.title);
+  if (!image) {
+    return console.log(`Error generating image (prompt: ${article.title})`);
+  }
+  article.image = image;
 
   const mappedUsers = users.map((user) => ({
     fullName: user?.fullName,
