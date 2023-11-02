@@ -1,11 +1,12 @@
 require('dotenv').config();
 
 import fs from 'fs';
-import { strict_output } from './strict_output';
+import { strict_image, strict_output } from './strict_output';
 import { UsersTest } from '../database';
 import schedule from 'node-schedule';
 import { sendMessageViaWhatsApp } from '../services/twilio';
 import { sendMessageViaEmail } from '../services/nodemailer';
+import https from 'https';
 
 export type Article = {
   title: string;
@@ -21,20 +22,42 @@ async function generateArticle({
   console.log('Generating article...');
 
   const response = (await strict_output(
-    `You are a helpful AI that is able to generate articles with title image and text, the length of the text should not be more than ${wordsCount} words, store article in a JSON array`,
+    `You are a helpful AI that is able to generate articles with title and text, the length of the text should not be more than ${wordsCount} words, store article in a JSON array.`,
     `You are to generate an article about ${topic}.`,
     {
       title: '<title>',
-      image: '<a link to relative image>',
-      text: `<text not more than ${wordsCount} words>`,
+      text: `<text with no more than ${wordsCount} words>`,
     }
     // { verbose: true }
   )) as Article;
 
-  // console.log('GPT Response:');
-  // console.log(response);
-
   return response;
+}
+
+async function generateImage(prompt: string) {
+  console.log(`Generete image for article (prompt: ${prompt})`);
+
+  // create image for article with the title as prompt
+  const blob = await strict_image(prompt);
+  const imageBlob = blob[0].url;
+
+  // download image to local storage
+  const imagePath = `GPT/images/${prompt}.jpg`;
+  const file = fs.createWriteStream(imagePath);
+  https
+    .get(imageBlob as string, (res) => {
+      res.pipe(file);
+      file.on('finish', () => {
+        file.close();
+        console.log(`Image downloaded as ${prompt}`);
+      });
+    })
+    .on('error', (err) => {
+      fs.unlink(imagePath, () => {});
+      console.error(`Error downloading image: ${err.message}`);
+    });
+
+  return imageBlob;
 }
 
 // Function to generate and send articles to subscribers
@@ -129,22 +152,26 @@ const fetchAllArticleSubscribedUsers = async () => {
 
 // Function that log all subscribed users that subscribe to article
 async function sendArticleToAllSubscribers(
-  topic = 'random topic',
+  topic = 'a topic of your choice',
   wordsCount = 100
 ) {
   const users = await fetchAllArticleSubscribedUsers();
 
   // Generate article
-  // const article = await generateArticle({ topic, wordsCount });
+  const article = await generateArticle({ topic, wordsCount });
 
   // Take the article from the file generated_article.json for less API calls and testing
-  const article: Article = JSON.parse(
-    fs.readFileSync('GPT/genereted_article.json', 'utf8')
-  );
+  // const article: Article = JSON.parse(
+  //   fs.readFileSync('GPT/genereted_article.json', 'utf8')
+  // );
 
   if (article === null) {
     return console.log('Error generating article');
   }
+
+  // Generate image for article
+  const image = await generateImage(article.title);
+  article.image = image!;
 
   const mappedUsers = users.map((user) => ({
     fullName: user?.fullName,
@@ -159,7 +186,7 @@ sendArticleToAllSubscribers();
 // Schedule Article sendArticleToAllSubscribers() to run every Monday at 9:00 AM
 const rule = new schedule.RecurrenceRule();
 rule.dayOfWeek = 1; // Monday
-rule.hour = 9; // 9:00 AM
+rule.hour = 9; // 9:00
 rule.minute = 0; // 00 seconds
 const job = schedule.scheduleJob(rule, () => sendArticleToAllSubscribers());
-console.log('Scheduled article generator job to run every Monday at 9:00 AM');
+console.log('Scheduled article generator job to run every Monday at 9:00');

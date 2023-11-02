@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { type ChallengeOutput } from './ChallengeGenerator';
 import { type Article } from './ArticleGenerator';
+import { type ImageGenerateParams } from 'openai/resources';
 
 const openai = new OpenAI({
   // organization: "YOUR_ORG_ID",
@@ -249,4 +250,20 @@ export async function strict_output(
   }
 
   return null;
+}
+
+// Function to generate an image from the OpenAI DALL-E API
+export async function strict_image(
+  prompt: string,
+  n = 1,
+  size: ImageGenerateParams['size'] = '1024x1024'
+) {
+  const response = await openai.images.generate({
+    prompt,
+    n,
+    size,
+  });
+  const imageUrl = response.data;
+
+  return imageUrl;
 }
