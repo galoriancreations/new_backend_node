@@ -1,39 +1,11 @@
 require('dotenv').config();
 
 import fs from 'fs';
-import { strict_output2 } from './strict_output';
 import schedule from 'node-schedule';
-import { generateRandomString } from '../services/utils';
+import { strict_output2 } from './strict_output';
 import { addChallengeToDb } from '../database';
-
-export type Selection = {
-  day: number;
-  text: string;
-  emoji: string;
-  score: number;
-};
-
-export type ChallengeOutput = {
-  name: string;
-  selections: Selection[];
-};
-
-export type Challenge = ChallengeOutput & {
-  _id: string;
-  active: boolean;
-  createdOn: Number;
-  creator: string;
-  date: string;
-  declined: Boolean;
-  invite: string;
-  isPublic: Boolean;
-  scores: [];
-  template: string;
-  verified: Boolean;
-  days: [];
-  preMessages: [];
-  preDays: [];
-};
+import { generateRandomString } from '../services/utils';
+import { type Challenge, type ChallengeOutput } from './types';
 
 export async function generateChallenge({
   topic = 'a topic of your choise',
@@ -44,7 +16,7 @@ export async function generateChallenge({
     `Generating challenge (between ${minSelections} to ${MaxSelections} selections)... This may take a while`
   );
 
-  const response = (await strict_output2(
+  const response: ChallengeOutput = await strict_output2(
     `You are a helpful AI that is able to generate a challenge with ${minSelections} to ${MaxSelections} selections,
 Selection is a task that the user should do in the challenge.
 ${/*Each selection contain between 3 to 5 tasks.*/ ''}
@@ -107,7 +79,7 @@ Store the challenge in a JSON array.`,
       ],
     }
     // { verbose: true }
-  )) as ChallengeOutput;
+  );
 
   if (!response) {
     console.error('Error generating challenge');

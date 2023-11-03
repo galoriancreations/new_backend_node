@@ -11,23 +11,23 @@ const transporter = nodemailer.createTransport({
 
 // Function to send an article to a subscriber via email
 export async function sendMessageViaEmail(
-  messageHtml: string,
-  emailAddress: string,
-  text = ''
+  html: string,
+  to: string,
+  attachments?: { filename: string; path: string; cid: string }[]
 ) {
-  const message = {
+  const message: nodemailer.SendMailOptions = {
     from: `${process.env.EMAIL_ADDRESS}`,
-    to: emailAddress,
+    to,
     subject: 'Your Weekly Article',
-    text: JSON.stringify(text),
-    html: messageHtml,
+    html,
+    attachments,
   };
 
   try {
     return await transporter.sendMail(message);
   } catch (error) {
     console.error(
-      `Error sending email to ${emailAddress}: ${
+      `Error sending email to ${to}: ${
         error instanceof Error ? error.message : 'Something went wrong'
       }`
     );

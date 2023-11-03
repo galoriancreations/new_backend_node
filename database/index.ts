@@ -7,7 +7,7 @@ import {
   UsersTestSchema,
   waGroupSchema,
 } from './schemas';
-import { type Challenge } from '../GPT/ChallengeGenerator';
+import { type Challenge } from '../GPT/types';
 
 db.connect(
   'mongodb+srv://Yinon:Challenge18@challenge18.hclji.mongodb.net/challenge'

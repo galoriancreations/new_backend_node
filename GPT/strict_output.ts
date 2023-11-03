@@ -1,12 +1,10 @@
 /**
  * This file contain functions that generate output from the OpenAI API
  * The output is strictly checked to ensure that it adheres to the output format
-*/
-
+ */
 import OpenAI from 'openai';
-import { type ChallengeOutput } from './ChallengeGenerator';
-import { type Article } from './ArticleGenerator';
 import { type ImageGenerateParams } from 'openai/resources';
+import { type Article, type ChallengeOutput } from './types';
 
 const openai = new OpenAI({
   // organization: "YOUR_ORG_ID",
@@ -29,7 +27,7 @@ export async function strict_output2(
     model = 'gpt-3.5-turbo',
     verbose = false,
   } = {}
-): Promise<null | Article | ChallengeOutput> {
+) {
   for (let i = 0; i < num_tries; i++) {
     let output_format_prompt = `\nYou are to output the following in json format: ${JSON.stringify(
       output_format
@@ -135,7 +133,7 @@ export async function strict_output(
     num_tries = 3,
     verbose = false,
   } = {}
-): Promise<null | Article | ChallengeOutput> {
+) {
   // if the user input is in a list, we also process the output as a list of json
   const list_input: boolean = Array.isArray(user_prompt);
   // if the output format contains dynamic elements of < or >, then add to the prompt to handle dynamic elements
@@ -253,8 +251,6 @@ export async function strict_output(
       console.log('Current invalid json format:', res);
     }
   }
-
-  return null;
 }
 
 // Function to generate image from the OpenAI DALL-E API
@@ -272,3 +268,13 @@ export async function strict_image(
 
   return imageUrl;
 }
+
+// // Function to generate audio from the OpenAI API
+// export async function strict_audio(prompt: string) {
+//   const transcription = await openai.audio.transcriptions.create({
+//     file: fs.createReadStream('audio.mp3'),
+//     model: 'whisper-1',
+//   });
+
+//   console.log(transcription.text);
+// }
