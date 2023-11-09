@@ -401,7 +401,7 @@ const token = '6510559827:AAGKzetnLXsASIqILp2Iw11tb-qFZAqxw9Q';
 
 // const bot = new TelegramBot(token, { polling: true });
 const bot = new Telegraf(token)
-
+const groupArray = []
 let hourmin = false;
 const checkIf = () => {
   const d = new Date();
@@ -424,9 +424,9 @@ const checkIf = () => {
   }else{
     
     setTimeout(()=>{
-      const courseArray = []
-      for (let i = 0; i < courseArray.length; i++) {
-        bot.telegram.sendMessage(courseArray[i].courseid,'good morning here is your challnge for today')
+
+      for (let i = 0; i < groupArray.length; i++) {
+        bot.telegram.sendMessage(groupArray[i].groupid,'good morning here is your challnge for today')
           
       }
       checkIf()
@@ -1337,7 +1337,33 @@ app.post("/xapi", async (req, res) => {
           });
           final = template;
           console.log("Template Ready!");
-        } else if (data.hasOwnProperty("saveTemplate")) {
+        // }else if (data.hasOwnProperty("saveDraft")) {
+        //   let draftData = data["saveDraft"]["draftData"];
+        //   let draftId = data["saveDraft"]["draftId"];
+        //   draftData["lastSave"] = Date.now();
+
+        //   if (draftId === null) {
+        //     draftId = "d_" + generateRandomString();
+        //     draftData["_id"] = draftId;
+            
+        //     await UsersDrafts.insertMany(draftData);
+        //     if (!user.drafts) {
+        //       user.drafts = [];
+        //     }
+        //     user.drafts.push(draftId);
+        //     updateUserInDB(user);          
+        //   } else {
+        //     if (!user.drafts.includes(draftId)) {
+        //       return res.status(404).json({ msg: `No draft found with this ID: ${draftId}`, draftId: draftId });
+        //     }
+        //     await UsersDrafts.updateOne({ _id: draftId }, { $set: draftData });
+        //   }
+
+        //   final = {
+        //     logged_in_as: current_user,
+        //     draftId: draftId,
+        //   };
+        }else if (data.hasOwnProperty("saveTemplate")) {
           let templateId = data["saveTemplate"]["templateId"];
           console.log("template id is : " + templateId);
           let templateData = data["saveTemplate"]["templateData"];
@@ -1634,14 +1660,49 @@ app.post("/xapi", async (req, res) => {
               botMessage:'welcome to the group'
             }
 
-            user.groups.push(groupID)
+            user.groups.push({_id:groupID,name:`${challengeData.name} group chat`})
 
             await GroupsDB.insertMany(groupChatInfo);
             updateUserInDB(user);
             final = groupChatInfo;
+        }else if (data.hasOwnProperty("joinGroup")) {
+          const inviteId = data["joinGroup"]
+          // console.log(inviteId);
+          const group = await GroupsDB.findOne({invite:inviteId})
+          // console.log(group);
+          if (group) {
+            let inGroup = false
+            for (let i = 0; i < group.users.length; i++) {
+              // console.log(group.users[i].userid);
+              if (group.users[i].userid == user._id) {
+                // console.log(user._id);
+                inGroup = !inGroup
+                break
+              }
+            }
+            if (!inGroup) {
+              const userinfo = {userid:user._id,role:'student'}
+              group.users.push(userinfo)
+              user.groups.push({_id:group._id,name:group.name})
+              console.log(user.groups);
+              updateUserInDB(user);
+              await GroupsDB.updateOne({invite:inviteId},{users:group.users})
+              return res.status(200).json({ msg:'You are now a part of the group!'});
+            }else{
+              return res.status(400).json({ msg:'you are already in this group'});
+            }
+          }else{
+            return res.status(400).json({ msg: `No group found with this ID: ${inviteId}` });
+          }
+  
+
+
+
+
         }else if (data.hasOwnProperty("loadGroup")) {
           const groupId = data["loadGroup"]["_id"]
           const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1})
+          console.log(group);
           if (group) {
             final = group
           }else{
@@ -1650,16 +1711,161 @@ app.post("/xapi", async (req, res) => {
         }else if (data.hasOwnProperty("sendMessage")) {
           const groupId = data["sendMessage"]["_id"]
           const group = await GroupsDB.findOne({_id:groupId})
+          // const group = []
           if (group) {
+            const msg = data["sendMessage"]["message"]
+            const removeAbove20 = () =>{
+              if (group.messages.length >=20) {
+                group.messages.shift()
+                removeAbove20()
+              }
+            }
+            removeAbove20()
             const time = new Date
             const hourmin = time.getHours()
-            const msg = data["sendMessage"]["message"]
-            const message = {msg:msg,time:hourmin,user:user._id} 
-            console.log(groupId);
-            console.log(group);
-            console.log(message);
-            group.messages.push(message)
             
+            const message = {msg:msg,time:hourmin,user:user._id} 
+
+            let botMessage;
+
+            
+            if (msg == '/hello') {
+              botMessage = {msg:'hi there!',time:hourmin,user:'Ting Global Bot'} 
+
+              group.messages.push(message)
+              group.messages.push(botMessage)
+            }else if (msg.startsWith('/promote')) {
+              let number = msg.slice(8,msg.length)
+              if (number[0] == ' ') {
+                number = number.slice(1,msg.number)
+              }
+              let admin = false
+              for (let i = 0; i < group.users.length; i++) {
+                if (group.users[i].userid == user._id ) {
+                  if (group.users[i].role == 'admin') {
+                    admin =!admin
+                    break
+                  }else{
+                    break
+                  }
+                }
+              }
+              if (admin) {
+                let foundUser = false
+                let position;
+                for (let i = 0; i < group.users.length; i++) {
+                  if (group.users[i].userid == number) {
+                    foundUser =!foundUser
+                    position = i
+                    break
+                  }
+                }
+                if (foundUser) {
+                  if (group.users[position].role == 'student'){
+                    group.users[position].role = 'instructor'
+                  }else if (group.users[position].role == 'instructor') {
+                    group.users[position].role = 'admin'
+                  }
+                  await GroupsDB.updateOne({_id:groupId},{users:group.users})
+                  botMessage = {msg:'User has been premoted!!',time:hourmin,user:'Ting Global Bot'}
+                }else{
+                  botMessage = {msg:'I did not find a user with that number.\n did you type the correct one?',time:hourmin,user:'Ting Global Bot'}
+                }
+                group.messages.push(botMessage)
+              }else{
+                botMessage = {msg:'i am sorry only admins have accses to this command.\n if you would like to use it you can ask an admin for a promotion.',time:hourmin,user:'Ting Global Bot'} 
+                group.messages.push(message)
+                group.messages.push(botMessage)
+              }
+              
+               
+            }else if (msg == '/invite') {
+              let instructor = false
+              for (let i = 0; i < group.users.length; i++) {
+                if (group.users[i].userid == user._id ) {
+                  if (group.users[i].role == 'instructor' || group.users[i].role == 'admin') {
+                    instructor =!instructor
+                    break
+                  }else{
+                    break
+                  }
+                }
+              }
+              if (instructor) {
+                if (group.invite.length > 0) {
+                  botMessage = {msg:`this is the invite code for this group\n ${group.invite} send this to the users you want to invite`,time:hourmin,user:'Ting Global Bot'}
+                }else{
+                  const inviteCode = "i_" + generateRandomString();
+                  botMessage = {msg:`this is the invite code for this group\n ${inviteCode} send this to the users you want to invite`,time:hourmin,user:'Ting Global Bot'}
+                  group.invite = inviteCode
+                  await GroupsDB.updateOne({_id:groupId},{invite:group.invite})
+                }
+              }else{
+                botMessage = {msg:'sorry you need to be an instructor or above to use this command',time:hourmin,user:'Ting Global Bot'}
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
+              
+            }else if (msg.startsWith('/help')) {
+              group.messages.push(message)
+              let send = true
+              if (msg == '/help') {
+                botMessage = {
+                  msg:'here are the commands i know:\n1. /hello\n2. /invite\n3. /promote\n4. /nickname\n5. /help\n type (/help) then the number of the command you want info on',
+                  time:hourmin,
+                  user:'Ting Global Bot'
+                }
+                group.messages.push(botMessage)
+              }else{
+                let number = msg.slice(5,msg.length)
+                if (number[0] == ' ') {
+                  number = number.slice(1,msg.number)
+                }
+                if (number == 1) {
+                  botMessage = {
+                    msg:'1',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 2) {
+                  botMessage = {
+                    msg:'2',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 3) {
+                  botMessage = {
+                    msg:'3',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 4) {
+                  botMessage = {
+                    msg:'4',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 5) {
+                  botMessage = {
+                    msg:'5',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else {
+                  send = !send
+                }
+                if (send) {
+                  group.messages.push(botMessage)
+                }
+                
+              }
+
+
+              
+            }else{
+              group.messages.push(message)
+            }
+
             
             //group bot response
             
@@ -1685,6 +1891,7 @@ app.post("/xapi", async (req, res) => {
 
 
             await GroupsDB.updateOne({_id:groupId},{messages:group.messages})
+
 
 
             final = group.messages
