@@ -20,6 +20,7 @@ const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
 const { Z_UNKNOWN } = require("zlib");
+const { error } = require("console");
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -314,11 +315,23 @@ const StarsSchema = new db.Schema(
       _id: String,
       challengeID: String,
       invite: String,
+      telInvite: String,
+      telGroupId: String,
       name: String,
       users: [Object],
       messages:[Object],
-      botMessage:String
+      botMessage:String,
+      emoji:String,
+      selectionPosition:Number,
+      scored:[Object],
     },
+);
+  const ChallengeArraySchema = new db.Schema(
+  {
+    _id: String,
+    challengeID: String,
+  },
+  { versionKey: false }
 );
 
 ///צריך לרשום לו עוד פרמטר עם אותו השם של הקולקשן כדי להגיד לו שאתה מתכוון למה שאתה מתכוון...
@@ -337,6 +350,8 @@ const PlayersDB = db.model("players", PlayerSchema, "players");
 const StarsDB = db.model("stars", StarsSchema, "stars");
 
 const GroupsDB = db.model("tel_groups", GroupSchema, "tel_groups");
+
+const ChallengeArray = db.model("group_array", ChallengeArraySchema, "group_array");
 
 // function start(client) { ///פונקציית ההתחלה שמקבלת את הקליינט
 
@@ -424,12 +439,53 @@ const checkIf = () => {
   }else{
     
     setTimeout(()=>{
-
-      for (let i = 0; i < groupArray.length; i++) {
-        bot.telegram.sendMessage(groupArray[i].groupid,'good morning here is your challnge for today')
-          
-      }
       checkIf()
+      const dailyChallnges = async() =>{
+        const Challengearray = await ChallengeArray.find()
+        const _d = new Date()
+        const day = _d.getDate()
+        const month = _d.getMonth()
+        // sync Monthes between create challnge scheme and dailyChallnges jan = 0
+        const date = {day,month}
+        Challengearray.forEach(async (val) => {
+          const ID = val.challengeID
+          const Challenge = await Challenges.findone({_id:ID})
+          const Group = await GroupsDB.findone({_id:ID})
+          if (Challenge) {
+            const elementPos = Challenge.selection.map(function(val,ind) { if (val.date.day == date.day && val.date.month == date.month) {
+              return ind; 
+            }});
+            const objectFound = Challenge.selection[elementPos];
+            if (objectFound) {
+              Group.botMessage = objectFound.text
+              Group.emoji = objectFound.emoji
+              Group.selectionPosition = elementPos
+              Group.scored = []
+              if (Group[i].telGroupId) {
+                bot.telegram.sendMessage(Group[i].telGroupId,'good morning here is your challnge for today')  
+                bot.telegram.sendMessage(Group[i].telGroupId,objectFound.text)
+                bot.telegram.sendMessage(Group[i].telGroupId,`To complete this challnge send this emoji ${objectFound.emoji}`)
+              }
+            }else{
+              Group.botMessage = 'welcome to the group'
+              Group.emoji = null
+              Group.selectionPosition = null
+              if (Group[i].telGroupId) {
+                bot.telegram.sendMessage(Group[i].telGroupId,'good morning there is no challnge for today')  
+              }
+              
+            }
+            await GroupsDB.updateOne({_id:ID},{ $set: Group });
+          }else{
+            console.error('Challenge not found');
+          }
+
+
+          
+        });
+
+      }
+      dailyChallnges()
     },86400000)
   }
 }
@@ -516,6 +572,144 @@ bot.command('findM',(ctx) => {
   // console.log(ctx.message.text);
 
 })
+bot.command('connect',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 8) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let link = msg.slice(8,msg.length)
+    if (link[0] == ' ') {
+      link = link.slice(1,link.length)
+    }
+    const findAndUpdate = async ()=>{
+      const group = await GroupsDB.findOne({invite:link})
+      if (group) {
+        try{
+          const telLink = await ctx.createChatInviteLink()
+          const botMessage = {
+            msg:`if you are the one that activeted this group use the telegram command with this link ${telLink.invite_link}`,
+            user:'telegram Ting Global Bot'
+          }
+          group.messages.push(botMessage)
+          await GroupsDB.updateOne({invite:link}, { messages:group.messages})
+          ctx.reply('Go to your Ting Global group to confirm')
+        } catch (error) {
+          console.error(error);
+          ctx.reply('Error generating invite link.');
+        }
+        
+      }else{
+        ctx.reply('I did not find a group with this invite link')
+      }
+    }
+    findAndUpdate()
+  }
+})
+bot.command('activate',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 9) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let message = msg.slice(9,msg.length)
+    if (message[0] == ' ') {
+      message = message.slice(1,message.length)
+    }
+    let Tinglink = message.slice(0,24)
+    let telLink = message.slice(24,message.length)
+    
+    if (telLink[0] == ' ') {
+      telLink = telLink.slice(1,telLink.length)
+    }
+    const findAndConfirm = async ()=>{
+      const group = await GroupsDB.findOne({invite:Tinglink})
+      if (group) {
+        let telInvite = group.telInvite.slice(0,26) + group.telInvite.slice(27,group.telInvite.length)
+        if (telInvite == telLink) {
+          group.telGroupId = ctx.chat.id
+        
+          const botMessage = {
+            msg:`Telegram Group connected!!!\n the link is ${telLink}`,
+            user:'telegram Ting Global Bot'
+          }
+      
+          group.messages.push(botMessage)
+          await GroupsDB.updateOne({invite:Tinglink}, { $set: group })
+          ctx.reply(`your Ting Global group has been connected from here on all commands are available`)
+        }else{
+          ctx.reply('please connect the link to the group in the Ting Global website')
+        }
+      }else{
+        ctx.reply('I did not find a group with this invite link')
+      }
+    }
+    findAndConfirm()
+  }
+})
+bot.command('finish',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 7) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let message = msg.slice(7,msg.length)
+    if (message[0] == ' ') {
+      message = message.slice(1,message.length)
+    }
+    const findAndConfirm = async ()=>{
+      const group = await GroupsDB.findOne({telGroupId:ctx.chat.id})
+      // if (group) {
+      //   let userfound = group.scored.map((val)=>{if (val == user._id) {
+      //     return val
+      //   }});
+      //   if (userfound) {
+      //     botMessage = {msg:'you already did this task',time:hourmin,user:'Ting Global Bot'} 
+      //   }else{
+      //     const challenge = await Challenges.findOne({_id:group.challengeID},{selections:1})
+      //     botMessage = {msg:'Task Finished!!!',time:hourmin,user:'Ting Global Bot'} 
+      //     const mission = challenge[group.selectionPosition]
+      //     group.scored.push({user:user._id,points:mission.points})
+      //     // user.totalScore += mission.points
+      //     // updateUserInDB(user)
+      //     //
+      //     //
+      //     // give points to player
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+          
+      //     await GroupsDB.updateOne({_id:groupId},{scored:group.scored})
+          
+      //   }
+      //   group.messages.push(message)
+      //   group.messages.push(botMessage)
+      //   if (telInvite == telLink) {
+      //     group.telGroupId = ctx.chat.id
+        
+      //     const botMessage = {
+      //       msg:`Telegram Group connected!!!\n the link is ${telLink}`,
+      //       user:'telegram Ting Global Bot'
+      //     }
+      
+      //     group.messages.push(botMessage)
+      //     await GroupsDB.updateOne({invite:Tinglink}, { $set: group })
+      //     ctx.reply(`your Ting Global group has been connected from here on all commands are available`)
+      //   }else{
+      //     ctx.reply('please connect the link to the group in the Ting Global website')
+      //   }
+      // }else{
+      //   ctx.reply('please connect your group before doing missions')
+      // }
+    }
+    findAndConfirm()
+  }
+})
 bot.help((ctx) => ctx.reply('Send me a sticker (placeholder)'))
 bot.on('sticker', (ctx) => ctx.reply(ctx.message.sticker.emoji))
 bot.hears('hi', (ctx) => ctx.reply('Hey how can i help you?'))
@@ -578,7 +772,7 @@ bot.launch()
 
 // bot.onText(/\/Time/, (msg) => {
 //     const chatId = msg.chat.id;
-//     const d = new Date();
+    // const d = new Date();
 //     const hour = d.getHours()
 //     const min = d.getMinutes()
 //     const second = d.getSeconds()
@@ -1630,7 +1824,6 @@ app.post("/xapi", async (req, res) => {
         
             user.challenges.push(challengeId);
             user.createdChallenges.push(challengeId);
-            //////////////////////////////////////////dont want new challnges remove // when ready
             await Challenges.insertMany(challengeData);
         
             if (verifyNow) {
@@ -1650,19 +1843,30 @@ app.post("/xapi", async (req, res) => {
 
             const groupID = "g_" + generateRandomString();
 
+            const username = user.username ? user.username : 'Jhon Doe'
             const groupChatInfo = {
               _id:groupID,
               challengeID: challengeId,
               invite: '',
               name: `${challengeData.name} group chat`,
-              users: [{userid:user._id,role:'admin'}],
+              users: [{userid:user._id,role:'admin',username:username}],
               messages:[],
-              botMessage:'welcome to the group'
+              scored:[],
+              botMessage:'welcome to the group',
+              emoji:null,
+              selectionPosition:null
             }
 
             user.groups.push({_id:groupID,name:`${challengeData.name} group chat`})
 
             await GroupsDB.insertMany(groupChatInfo);
+            const arrayItemID = "A_" + generateRandomString();
+            challengeItem = {
+              _id: arrayItemID,
+              challengeID: challengeId,
+              groupID:groupID
+            }
+            await ChallengeArray.insertMany(challengeItem)
             updateUserInDB(user);
             final = groupChatInfo;
         }else if (data.hasOwnProperty("joinGroup")) {
@@ -1681,10 +1885,11 @@ app.post("/xapi", async (req, res) => {
               }
             }
             if (!inGroup) {
-              const userinfo = {userid:user._id,role:'student'}
+              const username = user.username ? user.username : 'Jhon Doe'
+              const userinfo = {userid:user._id,role:'student',username:username}
               group.users.push(userinfo)
               user.groups.push({_id:group._id,name:group.name})
-              console.log(user.groups);
+              // console.log(user.groups);
               updateUserInDB(user);
               await GroupsDB.updateOne({invite:inviteId},{users:group.users})
               return res.status(200).json({ msg:'You are now a part of the group!'});
@@ -1723,13 +1928,45 @@ app.post("/xapi", async (req, res) => {
             removeAbove20()
             const time = new Date
             const hourmin = time.getHours()
-            
-            const message = {msg:msg,time:hourmin,user:user._id} 
+            const username = user.username ? user.username : 'Jhon Doe'
+            const message = {msg:msg,time:hourmin,user:user._id,nickname:username} 
 
             let botMessage;
 
-            
-            if (msg == '/hello') {
+            if (msg == group.emoji) {
+              let userfound = group.scored.map((val)=>{if (val == user._id) {
+                return val
+              }});
+              if (userfound) {
+                botMessage = {msg:'you already did this task',time:hourmin,user:'Ting Global Bot'} 
+              }else{
+                const challenge = await Challenges.findOne({_id:group.challengeID},{selections:1})
+                botMessage = {msg:'Task Finished!!!',time:hourmin,user:'Ting Global Bot'} 
+                const mission = challenge[group.selectionPosition]
+                group.scored.push({user:user._id,points:mission.points})
+                // user.totalScore += mission.points
+                // updateUserInDB(user)
+                //
+                //
+                // give points to player
+                //
+                //
+                //
+                //
+                //
+                //
+                //
+                //
+                //
+                //
+                //
+                
+                await GroupsDB.updateOne({_id:groupId},{scored:group.scored})
+                
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
+            }else if (msg == '/hello') {
               botMessage = {msg:'hi there!',time:hourmin,user:'Ting Global Bot'} 
 
               group.messages.push(message)
@@ -1806,12 +2043,25 @@ app.post("/xapi", async (req, res) => {
               group.messages.push(message)
               group.messages.push(botMessage)
               
+            }else if (msg.startsWith('/nickname')) {
+              let nickname = msg.slice(9,msg.length)
+              if (nickname[0] == ' ') {
+                nickname = nickname.slice(1,msg.length)
+              }
+              user.username = nickname
+              updateUserInDB(user)
+              botMessage = {
+                msg:`Username changed to ${nickname}`,
+                time:hourmin,
+                user:'Ting Global Bot'
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
             }else if (msg.startsWith('/help')) {
               group.messages.push(message)
-              let send = true
               if (msg == '/help') {
                 botMessage = {
-                  msg:'here are the commands i know:\n1. /hello\n2. /invite\n3. /promote\n4. /nickname\n5. /help\n type (/help) then the number of the command you want info on',
+                  msg:'Here are the commands i know:\n1. /hello\n2. /invite\n3. /promote\n4. /nickname\n5. /help\n type (/help) then the number of the command you want info on',
                   time:hourmin,
                   user:'Ting Global Bot'
                 }
@@ -1819,48 +2069,104 @@ app.post("/xapi", async (req, res) => {
               }else{
                 let number = msg.slice(5,msg.length)
                 if (number[0] == ' ') {
-                  number = number.slice(1,msg.number)
+                  number = number.slice(1,msg.length)
                 }
                 if (number == 1) {
                   botMessage = {
-                    msg:'1',
+                    msg:'This command is to say hello to me!',
                     time:hourmin,
                     user:'Ting Global Bot'
                   }
                 }else if (number == 2) {
                   botMessage = {
-                    msg:'2',
+                    msg:'This command is used to create an invite link to add players to the group,\n it can only be used by instructors.',
                     time:hourmin,
                     user:'Ting Global Bot'
                   }
                 }else if (number == 3) {
                   botMessage = {
-                    msg:'3',
+                    msg:'This command promotes a student to instructor and instructor to an admin,\n it can only be used by admins.',
                     time:hourmin,
                     user:'Ting Global Bot'
                   }
                 }else if (number == 4) {
                   botMessage = {
-                    msg:'4',
+                    msg:'This command gives you a nickname to identify in the group.',
                     time:hourmin,
                     user:'Ting Global Bot'
                   }
                 }else if (number == 5) {
                   botMessage = {
-                    msg:'5',
+                    msg:'This command gives a list of all commands available.',
                     time:hourmin,
                     user:'Ting Global Bot'
                   }
                 }else {
-                  send = !send
+                  botMessage = {
+                    msg:'I am sorry i dont know this command',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
                 }
-                if (send) {
-                  group.messages.push(botMessage)
-                }
+                
+                group.messages.push(botMessage)
+                
                 
               }
 
 
+              
+            }else if (msg.startsWith('/telegram')) {
+              let shortmsg = msg.slice(9,msg.length)
+              if (shortmsg[0] == ' ') {
+                shortmsg = shortmsg.slice(1,msg.length)
+              }
+              if (shortmsg == 'link') {
+                if (group.telInvite) {
+                  botMessage = {
+                    msg:`Here is the invite link to your telegram group\n${group.telInvite}`,
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else{
+                  botMessage = {
+                    msg:'I am sorry you didnt register a telegram group to do that please add the TingGlobalBot to your group and give it your groupid',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }
+                group.messages.push(message)
+                group.messages.push(botMessage)
+              }else{
+                let admin = false
+                for (let i = 0; i < group.users.length; i++) {
+                  if (group.users[i].userid == user._id ) {
+                    if (group.users[i].role == 'admin') {
+                      admin =!admin
+                    }
+                    break
+                  }
+                }
+                if (admin) {
+                  group.telInvite = shortmsg
+                  await GroupsDB.updateOne({_id:groupId},{telInvite:group.telInvite})
+                  botMessage = {
+                    msg:'telegram invite code registerd!!\n you can go to telegram and activate the group now!',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                  group.messages.push(message)
+                  group.messages.push(botMessage)
+                }else{
+                  botMessage = {
+                    msg:'only admins can use this command',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                  group.messages.push(message)
+                  group.messages.push(botMessage)
+                }
+              }
               
             }else{
               group.messages.push(message)
@@ -1886,7 +2192,7 @@ app.post("/xapi", async (req, res) => {
             //   const msg = 'placeholder'     /////////////////////////////////////////////////////////////////////placeholder
             //   const messageFromBot = {msg:msg,time:hourmin,user:'Ting_Global_BOT'} 
             //   group.messages.push(messageFromBot)
-            // }
+            // }$set: group 
 
 
 
