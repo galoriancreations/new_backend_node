@@ -514,7 +514,7 @@ app.post("/api", upload.single("photo"), (req, res) => {
       } else if (req.body.hasOwnProperty("getUser")) {
         const { phone } = req.body;
         const user = await UsersTest.findById(phone);
-        console.log(user);
+        res.status(200).json({ user });
       } else if (req.body.hasOwnProperty("checkUsername")) {
         let check = await UsersTest.findOne({
           username: `${req.body.checkUsername}`,
