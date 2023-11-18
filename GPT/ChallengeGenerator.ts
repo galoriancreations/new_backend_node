@@ -77,8 +77,11 @@ Store the challenge in a JSON array.`,
           score: '<task score>',
         },
       ],
+    },
+    {
+      // verbose: true,
+      model: 'gpt-4',
     }
-    // { verbose: true }
   );
 
   if (!response) {

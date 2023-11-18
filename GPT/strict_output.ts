@@ -4,10 +4,9 @@
  */
 import OpenAI from 'openai';
 import { type ImageGenerateParams } from 'openai/resources';
-import { type Article, type ChallengeOutput } from './types';
 
 const openai = new OpenAI({
-  // organization: "YOUR_ORG_ID",
+  organization: process.env.OPENAI_ORGANIZATION_ID,
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -48,6 +47,7 @@ export async function strict_output2(
         },
         { role: 'user', content: user_prompt.toString() },
       ],
+      response_format: { type: 'json_object' },
     });
 
     let res = response.choices[0].message?.content?.replace(/'/g, "'");
