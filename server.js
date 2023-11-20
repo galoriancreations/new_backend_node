@@ -3,6 +3,16 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 
+//==== Its help to resolve  
+/*error 413 // payload too large, 
+for base64 string after adjusting size in express */
+
+app.use(bodyParser.json({limit: '50mb', extended: true}));
+app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
+app.use(bodyParser.text({ limit: '200mb' }));
+
+//=============================================
+
 const wa = require("@open-wa/wa-automate");
 
 const db = require("mongoose");
@@ -291,7 +301,7 @@ const TemplateSchema = new db.Schema(
 		creator: String,
 		dayMargin: Number,
 		days: Array,
-		image: String,
+		image:String,
 		isPublic: Boolean,
 		language: String,
 		lastSave: String,
@@ -951,6 +961,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 					});
 					final = template;
 					console.log("Template Ready!");
+///=======================templates // save challenge image //=============================
 				} else if (Object.hasOwn(data, "saveTemplate")) {
 					let templateId = data["saveTemplate"]["templateId"];
 					console.log("template id is : " + templateId);
@@ -972,11 +983,12 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 							};
 							user["templates"] = [...user["templates"], temp];
 							// to save templets in model "users" in drafts arr but not in model "user_drafts"
-							user["drafts"] = [...user["drafts"], temp];
+							// user["drafts"] = [...user["drafts"], temp];
 							// user['templates'] = [...user['templates'], templateId]
 						}
 					} else {
 						templateData["_id"] = templateId;
+
 						if (
 							isAdmin == true ||
 							user["templates"].find((val) => val._id == templateId) !=
