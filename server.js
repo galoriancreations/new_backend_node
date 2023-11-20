@@ -3,6 +3,16 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 
+//==== Its help to resolve  
+/*error 413 // payload too large, 
+for base64 string after adjusting size in express */
+
+app.use(bodyParser.json({limit: '50mb', extended: true}));
+app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
+app.use(bodyParser.text({ limit: '200mb' }));
+
+//=============================================
+
 const wa = require("@open-wa/wa-automate");
 
 const db = require("mongoose");
@@ -293,11 +303,7 @@ const TemplateSchema = new db.Schema(
 		creator: String,
 		dayMargin: Number,
 		days: Array,
-		image: {
-			name: String,
-			data: String,
-			contentType: String,
-		},
+		image: String,
 		isPublic: Boolean,
 		language: String,
 		lastSave: String,
