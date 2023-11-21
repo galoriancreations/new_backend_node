@@ -6,4 +6,8 @@ node_modules
 **_IGNORE_**
 # end managed
 
+# local env files
 .env.local
+.env.development.local
+
+GPT/images/*
