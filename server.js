@@ -36,6 +36,7 @@ let lastSender;
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
+const { generateChallenge } = require('./GPT/ChallengeGeneratorJS');
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -1239,6 +1240,18 @@ app.post("/xapi", async (req, res) => {
             }
             final = templates;
           }
+        }
+        else if (data.hasOwnProperty("createTemplateWithAi")) {
+          console.log('enter createTemplateWithAi');
+          const { language, topic } = data.createTemplateWithAi;
+          
+          const template = await generateChallenge({
+            creator: user.phone,
+            id: 't_' + generateRandomString(),
+            topic,
+          });
+          console.log("template:", template);
+          final = template;
         }
         res.status(200).json(final);
       }
