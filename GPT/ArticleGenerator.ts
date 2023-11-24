@@ -183,7 +183,7 @@ async function sendArticleToAllSubscribers(
 
   // Take the article from the file generated_article.json for less API calls and testing
   // const article: Article = JSON.parse(
-  //   fs.readFileSync('GPT/genereted_article.json', 'utf8')
+  //   fs.readFileSync('GPT/json/genereted_article.json', 'utf8')
   // );
 
   if (articleOutput === null) {

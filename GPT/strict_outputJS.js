@@ -2,6 +2,7 @@
  * This file contain functions that generate output from the OpenAI API
  * The output is strictly checked to ensure that it adheres to the output format
  */
+const fs = require('fs');
 const OpenAI = require('openai');
 
 const openai = new OpenAI({
@@ -66,6 +67,11 @@ async function strict_output2(
       console.log('\nGPT response:', res);
     }
 
+    fs.writeFile('GPT/json/challenge_output.json', res, function (err) {
+      if (err) return console.error(err);
+      else console.log('Output saved to GPT/json/challenge_output.json');
+    });
+
     // try-catch block to ensure output format is adhered to
     try {
       if (res[0] !== '{') {
@@ -77,6 +83,7 @@ async function strict_output2(
         }
       }
       let output = JSON.parse(res);
+      return output;
 
       // check for each element in the output_list, the format is correctly adhered to
       for (let index = 0; index < output.length; index++) {

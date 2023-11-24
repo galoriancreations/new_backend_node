@@ -1242,7 +1242,6 @@ app.post("/xapi", async (req, res) => {
           }
         }
         else if (data.hasOwnProperty("createTemplateWithAi")) {
-          console.log('enter createTemplateWithAi');
           const { language, topic } = data.createTemplateWithAi;
           
           const template = await generateChallenge({
