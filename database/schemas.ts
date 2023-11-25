@@ -109,3 +109,11 @@ export const PlayerSchema = new db.Schema(
   },
   { versionKey: false }
 );
+
+export const QuestionSchema = new db.Schema(
+	{
+		id:Number,
+		text:String
+	},
+	{ versionKey: false }
+)

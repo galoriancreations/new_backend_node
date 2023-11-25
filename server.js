@@ -1,6 +1,5 @@
 const express = require("express");
-//test
-//test2
+
 const app = express();
 const bodyParser = require("body-parser");
 
@@ -316,6 +315,14 @@ const PlayerSchema = new db.Schema(
 	{ versionKey: false }
 );
 
+const QuestionSchema = new db.Schema(
+	{
+		id:Number,
+		text:String
+	},
+	{ versionKey: false }
+)
+
 ///צריך לרשום לו עוד פרמטר עם אותו השם של הקולקשן כדי להגיד לו שאתה מתכוון למה שאתה מתכוון...
 const WaGroup = db.model("waGroups", waGroupSchema, "waGroups");
 
@@ -328,6 +335,9 @@ const Challenges = db.model("challenges", ChallengeSchema, "challenges");
 const TemplatesDB = db.model("templates", TemplateSchema, "templates");
 
 const PlayersDB = db.model("players", PlayerSchema, "players");
+
+const QuestionModel = db.model("questions", QuestionSchema, "questions")
+
 
 // function start(client) { ///פונקציית ההתחלה שמקבלת את הקליינט
 
