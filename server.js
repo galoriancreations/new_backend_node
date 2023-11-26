@@ -3,13 +3,19 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 
-//==== Its help to resolve  
+//==== Its help to resolve
 /*error 413 // payload too large, 
 for base64 string after adjusting size in express */
 
-app.use(bodyParser.json({limit: '50mb', extended: true}));
-app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
-app.use(bodyParser.text({ limit: '200mb' }));
+app.use(bodyParser.json({ limit: "50mb", extended: true }));
+app.use(
+	bodyParser.urlencoded({
+		limit: "50mb",
+		extended: true,
+		parameterLimit: 50000,
+	})
+);
+app.use(bodyParser.text({ limit: "200mb" }));
 
 //=============================================
 
@@ -691,12 +697,12 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 	// ------------------------------------------------------------
 
 	let user = await UsersTest.findOne({ _id: current_user });
-	// yana
-	user.templates.forEach((t) => {
-		for (let key in t) {
-			console.log(`==XAPI==: ${key}: ${t[key]}`);
-		}
-	});
+
+	// user.templates.forEach((t) => {
+	// 	for (let key in t) {
+	// 		console.log(`==XAPI==: ${key}: ${t[key]}`);
+	// 	}
+	// });
 
 	const isAdmin = user["isAdmin"];
 
@@ -798,7 +804,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 					userData[key] = userDoc[key];
 				}
 			}
-			// yana
+
 			// userDoc.templates.forEach((t) => {
 			// 	for (let key in t) {
 			// 		console.log(`==XAPI==: ${key}: ${t[key]}`);
@@ -1074,7 +1080,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 					};
 					user["templates"] = [...user["templates"], temp];
 				}
-				// yana
+
 				// user.templates.forEach((t) => {
 				// 	for (let key in t) {
 				// 		console.log(`${key}: ${t[key]}`);
@@ -1300,7 +1306,6 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 			// if draft is new there will be empty draftId,
 			// and here it will be created:
 			if (draftId === null) {
-				// yana
 				// console.log(`--saveDraft--: draftId is null: ${draftId}`);
 				draftId = "d_" + generateRandomString();
 				draftData["_id"] = draftId;
@@ -1315,7 +1320,6 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 				// update DB - users collection:
 				await updateUserInDB(user);
 			} else {
-				// yana
 				// console.log(`--saveDraft--: draftId is exists: ${draftId}`);
 				// if draft is no in user virable (i dont know how it is possible?):
 				if (!user["drafts"].includes(draftId)) {
@@ -1344,7 +1348,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 					.status(404)
 					.json({ msg: `No draft found with this ID: ${draftId} ` });
 			}
-			// yana
+
 			// console.log(`--getDraftData--: ${draft}`);
 			// send back to front:
 			final = draft;
