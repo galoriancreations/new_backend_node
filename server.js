@@ -98,7 +98,7 @@ const getUserData = (user) => {
 	return userData;
 };
 
-const generateToken = (user_id, secretKey) => {
+const generateTokenס = (user_id, secretKey) => {
 	const expiresIn = 60 * 60 * 24;
 	const payload = {
 		exp: Math.floor(Date.now() / 1000) + expiresIn,
@@ -318,7 +318,8 @@ const PlayerSchema = new db.Schema(
 const QuestionSchema = new db.Schema(
 	{
 		id:Number,
-		text:String
+		text:String,
+		answers: Array
 	},
 	{ versionKey: false }
 )

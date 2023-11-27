@@ -113,7 +113,8 @@ export const PlayerSchema = new db.Schema(
 export const QuestionSchema = new db.Schema(
 	{
 		id:Number,
-		text:String
+		text:String,
+    answers: Array
 	},
 	{ versionKey: false }
 )
