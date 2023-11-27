@@ -9,12 +9,11 @@ async function generateChallenge({
   id,
   topic = 'a topic of your choice',
   days = 2,
-  minTasks = 2,
-  maxTasks = 4,
+  tasks = 2,
   language = 'English',
 }) {
   console.log(
-    `Generating challenge (${days} days, between ${minTasks} to ${maxTasks} tasks)... This may take a while.`
+    `Generating challenge with the topic: ${topic} (${days} days, ${tasks} tasks)... This may take a while.`
   );
 
   const challengeExample = fs.readFileSync(
@@ -26,7 +25,7 @@ async function generateChallenge({
     `You are a helpful AI that is able to generate a challenge.
 The challenge should be about ${topic}.
 The challenge should contain ${days} days.
-The challenge should contain between ${minTasks} to ${maxTasks} tasks.
+The challenge should contain ${tasks} tasks.
 The challenge should be in English.
 The challenge is an array of messages and tasks that the user should do in the challenge.
 The challenge contain days, preDays, image.
@@ -111,7 +110,7 @@ Don't exceed the 1,190-character limit in the json.`,
       ],
     },
     {
-      verbose: true,
+      // verbose: true,
       // model: 'gpt-4',
     }
   );

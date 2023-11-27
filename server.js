@@ -1242,31 +1242,42 @@ app.post("/xapi", async (req, res) => {
           }
         }
         else if (data.hasOwnProperty("createTemplateWithAi")) {
-          const { language, topic } = data.createTemplateWithAi;
+          try {
+            // get data
+            const { language, topic, days, tasks } = data.createTemplateWithAi;
 
-          // create template
-          const templateId = 't_' + generateRandomString();
-          const template = await generateChallenge({
-            creator: current_user,
-            id: templateId,
-            topic,
-            language: 'English',
-          });
+            // create template
+            const templateId = 't_' + generateRandomString();
+            const template = await generateChallenge({
+              creator: current_user,
+              id: templateId,
+              topic,
+              language: 'English', // only english supported for now
+              days,
+              tasks,
+            });
+            if (!template) {
+              throw new Error('Failed to create template with ai');
+            }
 
-          // add template to db
-          await TemplatesDB.create(template);
+            // add template to db
+            await TemplatesDB.create(template);
 
-          // add template to user
-          const temp = {
-            _id: templateId,
-            name: template.name,
-            isPublic: template.isPublic,
-          };
-          user.templates = [...user.templates, temp];
-          updateUserInDB(user);
+            // add template to user
+            const temp = {
+              _id: templateId,
+              name: template.name,
+              isPublic: template.isPublic,
+            };
+            user.templates = [...user.templates, temp];
+            updateUserInDB(user);
 
-          // return template
-          final = { template };
+            // return template
+            final = { template };
+          } catch (error) {
+            console.log(error);
+            return res.status(400).json({ msg: 'Failed to create template with ai' });
+          }
         }
         res.status(200).json(final);
       }
