@@ -8,12 +8,13 @@ async function generateChallenge({
   creator,
   id,
   topic = 'a topic of your choice',
-  days = 5,
-  minTasks = 3,
-  maxTasks = 15,
+  days = 2,
+  minTasks = 2,
+  maxTasks = 4,
+  language = 'English',
 }) {
   console.log(
-    `Generating challenge (${days} days, between ${minTasks} to ${maxTasks} tasks)... This may take a while`
+    `Generating challenge (${days} days, between ${minTasks} to ${maxTasks} tasks)... This may take a while.`
   );
 
   const challengeExample = fs.readFileSync(
@@ -78,7 +79,7 @@ Store the challenge in a JSON array.
 Respond only with the JSON array, and provide the complete JSON tree.
 No text outside the JSON.
 
-Don't exceed the 1,190-character limit in the response.`,
+Don't exceed the 1,190-character limit in the json.`,
     `You are to generate a challenge about ${topic}.`,
     {
       name: '<challenge name>',
@@ -114,11 +115,20 @@ Don't exceed the 1,190-character limit in the response.`,
       // model: 'gpt-4',
     }
   );
+  
+  // for testing
+  // const response = JSON.parse(fs.readFileSync('GPT/json/challenge_output.json', 'utf8'));
+
   if (!response) {
     console.error('Error generating challenge');
     return;
   }
-  console.log(response);
+
+  fs.writeFile('GPT/json/challenge_output.json', JSON.stringify(response), (err) => {
+    if (err) return console.error(err);
+    else console.log('Output saved to GPT/json/challenge_output.json');
+  });
+    
   const challenge = {
     _id: id,
     allowsCopies: true,
@@ -130,31 +140,16 @@ Don't exceed the 1,190-character limit in the response.`,
     // invite: '', // an invite link to telegram challenge group
     isPublic: false,
     scores: [],
-    // template: '', // check the template idea
     verified: false,
     days: [],
     preMessages: [],
     preDays: [],
+    language,
     ...response,
   };
-  fs.writeFileSync('GPT/json/challenge_output.json', JSON.stringify(challenge));
+
   return challenge;
 }
-
-async function generateAndAddChallenge() {
-  const challenge = await generateChallenge({
-    minTasks: 30,
-    maxTasks: 60,
-  });
-  if (challenge) {
-    // addChallengeToDb(challenge);
-    console.log('Challenge successfully added to database');
-  } else {
-    console.error('Error adding challenge to database, challenge is ');
-  }
-}
-
-// generateAndAddChallenge();
 
 // // Schedule Article sendArticleToAllSubscribers() to run every Monday at 9:00 AM
 // const rule = new schedule.RecurrenceRule();

@@ -1243,14 +1243,30 @@ app.post("/xapi", async (req, res) => {
         }
         else if (data.hasOwnProperty("createTemplateWithAi")) {
           const { language, topic } = data.createTemplateWithAi;
-          
+
+          // create template
+          const templateId = 't_' + generateRandomString();
           const template = await generateChallenge({
-            creator: user.phone,
-            id: 't_' + generateRandomString(),
+            creator: current_user,
+            id: templateId,
             topic,
+            language: 'English',
           });
-          console.log("template:", template);
-          final = template;
+
+          // add template to db
+          await TemplatesDB.create(template);
+
+          // add template to user
+          const temp = {
+            _id: templateId,
+            name: template.name,
+            isPublic: template.isPublic,
+          };
+          user.templates = [...user.templates, temp];
+          updateUserInDB(user);
+
+          // return template
+          final = { template };
         }
         res.status(200).json(final);
       }

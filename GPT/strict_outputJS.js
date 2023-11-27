@@ -6,7 +6,7 @@ const fs = require('fs');
 const OpenAI = require('openai');
 
 const openai = new OpenAI({
-  organization: process.env.OPENAI_ORGANIZATION_ID,
+  // organization: process.env.OPENAI_ORGANIZATION_ID,
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -57,7 +57,7 @@ async function strict_output2(
 
     // ensure that we don't replace away apostrophes in text
     res = res.replace(/(\w)"(\w)/g, "$1'$2");
-
+    
     if (verbose) {
       console.log(
         'System prompt:',
@@ -66,11 +66,6 @@ async function strict_output2(
       console.log('\nUser prompt:', user_prompt);
       console.log('\nGPT response:', res);
     }
-
-    fs.writeFile('GPT/json/challenge_output.json', res, function (err) {
-      if (err) return console.error(err);
-      else console.log('Output saved to GPT/json/challenge_output.json');
-    });
 
     // try-catch block to ensure output format is adhered to
     try {
@@ -83,7 +78,7 @@ async function strict_output2(
         }
       }
       let output = JSON.parse(res);
-      return output;
+      // return output;
 
       // check for each element in the output_list, the format is correctly adhered to
       for (let index = 0; index < output.length; index++) {
