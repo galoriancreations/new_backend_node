@@ -146,7 +146,7 @@ const fetchUserFromID = async (id) => {
 };
 
 const updateUserInDB = async (user) => {
-  console.log("new user to update:", user);
+  // console.log("new user to update:", user);
   await UsersTest.updateOne({ _id: `${user["_id"]}` }, { $set: user });
   return;
 };
@@ -1133,7 +1133,7 @@ app.post("/xapi", async (req, res) => {
           updateUserInDB(user);
           final = { logged_in_as: current_user, templateId: templateId };
         } else if (data.hasOwnProperty("deleteTemplate")) {
-          let templateId = data["deleteTemplate"]["templateId"];
+          const templateId = data.deleteTemplate.templateId;
           if (
             !isAdmin &&
             !(
@@ -1149,7 +1149,7 @@ app.post("/xapi", async (req, res) => {
           user.templates = user.templates.filter(
             (val) => val._id !== templateId
           );
-          console.log("user templates:", user.templates);
+          // console.log("user templates:", user.templates);
           updateUserInDB(user);
           final = {
             msg: `Successfully deleted template: ${templateId}`,
@@ -1275,8 +1275,8 @@ app.post("/xapi", async (req, res) => {
             // return template
             final = { template };
           } catch (error) {
-            console.log(error);
-            return res.status(400).json({ msg: 'Failed to create template with ai' });
+            console.error(error);
+            return res.status(400).json({ msg: 'Failed to create template with AI' });
           }
         }
         res.status(200).json(final);

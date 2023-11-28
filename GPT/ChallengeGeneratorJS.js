@@ -22,63 +22,43 @@ async function generateChallenge({
   );
 
   const response = await strict_output2(
-    `You are a helpful AI that is able to generate a challenge.
-The challenge should be about ${topic}.
-The challenge should contain ${days} days.
-The challenge should contain ${tasks} tasks.
-The challenge should be in English.
-The challenge is an array of messages and tasks that the user should do in the challenge.
-The challenge contain days, preDays, image.
+    `You are a helpful AI tasked with generating a challenge in JSON format. The challenge is based on the following parameters:
+    - Topic: ${topic}
+    - Duration: ${days} days
+    - Number of Tasks: ${tasks}
+    - Language: ${language}
+    
+    The challenge will be structured as a JSON array containing fields: name, days, preDays, image. Here are the specifications for each section:
+    
+    1. Days Array: 
+       - Each day includes: introduction, messages, tasks, time, title, image.
+       - Introduction: A brief intro with titles marked as (*title*). Use '\\n' for new lines.
+       - Time: When to send the day's content to the user.
+       - Image: A description for a DALL-E image prompt related to the day's topic.
+    
+    2. Messages Array:
+       - Content: The message text.
+       - Time: When to send the message to the user.
+    
+    3. Tasks Array:
+       - Each task includes: emoji, isBonus, options, points, time.
+       - Emoji: To make the task visually appealing.
+       - isBonus: Boolean indicating if it's a bonus task.
+       - Options: Short, simple choices without the word 'TASK:'.
+       - Points: Points awarded for completing the task.
+    
+    4. PreDays Array:
+       - Messages to be read before the challenge starts.
+    
+    5. Image Description:
+       - A text prompt for creating a DALL-E image about the challenge topic.
+    
+    Example Challenge with 3 days and 2 tasks per day (total of 6 tasks):
+    ${challengeExample}
+    
+    The goal is to educate and connect people globally, making the world better.
 
-${/* days[] */ ''}
-${/* introduction, messages, tasks, time, title, image */ ''}
-days is an array of days that the user should do in the challenge.
-each day contain the next fields: introduction, messages, tasks, time, title.
-introduction is the introduction of the day. introduction titles marks with *. (*title*).
-to enter a new line in the introduction or any other text use \\n.
-time is the time that the day should be sent to the user.
-title is the title of the day.
-image is a text about image prompt to create with dell-e about the topic of the day.
-
-${/* days[] > messages[] */ ''}
-${/* content, time */ ''}
-messages are an array of messages that the user should read in the challenge.
-each field contain the next fields: content, time.
-content is the content of the message, time is the time that the message should be sent to the user.
-
-${/* days[] > tasks[] */ ''}
-${/* emoji, isBonus, options[], points, time */ ''}
-tasks is an array of tasks that the user should do in the challenge,
-each task contain the next fields: emoji, isBonus, options, points, time.
-emoji is the emoji of the task. to be attractive to the students.
-isBonus is a boolean that indicate if the task is a bonus task.
-options is an array of options that the user should choose from, each option contain the next fields: text.
-Keep the text text short and simple, and don't use the word TASK: or inside the text.
-points is the points that the user will get if he choose the option.
-time is the time that the task should be sent to the user.
-Some tasks should be additional bonus and double bonus selection.
-
-${/* days[] > preDays[] */ ''}
-${/* messages[] */ ''}
-preDays is an array, each field contain the next fields: messages.
-messages is an array of messages that the user should read in the challenge.
-The message contain the next fields: time, content.
-The time is the time that the message should be sent to the user.
-The content is the content of the message.
-
-${/* image */ ''}
-image is a text about image prompt to create with dell-e about the topic of the challenge.
-
-Example of a challenge with 3 days and 5 tasks:
-
-${challengeExample}
-
-The goal of the challenge is to educate and connect people around the world, and to bring the world to be a better place.
-Store the challenge in a JSON array.
-Respond only with the JSON array, and provide the complete JSON tree.
-No text outside the JSON.
-
-Don't exceed the 1,190-character limit in the json.`,
+    Respond only in JSON format within a 1,190-character limit.`,
     `You are to generate a challenge about ${topic}.`,
     {
       name: '<challenge name>',
