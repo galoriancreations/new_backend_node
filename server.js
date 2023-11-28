@@ -36,7 +36,7 @@ let lastSender;
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
-const { generateChallenge } = require('./GPT/ChallengeGeneratorJS');
+const { generateChallenge } = require('./GPT/ChallengeGenerator');
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 

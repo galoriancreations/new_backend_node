@@ -1,7 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const schedule = require('node-schedule');
-const { strict_output2 } = require('./strict_outputJS');
+const { strict_output2 } = require('./strict_output');
 // const { addChallengeToDb } = require('../database/indexJS');
 
 async function generateChallenge({

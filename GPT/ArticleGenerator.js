@@ -8,8 +8,7 @@ import { promisify } from 'util';
 import { UsersTest } from '../database';
 import { sendMessageViaEmail } from '../services/nodemailer';
 import { sendMessageViaWhatsApp } from '../services/twilio';
-import { strict_image, strict_output } from './strict_output';
-import { type ArticleOutput, type Article } from './types';
+import { strict_image, strict_output } from './ts/strict_output';
 
 // Function to generate an article using the OpenAI CHATGPT-3 API
 async function generateArticle({
@@ -18,7 +17,7 @@ async function generateArticle({
 }) {
   console.log('Generating article...');
 
-  const response: ArticleOutput = await strict_output(
+  const response = await strict_output(
     `You are a helpful AI that is able to generate articles with title, imagePrompt and text.
     The length of the text should not be more than ${wordsCount} words, store article in a JSON array.
     The imagePrompt should be a prompt for the AI to generate an image that is related to the article.
@@ -35,7 +34,7 @@ async function generateArticle({
   return response;
 }
 
-async function generateAndSaveImage(prompt: string) {
+async function generateAndSaveImage(prompt) {
   console.log(`Genereting image (prompt: ${prompt})`);
 
   // create image
@@ -52,7 +51,7 @@ async function generateAndSaveImage(prompt: string) {
   return downloadPath;
 }
 
-const downloadImage = async (imageUrl: string, downloadPath: string) => {
+const downloadImage = async (imageUrl, downloadPath) => {
   try {
     const response = await axios({
       url: imageUrl,
@@ -78,8 +77,8 @@ const downloadImage = async (imageUrl: string, downloadPath: string) => {
 
 // Function to generate and send articles to subscribers
 export async function sendArticle(
-  article: Article,
-  subscribers: { fullName?: string; phone?: string; email?: string }[]
+  article,
+  subscribers = { fullName, phone, email }
 ) {
   console.log(`Sending article to ${subscribers.length} subscribers`);
 
@@ -197,7 +196,7 @@ async function sendArticleToAllSubscribers(
       `Error generating image (prompt: ${articleOutput.imagePrompt})`
     );
   }
-  const article: Article = {
+  const article = {
     title: articleOutput.title,
     text: articleOutput.text,
     image,
@@ -211,12 +210,22 @@ async function sendArticleToAllSubscribers(
 
   sendArticle(article, mappedUsers);
 }
-sendArticleToAllSubscribers();
 
-// Schedule Article sendArticleToAllSubscribers() to run every Monday at 9:00 AM
-const rule = new schedule.RecurrenceRule();
-rule.dayOfWeek = 1; // Monday
-rule.hour = 9; // 9:00
-rule.minute = 0; // 00 seconds
-const job = schedule.scheduleJob(rule, () => sendArticleToAllSubscribers());
-console.log('Scheduled article generator job to run every Monday at 9:00');
+let job;
+const scheduleJob = async () => {
+  if (job) {
+    job.cancel();
+    console.log('Cancelled previous article generator job');
+  } else {
+
+  const rule = new schedule.RecurrenceRule();
+  rule.dayOfWeek = 1; // Monday
+  rule.hour = 9; // 9:00
+  rule.minute = 0; // 00 seconds
+  job = schedule.scheduleJob(rule, () => sendArticleToAllSubscribers());
+  console.log('Scheduled article generator job to run every Monday at 9:00');
+}
+
+};
+
+exports = { scheduleJob, sendArticleToAllSubscribers }
