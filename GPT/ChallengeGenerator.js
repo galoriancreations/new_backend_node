@@ -11,9 +11,10 @@ async function generateChallenge({
   days = 2,
   tasks = 2,
   language = 'English',
+  targetAudience = 'Everyone',
 }) {
   console.log(
-    `Generating challenge with the topic: ${topic} (${days} days, ${tasks} tasks)... This may take a while.`
+    `Generating challenge with the topic: ${topic} (${days} days, ${tasks} tasks per day, target: ${targetAudience})... This may take a while.`
   );
 
   const challengeExample = fs.readFileSync(
@@ -22,44 +23,49 @@ async function generateChallenge({
   );
 
   const response = await strict_output2(
-    `You are a helpful AI tasked with generating a challenge in JSON format. The challenge is based on the following parameters:
+    `You are an advanced AI programmed to generate a multi-day challenge in JSON format, based on the following parameters:
     - Topic: ${topic}
     - Duration: ${days} days
-    - Number of Tasks: ${tasks}
+    - Number of Tasks per Day: ${tasks}
     - Language: ${language}
-    
-    The challenge will be structured as a JSON array containing fields: name, days, preDays, image. Here are the specifications for each section:
-    
-    1. Days Array: 
-       - Each day includes: introduction, messages, tasks, time, title, image.
-       - Introduction: A brief intro with titles marked as (*title*). Use '\\n' for new lines.
-       - Time: When to send the day's content to the user.
-       - Image: A description for a DALL-E image prompt related to the day's topic.
-    
-    2. Messages Array:
-       - Content: The message text.
-       - Time: When to send the message to the user.
-    
-    3. Tasks Array:
-       - Each task includes: emoji, isBonus, options, points, time.
-       - Emoji: To make the task visually appealing.
-       - isBonus: Boolean indicating if it's a bonus task.
-       - Options: Short, simple choices without the word 'TASK:'.
-       - Points: Points awarded for completing the task.
-    
-    4. PreDays Array:
-       - Messages to be read before the challenge starts.
-    
-    5. Image Description:
-       - A text prompt for creating a DALL-E image about the challenge topic.
-    
-    Example Challenge with 3 days and 2 tasks per day (total of 6 tasks):
-    ${challengeExample}
-    
-    The goal is to educate and connect people globally, making the world better.
+    - Target Audience: ${targetAudience}
+  
+  The challenge should be structured as a JSON object containing fields: name, days, image, language. The detailed structure is as follows:
+  
+  1. Name:
+     - Title of the challenge.
+  
+  2. Days Array:
+     - An array with each element representing a day in the challenge.
+     - Each day includes: introduction, messages, tasks, time, title, image.
+     - Ensure content diversity across different days.
+  
+  3. Image Description:
+     - A DALL-E image prompt description related to the overall theme.
+  
+  4. Language:
+     - The language in which the challenge is presented.
+  
+  Each 'day' object in the days array should include:
+     a. Introduction: A brief introduction, emphasizing titles with asterisks.
+     b. Time: The specific time for releasing the day's content, in HH:MM:SS format.
+     c. Image: A related DALL-E image prompt description.
+     d. Messages: An array of messages, each with content and a specific time.
+     e. Tasks: An array of tasks, each with emoji, isBonus, options, points, time.
 
-    Respond only in JSON format within a 1,190-character limit.`,
-    `You are to generate a challenge about ${topic}.`,
+  Each 'task' object in the tasks array should include:
+      a. Emoji: A related emoji.
+      b. IsBonus: A boolean indicating whether the task is a bonus task.
+      c. Options: An array of options, each with text. each option is a task that can be complete.
+      d. Points: The number of points awarded for completing the task. (first task of the day is worth 1 points, second task is worth 2 points, third task is worth 3 points, etc.)
+  
+  The tasks should be engaging, related to ${topic}, and suitable for the ${targetAudience}. The challenge aims to educate and connect people globally.
+  
+  Ensure the JSON structure is consistent and scalable for the specified number of days and tasks.`,
+    // user prompt:
+    `Generate a challenge about ${topic}. targeting ${targetAudience}.
+    It should span ${days} days with ${tasks} tasks per day.
+    The language of the challenge is ${language}.`,
     {
       name: '<challenge name>',
       days: [
@@ -94,7 +100,7 @@ async function generateChallenge({
       // model: 'gpt-4',
     }
   );
-  
+
   // for testing
   // const response = JSON.parse(fs.readFileSync('GPT/json/challenge_output.json', 'utf8'));
 
@@ -103,11 +109,15 @@ async function generateChallenge({
     return;
   }
 
-  fs.writeFile('GPT/json/challenge_output.json', JSON.stringify(response), (err) => {
-    if (err) return console.error(err);
-    else console.log('Output saved to GPT/json/challenge_output.json');
-  });
-    
+  fs.writeFile(
+    'GPT/json/challenge_output.json',
+    JSON.stringify(response),
+    (err) => {
+      if (err) return console.error(err);
+      else console.log('Output saved to GPT/json/challenge_output.json');
+    }
+  );
+
   const challenge = {
     _id: id,
     allowsCopies: true,

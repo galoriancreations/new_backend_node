@@ -46,6 +46,8 @@ async function strict_output2(
       // response_format: { type: 'json_object' },
     });
 
+    fs.writeFileSync('GPT/json/strict_output2.json', JSON.stringify(response));
+    
     let res = response.choices[0].message?.content?.replace(/'/g, "'");
 
     if (!res) {
@@ -57,7 +59,7 @@ async function strict_output2(
 
     // ensure that we don't replace away apostrophes in text
     res = res.replace(/(\w)"(\w)/g, "$1'$2");
-    
+
     if (verbose) {
       console.log(
         'System prompt:',
@@ -111,6 +113,11 @@ async function strict_output2(
       error_msg = `\n\nResult: ${res}\n\nError message: ${e}`;
       console.log('An exception occurred:', e);
       console.log('Current invalid json format:', res);
+      if (num_tries > 1) {
+        console.log(`Trying again, attempt ${i + 1} of ${num_tries}`);
+      } else {
+        console.log('No more tries left');
+      }
     }
   }
 
