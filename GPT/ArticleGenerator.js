@@ -1,14 +1,16 @@
 require('dotenv').config();
 
-import fs from 'fs';
-import axios from 'axios';
-import schedule from 'node-schedule';
-import { pipeline } from 'stream';
-import { promisify } from 'util';
-import { UsersTest } from '../database';
-import { sendMessageViaEmail } from '../services/nodemailer';
-import { sendMessageViaWhatsApp } from '../services/twilio';
-import { strict_image, strict_output } from './ts/strict_output';
+const fs = require('fs');
+const axios = require('axios');
+const schedule = require('node-schedule');
+const stream = require('stream');
+const pipeline = stream.pipeline;
+const util = require('util');
+const promisify = util.promisify;
+const { UsersTest } = require('../database/indexJS');
+const { sendMessageViaEmail } = require('../services/nodemailer');
+const { sendMessageViaWhatsApp } = require('../services/twilio');
+const { strict_image, strict_output } = require('./ts/strict_output');
 
 // Function to generate an article using the OpenAI CHATGPT-3 API
 async function generateArticle({
@@ -76,10 +78,7 @@ const downloadImage = async (imageUrl, downloadPath) => {
 };
 
 // Function to generate and send articles to subscribers
-export async function sendArticle(
-  article,
-  subscribers = { fullName, phone, email }
-) {
+async function sendArticle(article, subscribers = { fullName, phone, email }) {
   console.log(`Sending article to ${subscribers.length} subscribers`);
 
   // Send the article to each subscriber
@@ -212,20 +211,18 @@ async function sendArticleToAllSubscribers(
 }
 
 let job;
-const scheduleJob = async () => {
+const scheduleArticleJob = async (dayOfWeek = 1, hour = 9, minute = 0) => {
   if (job) {
     job.cancel();
     console.log('Cancelled previous article generator job');
   } else {
-
-  const rule = new schedule.RecurrenceRule();
-  rule.dayOfWeek = 1; // Monday
-  rule.hour = 9; // 9:00
-  rule.minute = 0; // 00 seconds
-  job = schedule.scheduleJob(rule, () => sendArticleToAllSubscribers());
-  console.log('Scheduled article generator job to run every Monday at 9:00');
-}
-
+    const rule = new schedule.RecurrenceRule();
+    rule.dayOfWeek = dayOfWeek; // 1: Monday
+    rule.hour = hour; // 9: 9:00
+    rule.minute = minute; // 0: 00 seconds
+    job = schedule.scheduleJob(rule, () => sendArticleToAllSubscribers());
+    console.log('Scheduled article generator job to run every Monday at 9:00');
+  }
 };
 
-exports = { scheduleJob, sendArticleToAllSubscribers }
+exports = { scheduleArticleJob, sendArticleToAllSubscribers, sendArticle };

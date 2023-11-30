@@ -37,6 +37,7 @@ const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
 const { generateChallenge } = require('./GPT/ChallengeGenerator');
+// const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -1244,7 +1245,7 @@ app.post("/xapi", async (req, res) => {
         else if (data.hasOwnProperty("createTemplateWithAi")) {
           try {
             // get data
-            const { language, topic, days, tasks } = data.createTemplateWithAi;
+            const { language, topic, days, tasks, targetAudience } = data.createTemplateWithAi;
 
             // create template
             const templateId = 't_' + generateRandomString();
@@ -1255,6 +1256,7 @@ app.post("/xapi", async (req, res) => {
               language: 'English', // only english supported for now
               days,
               tasks,
+              targetAudience,
             });
             if (!template) {
               throw new Error('Failed to create template with ai');
@@ -1288,3 +1290,6 @@ app.post("/xapi", async (req, res) => {
 app.listen(3000, () => {
   console.log("server works on port 3000!");
 });
+
+// start article generator schedule to run every Monday at 9:00
+// scheduleArticleJob(1, 9, 0);
