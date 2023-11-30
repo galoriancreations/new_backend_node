@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "concurrently \"nodemon server.js\" \"node script.js\"",
+    "start": "concurrently \"node server.js\" \"node script.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
