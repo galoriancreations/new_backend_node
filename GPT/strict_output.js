@@ -4,6 +4,7 @@
  */
 const fs = require('fs');
 const OpenAI = require('openai');
+const { jsonrepair } = require('jsonrepair');
 
 const openai = new OpenAI({
   // organization: process.env.OPENAI_ORGANIZATION_ID,
@@ -23,7 +24,7 @@ async function strict_output2(
     verbose = false,
   } = {}
 ) {
-  for (let i = 0; i < num_tries; i++) {
+  for (let i = 1; i <= num_tries; i++) {
     let output_format_prompt = `\nYou are to output the following in json format: ${JSON.stringify(
       output_format
     )}. \nDo not put quotation marks or escape character \\ in the output fields.`;
@@ -34,8 +35,8 @@ async function strict_output2(
 
     // Use OpenAI to get a response
     const response = await openai.chat.completions.create({
-      temperature: temperature,
-      model: model,
+      temperature,
+      model,
       messages: [
         {
           role: 'system',
@@ -79,7 +80,8 @@ async function strict_output2(
           res = res.slice(1);
         }
       }
-      let output = JSON.parse(res);
+      const repaired = jsonrepair(res);
+      let output = JSON.parse(repaired);
       // return output;
 
       // check for each element in the output_list, the format is correctly adhered to
@@ -169,8 +171,8 @@ async function strict_output(
 
     // Use OpenAI to get a response
     const response = await openai.chat.completions.create({
-      temperature: temperature,
-      model: model,
+      temperature,
+      model,
       messages: [
         {
           role: 'system',

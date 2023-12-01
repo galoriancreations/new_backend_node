@@ -1245,7 +1245,16 @@ app.post("/xapi", async (req, res) => {
         else if (data.hasOwnProperty("createTemplateWithAi")) {
           try {
             // get data
-            const { language, topic, days, tasks, targetAudience } = data.createTemplateWithAi;
+            const {
+              topic,
+              days,
+              tasks,
+              messages,
+              preDays,
+              preMessagesPerDay,
+              language,
+              targetAudience,
+            } = data.createTemplateWithAi;
 
             // create template
             const templateId = 't_' + generateRandomString();
@@ -1253,9 +1262,12 @@ app.post("/xapi", async (req, res) => {
               creator: current_user,
               id: templateId,
               topic,
-              language: 'English', // only english supported for now
               days,
               tasks,
+              messages,
+              preDays,
+              preMessagesPerDay,
+              language: 'English', // only english supported for now
               targetAudience,
             });
             if (!template) {
