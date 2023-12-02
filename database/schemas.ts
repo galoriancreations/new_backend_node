@@ -110,11 +110,12 @@ export const PlayerSchema = new db.Schema(
   { versionKey: false }
 );
 
-export const QuestionSchema = new db.Schema(
+const QuestionSchema = new db.Schema(
 	{
-		id:Number,
+		_id: String,
+		qnum:Number,
 		text:String,
-    answers: Array
+		answers: Array
 	},
 	{ versionKey: false }
 )
