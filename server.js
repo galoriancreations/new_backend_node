@@ -1043,7 +1043,7 @@ app.post("/xapi", async (req, res) => {
             _id: `${data["getTemplateData"]}`,
           });
           final = template;
-          console.log("Template Ready!");
+          // console.log("Template Ready!");
         } else if (data.hasOwnProperty("saveTemplate")) {
           let templateId = data["saveTemplate"]["templateId"];
           console.log("template id is : " + templateId);
@@ -1134,28 +1134,54 @@ app.post("/xapi", async (req, res) => {
           updateUserInDB(user);
           final = { logged_in_as: current_user, templateId: templateId };
         } else if (data.hasOwnProperty("deleteTemplate")) {
-          const templateId = data.deleteTemplate.templateId;
-          if (
-            !isAdmin &&
-            !(
-              user["templates"].find((val) => val._id == templateId) !=
-              undefined
-            )
-          ) {
-            return res
-              .status(404)
-              .json({ msg: `Template not found ${templateId}` });
+          // delete multi templates at once with delete many
+          if (Array.isArray(data.deleteTemplate.templateIds)) {
+            const templateIds = data.deleteTemplate.templateIds;
+            if (
+              !isAdmin &&
+              !templateIds.every((val) =>
+                user.templates.find((val2) => val2._id == val)
+              )
+            ) {
+              return res
+                .status(404)
+                .json({ msg: `Template not found ${templateIds}` });
+            }
+            await TemplatesDB.deleteMany({ _id: { $in: templateIds } });
+            user.templates = user.templates.filter(
+              (val) => !templateIds.includes(val._id)
+            );
+            updateUserInDB(user);
+            final = {
+              msg: `Successfully deleted templates: ${templateIds}`,
+              templateIds: templateIds,
+            };
           }
-          await TemplatesDB.deleteOne({ _id: `${templateId}` });
-          user.templates = user.templates.filter(
-            (val) => val._id !== templateId
-          );
-          // console.log("user templates:", user.templates);
-          updateUserInDB(user);
-          final = {
-            msg: `Successfully deleted template: ${templateId}`,
-            templateId: templateId,
-          };
+          // delete single template
+          else {
+            const templateId = data.deleteTemplate.templateId;
+            if (
+              !isAdmin &&
+              !(
+                user.templates.find((val) => val._id == templateId) !=
+                undefined
+              )
+            ) {
+              return res
+                .status(404)
+                .json({ msg: `Template not found ${templateId}` });
+            }
+            await TemplatesDB.deleteOne({ _id: `${templateId}` });
+            user.templates = user.templates.filter(
+              (val) => val._id !== templateId
+            );
+            // console.log("user templates:", user.templates);
+            updateUserInDB(user);
+            final = {
+              msg: `Successfully deleted template: ${templateId}`,
+              templateId: templateId,
+            };
+          }
         } else if (data.hasOwnProperty("cloneTemplate")) {
           let originId = data["cloneTemplate"];
           let originTemplate = await TemplatesDB.findOne({
@@ -1244,53 +1270,73 @@ app.post("/xapi", async (req, res) => {
         }
         else if (data.hasOwnProperty("createTemplateWithAi")) {
           try {
-            // get data
-            const {
-              topic,
-              days,
-              tasks,
-              messages,
-              preDays,
-              preMessagesPerDay,
-              language,
-              targetAudience,
-            } = data.createTemplateWithAi;
+            // try 3 times to create template with ai
+            const maxTries = 3;
+            for (let i = 0; i < maxTries; i++) {
+              // log
+              console.log(`Try ${i + 1} to create template with AI`);
+              // get data
+              const {
+                topic,
+                days,
+                tasks,
+                messages,
+                preDays,
+                preMessagesPerDay,
+                language,
+                targetAudience,
+              } = data.createTemplateWithAi;
 
-            // create template
-            const templateId = 't_' + generateRandomString();
-            const template = await generateChallenge({
-              creator: current_user,
-              id: templateId,
-              topic,
-              days,
-              tasks,
-              messages,
-              preDays,
-              preMessagesPerDay,
-              language: 'English', // only english supported for now
-              targetAudience,
-            });
-            if (!template) {
-              throw new Error('Failed to create template with ai');
+              // create template
+              const templateId = 't_' + generateRandomString();
+              let template = await generateChallenge({
+                creator: current_user,
+                id: templateId,
+                topic,
+                days,
+                tasks,
+                messages,
+                preDays,
+                preMessagesPerDay,
+                language: 'English', // only english supported for now
+                targetAudience,
+              });
+
+              if (template?.error) {
+                console.error('Failed to create template with AI');
+                if ( i + 1 === maxTries) {
+                  console.log(
+                    'No more tries, continuing with currepted template'
+                  );
+                  template = template.response;
+                } else {
+                  console.log('Trying again');
+                  continue;
+                }
+              }
+
+              // add template to db
+              await TemplatesDB.create(template);
+
+              // add template to user
+              const temp = {
+                _id: templateId,
+                name: template.name,
+                isPublic: template.isPublic,
+              };
+              user.templates = [...user.templates, temp];
+              updateUserInDB(user);
+
+              // return template
+              final = { template };
+              console.log('Template created successfully');
+              break;
             }
-
-            // add template to db
-            await TemplatesDB.create(template);
-
-            // add template to user
-            const temp = {
-              _id: templateId,
-              name: template.name,
-              isPublic: template.isPublic,
-            };
-            user.templates = [...user.templates, temp];
-            updateUserInDB(user);
-
-            // return template
-            final = { template };
           } catch (error) {
             console.error(error);
-            return res.status(400).json({ msg: 'Failed to create template with AI' });
+            return res
+              .status(400)
+              .json({ msg: 'Failed to create template with AI' });
           }
         }
         res.status(200).json(final);

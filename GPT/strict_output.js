@@ -48,7 +48,7 @@ async function strict_output2(
     });
 
     fs.writeFileSync('GPT/json/strict_output2.json', JSON.stringify(response));
-    
+
     let res = response.choices[0].message?.content?.replace(/'/g, "'");
 
     if (!res) {
@@ -84,31 +84,34 @@ async function strict_output2(
       let output = JSON.parse(repaired);
       // return output;
 
-      // check for each element in the output_list, the format is correctly adhered to
-      for (let index = 0; index < output.length; index++) {
-        for (const key in output_format) {
-          // unable to ensure accuracy of dynamic output header, so skip it
-          if (/<.*?>/.test(key)) {
-            continue;
+      // check if output is aligned with the output_format structure
+      // if not, throw an error
+      const check_output = (output, output_format) => {
+        // if output is a list, check each element
+        if (Array.isArray(output)) {
+          for (let index = 0; index < output.length; index++) {
+            check_output(output[index], output_format);
           }
+          return;
+        }
 
+        // if output is a dictionary, check each key
+        for (const key in output_format) {
           // if output field missing, raise an error
-          if (!(key in output[index])) {
+          if (!(key in output)) {
             throw new Error(`${key} not in json output`);
           }
 
-          // if inner output field missing, raise an error
+          // if output field is a list, check each element
           if (Array.isArray(output_format[key])) {
-            for (let i = 0; i < output_format[key].length; i++) {
-              if (!(output_format[key][i] in output[index][key])) {
-                throw new Error(
-                  `${output_format[key][i]} not in json output ${key}`
-                );
-              }
+            // ensure output is not a list
+            if (Array.isArray(output[key])) {
+              output[key] = output[key][0];
             }
+            check_output(output[key], output_format[key][0]);
           }
         }
-      }
+      };
 
       return output;
     } catch (e) {
@@ -116,7 +119,7 @@ async function strict_output2(
       console.log('An exception occurred:', e);
       console.log('Current invalid json format:', res);
       if (num_tries > 1) {
-        console.log(`Trying again, attempt ${i + 1} of ${num_tries}`);
+        console.log(`Trying again, attempt ${i} of ${num_tries}`);
       } else {
         console.log('No more tries left');
       }
