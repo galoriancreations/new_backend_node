@@ -788,11 +788,11 @@ app.post("/sendMessage", (req, res) => {
 // ----end test----
 
 app.post("/api", upload.single("photo"), (req, res) => {
-	const start = async () => {
-		//i cant use hasOwnProperty method like i use in below
+  const start = async () => {
+    //i cant use hasOwnProperty method like i use in below
     if (req.body.register != null) {
       console.log("this works");
-			
+
       const photo = {
         name: "",
         data: "",
@@ -813,6 +813,7 @@ app.post("/api", upload.single("photo"), (req, res) => {
 
         console.log("photo uploaded");
       }
+
       //parse body from JSON to object
       let parseredRegister = JSON.parse(req.body.register);
 
@@ -1069,9 +1070,10 @@ app.post("/api", upload.single("photo"), (req, res) => {
         }
       };
 
-      //התחלה
-      start();
-    }
+    }  //התחלה
+    start();
+  }
+})
 
 /**
  * Calculate the difference between two dates
@@ -2043,4 +2045,4 @@ app.post("/xapi", async (req, res) => {
 
 app.listen(3000, () => {
 	console.log("server works on port 3000!");
-});
+})
