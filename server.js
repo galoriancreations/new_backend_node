@@ -38,6 +38,8 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { generateChallenge } = require('./GPT/ChallengeGenerator');
 // const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
+const fs = require("fs");
+const EventEmitter = require('events');
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -1267,14 +1269,36 @@ app.post("/xapi", async (req, res) => {
             }
             final = templates;
           }
-        }
-        else if (data.hasOwnProperty("createTemplateWithAi")) {
+        } else if (data.hasOwnProperty('createTemplateWithAi')) {
           try {
             // try 3 times to create template with ai
-            const maxTries = 3;
-            for (let i = 0; i < maxTries; i++) {
-              // log
-              console.log(`Try ${i + 1} to create template with AI`);
+            const maxAttempts = maxTemplateAttempts;
+            // create array to store failed templates
+            const templates = [];
+            for (let i = 0; i < maxAttempts; i++) {
+              // update progress attempts
+              progressAttempts = i + 1;
+              progressEmitter.emit('progressAttemptsChanged');
+              // console.log('progressAttempts:', progressAttempts);
+
+              // delay of 2 secs
+              // await new Promise((resolve) => setTimeout(resolve, 2000));
+              // if (i+1==maxAttempts)
+              //   throw 'test';
+              // else continue;
+
+              console.log(
+                `Server attempt ${
+                  i + 1
+                } of ${maxAttempts} to create template with AI`
+              );
+
+              // cancel if user not in same page
+              if (current_user !== data.createTemplateWithAi.creator) {
+                console.log('User not in same page, cancelling');
+                throw 'User not in same page, cancelling';  
+              }
+              
               // get data
               const {
                 topic,
@@ -1300,21 +1324,31 @@ app.post("/xapi", async (req, res) => {
                 preMessagesPerDay,
                 language: 'English', // only english supported for now
                 targetAudience,
+                numAttempts: 1,
               });
 
               if (template?.error) {
                 console.error('Failed to create template with AI');
-                if ( i + 1 === maxTries) {
-                  console.log(
-                    'No more tries, continuing with currepted template'
+                if (template.response) {
+                  templates.push(template.response);
+                }
+                if (i + 1 === maxAttempts) {
+                  // take the template with the most days
+                  template = templates.reduce((prev, current) =>
+                  prev.days.length > current.days.length ? prev : current
                   );
-                  template = template.response;
+                  console.log(
+                    `No more attempts left, returning template with the most days (${template.days.length})`
+                  );
                 } else {
                   console.log('Trying again');
                   continue;
                 }
               }
 
+              progressAttempts = maxAttempts;
+              progressEmitter.emit('progressAttemptsChanged');
+              
               // add template to db
               await TemplatesDB.create(template);
 
@@ -1327,16 +1361,20 @@ app.post("/xapi", async (req, res) => {
               user.templates = [...user.templates, temp];
               updateUserInDB(user);
 
+              fs.writeFileSync(
+                'GPT/json/failed.json',
+                JSON.stringify(templates)
+              );
+
               // return template
               final = { template };
               console.log('Template created successfully');
               break;
             }
           } catch (error) {
+            progressAttempts = 0;
             console.error(error);
-            return res
-              .status(400)
-              .json({ msg: 'Failed to create template with AI' });
+            return res.status(400).json({ msg: error });
           }
         }
         res.status(200).json(final);
@@ -1348,6 +1386,45 @@ app.post("/xapi", async (req, res) => {
 app.listen(3000, () => {
   console.log("server works on port 3000!");
 });
+
+
+/*************************
+ *** Progress tracking ***
+ ************************/
+const progressEmitter = new EventEmitter();
+
+let progressAttempts = 0;
+let maxTemplateAttempts = 3;
+
+app.get('/progress', (req, res) => {
+  console.log('/progress');
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const progressListener = () => {
+    // calculate progress percentage
+    const progress = Math.floor((progressAttempts / maxTemplateAttempts) * 100);
+
+    const data = {
+      progress,
+      attempts: progressAttempts,
+      maxAttempts: maxTemplateAttempts,
+    };
+
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  progressListener();
+  progressEmitter.on('progressAttemptsChanged', progressListener);
+  console.log('progressEmitter started');
+  req.on('close', () => {
+    progressEmitter.removeListener('progressAttemptsChanged', progressListener);
+    console.log('progressEmitter closed');
+  });
+});
+
 
 // start article generator schedule to run every Monday at 9:00
 // scheduleArticleJob(1, 9, 0);

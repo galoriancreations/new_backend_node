@@ -14,17 +14,64 @@ async function generateChallenge({
   preMessagesPerDay = 0,
   language = 'English',
   targetAudience = 'Everyone',
+  numAttempts = 3,
 }) {
   console.log(`Generating challenge about: ${topic}... this may take a few minutes, depending on the parameters.
 (${days} days, ${tasks} tasks per day, ${messages} messages per day, ${preDays} preDays, ${preMessagesPerDay} messages per preDay, lang: ${language}, target: ${targetAudience})`);
 
-  const challengeExample = fs.readFileSync(
-    'GPT/json/input_challenge_example.json',
-    'utf8'
-  );
+  // const challengeExample = fs.readFileSync(
+  //   'GPT/json/input_challenge_example.json',
+  //   'utf8'
+  // );
+
+  const outputFormat = {
+    name: '<challenge name>',
+    days: [
+      {
+        introduction: '<introduction>',
+        tasks: [
+          {
+            emoji: '<emoji>',
+            isBonus: false,
+            options: [
+              {
+                text: '<task>',
+              },
+            ],
+            points: 1,
+            time: '<time>',
+          },
+        ],
+        time: '<time>',
+        title: '<title>',
+        // image: '<image>',
+      },
+    ],
+    // image: '<image>',
+  };
+  if (messages) {
+    outputFormat.days[0].messages = [
+      {
+        content: '<message>',
+        time: '<time>',
+      },
+    ];
+  }
+  if (preDays) {
+    outputFormat.preDays = [
+      {
+        messages: [
+          {
+            content: '<message>',
+            time: '<time>',
+          },
+        ],
+      },
+    ];
+  }
 
   const response = await strict_output2(
-    `You are an advanced AI programmed to generate a multi-day challenge in JSON format, based on the following parameters:
+    `You are to generate a multi-day challenge, based on the following parameters:
 Topic: ${topic}
 Days: ${days}
 Tasks per Day: ${tasks}
@@ -59,7 +106,7 @@ ${/*e. Image: Description of the image.*/ ''}
 Each 'task' object in the tasks array should include:
 a. Emoji: A related emoji.
 b. IsBonus: A boolean indicating whether the task is a bonus task.
-c. Options: An array of tasks, each with text. (1 task)
+c. Options: An array of task, containing text. 1 task per option.
 d. Points: The number of points awarded for completing the task. (first task of the day is worth 1 points, second task of the same day is worth 2 points etc.)
 
 3. 'preDays':
@@ -67,6 +114,7 @@ d. Points: The number of points awarded for completing the task. (first task of 
 - Each pre day includes: messages.
 - Each message includes: content, time.
 
+Emphasize text with asterisks to get audience's attention.
 ${
   /*4. 'image':
   - Prompt description a related image to the overall theme.*/ ''
@@ -75,52 +123,12 @@ ${
 The tasks should be engaging, creative, collaborative wth other participants, related to ${topic}, and suitable for the ${targetAudience}. The challenge aims to educate and connect people globally.
 
 Ensure the JSON structure is consistent and scalable for the specified number of days and tasks.
-
-Emphasize text with asterisks.`,
+`,
     // user prompt:
     `Generate a challenge with topic: ${topic}, days: ${days}, tasks: ${tasks}, messages: ${messages}, preDays: ${preDays}, preMessagesPerDay: ${preMessagesPerDay}, targetAudience: ${targetAudience}`,
+    outputFormat,
     {
-      name: '<challenge name>',
-      days: [
-        {
-          introduction: '<introduction>',
-          messages: [
-            {
-              content: '<message>',
-              time: '<time>',
-            },
-          ],
-          tasks: [
-            {
-              emoji: '<emoji>',
-              isBonus: false,
-              options: [
-                {
-                  text: '<option>',
-                },
-              ],
-              points: 1,
-              time: '<time>',
-            },
-          ],
-          time: '<time>',
-          title: '<title>',
-          // image: '<image>',
-        },
-      ],
-      preDays: [
-        {
-          messages: [
-            {
-              content: '<message>',
-              time: '<time>',
-            },
-          ],
-        },
-      ],
-      // image: '<image>',
-    },
-    {
+      num_tries: numAttempts,
       // verbose: true,
       // model: 'gpt-4',
     }
@@ -131,7 +139,7 @@ Emphasize text with asterisks.`,
 
   if (!response) {
     console.error('Error generating challenge');
-    return;
+    return { error: true, response: null };
   }
 
   fs.writeFileSync('GPT/json/challenge_output.json', JSON.stringify(response));
@@ -148,40 +156,62 @@ Emphasize text with asterisks.`,
     isPublic: false,
     scores: [],
     verified: false,
-    days: [],
-    preDays: [],
     language: 'English', // TODO: add language selection
     ...response,
   };
 
   // check if length of challenge is equal to the number of days and tasks, preDays and preMessagesPerDay, return error if not
-  if (
-    response?.days?.length !== days ||
-    response?.days[0]?.tasks?.length !== tasks ||
-    response?.days[0].messages?.length !== messages ||
-    response?.preDays?.length !== preDays ||
-    response?.preDays[0]?.messages?.length !== preMessagesPerDay
-  ) {
-    let errorMessage = 'Error: challenge length is not equal to: ';
-    if (response?.days?.length !== days) {
-      errorMessage += `days (${response?.days?.length}), `;
-    }
-    if (response?.days[0]?.tasks?.length !== tasks) {
+  let errorFlag = false;
+  let errorMessage = 'Error: challenge length is not equal to: ';
+  if (response?.days?.length !== days) {
+    errorMessage += `days (${response?.days?.length}), `;
+    errorFlag = true;
+  }
+  if (Array.isArray(response?.days)) {
+    if (response.days[0]?.tasks?.length !== tasks) {
       errorMessage += `tasks (${response?.days[0]?.tasks?.length}), `;
+      errorFlag = true;
     }
-    if (response?.days[0]?.messages?.length !== messages) {
+    if (messages && response.days[0]?.messages?.length !== messages) {
       errorMessage += `messages (${response?.days[0]?.messages?.length}), `;
+      errorFlag = true;
     }
-    if (response?.preDays?.length !== preDays) {
+  }
+  if (preDays && Array.isArray(response?.preDays)) {
+    if (response.preDays?.length !== preDays) {
       errorMessage += `preDays (${response?.preDays?.length}), `;
+      errorFlag = true;
     }
-    if (response?.preDays[0]?.messages?.length !== preMessagesPerDay) {
+    if (
+      preMessagesPerDay &&
+      response?.preDays[0]?.messages?.length !== preMessagesPerDay
+    ) {
       errorMessage += `preMessagesPerDay (${response?.preDays[0]?.messages?.length}), `;
+      errorFlag = true;
     }
+  }
+  if (errorFlag) {
     errorMessage = errorMessage.slice(0, -2) + '.';
     console.error(errorMessage);
     return { error: true, response: challenge };
   }
+
+  // add empty messages array if not present to every day in days array to avoid errors in frontend
+  if (Array.isArray(challenge.days)) {
+    challenge.days.map((day) => {
+      if (!day.messages) {
+        day.messages = [];
+      }
+      return day;
+    });
+  }
+
+  // if (
+  //   !preDays ||
+  //   (Array.isArray(challenge.preDays[0]) && !challenge.preDays[0].messages)
+  // ) {
+  //   challenge.preDays = [{ messages: [] }];
+  // }
 
   return challenge;
 }

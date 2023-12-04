@@ -20,12 +20,12 @@ async function strict_output2(
   {
     num_tries = 3,
     temperature = 1,
-    model = 'gpt-3.5-turbo',
+    model = 'gpt-3.5-turbo-1106',
     verbose = false,
   } = {}
 ) {
-  for (let i = 1; i <= num_tries; i++) {
-    let output_format_prompt = `\nYou are to output the following in json format: ${JSON.stringify(
+  for (let i = 0; i < num_tries; i++) {
+    let output_format_prompt = `\nYou are a helpful assistant designed to output the following in json format: ${JSON.stringify(
       output_format
     )}. \nDo not put quotation marks or escape character \\ in the output fields.`;
 
@@ -44,17 +44,19 @@ async function strict_output2(
         },
         { role: 'user', content: user_prompt.toString() },
       ],
-      // response_format: { type: 'json_object' },
+      response_format: { type: 'json_object' },
     });
 
     fs.writeFileSync('GPT/json/strict_output2.json', JSON.stringify(response));
 
+    if (response.choices[0].finish_reason === 'length') {
+      console.error('Error: response length is too long');
+    }
+
     let res = response.choices[0].message?.content?.replace(/'/g, "'");
 
     if (!res) {
-      // if (verbose) {
       console.log('Invalid json format, trying to fetch again');
-      // }
       continue;
     }
 
@@ -73,192 +75,49 @@ async function strict_output2(
     // try-catch block to ensure output format is adhered to
     try {
       if (res[0] !== '{') {
-        // if (verbose) {
         console.log('Invalid json format, trying to find first {');
-        // }
         while (res[0] !== '{') {
           res = res.slice(1);
         }
       }
       const repaired = jsonrepair(res);
       let output = JSON.parse(repaired);
-      // return output;
 
-      // check if output is aligned with the output_format structure
-      // if not, throw an error
-      const check_output = (output, output_format) => {
-        // if output is a list, check each element
-        if (Array.isArray(output)) {
-          for (let index = 0; index < output.length; index++) {
-            check_output(output[index], output_format);
-          }
+      // check for all keys and nested keys in output is according to output_format structure and log the key that is missing
+      const check_keys = (output, output_format) => {
+        if (typeof output !== 'object') {
           return;
         }
-
-        // if output is a dictionary, check each key
         for (const key in output_format) {
-          // if output field missing, raise an error
           if (!(key in output)) {
-            throw new Error(`${key} not in json output`);
-          }
-
-          // if output field is a list, check each element
-          if (Array.isArray(output_format[key])) {
-            // ensure output is not a list
-            if (Array.isArray(output[key])) {
-              output[key] = output[key][0];
-            }
-            check_output(output[key], output_format[key][0]);
+            // save output to file for debugging
+            fs.writeFileSync('GPT/json/failed_format.json', repaired);
+            throw `Key ${key} is missing in output`;
+          } else {
+            check_keys(output[key], output_format[key]);
           }
         }
       };
+      check_keys(output, output_format);
 
       return output;
     } catch (e) {
       error_msg = `\n\nResult: ${res}\n\nError message: ${e}`;
       console.log('An exception occurred:', e);
-      console.log('Current invalid json format:', res);
-      if (num_tries > 1) {
-        console.log(`Trying again, attempt ${i} of ${num_tries}`);
-      } else {
+      if (verbose) {
+        console.log('Current invalid json format:', res);
+      }
+      if (i < num_tries - 1) {
+        console.log(
+          `Trying again, strict_output attempt ${i + 2} of ${num_tries}`
+        );
+      } else if (num_tries !== 1) {
         console.log('No more tries left');
       }
     }
   }
 
   return null;
-}
-
-// Function to generate output from the OpenAI CHATGPT-3 API with a strict output format checking
-async function strict_output(
-  system_prompt,
-  user_prompt,
-  output_format,
-  {
-    default_category = '',
-    output_value_only = false,
-    model = 'gpt-3.5-turbo',
-    temperature = 1,
-    num_tries = 3,
-    verbose = false,
-  } = {}
-) {
-  // if the user input is in a list, we also process the output as a list of json
-  const list_input = Array.isArray(user_prompt);
-  // if the output format contains dynamic elements of < or >, then add to the prompt to handle dynamic elements
-  const dynamic_elements = /<.*?>/.test(JSON.stringify(output_format));
-  // if the output format contains list elements of [ or ], then we add to the prompt to handle lists
-  const list_output = /\[.*?\]/.test(JSON.stringify(output_format));
-
-  // start off with no error message
-  let error_msg = '';
-
-  for (let i = 0; i < num_tries; i++) {
-    let output_format_prompt = `\nYou are to output the following in json format: ${JSON.stringify(
-      output_format
-    )}. \nDo not put quotation marks or escape character \\ in the output fields.`;
-
-    if (list_output) {
-      output_format_prompt += `\nIf output field is a list, classify output into the best element of the list.`;
-    }
-
-    // if output_format contains dynamic elements, process it accordingly
-    if (dynamic_elements) {
-      output_format_prompt += `\nAny text enclosed by < and > indicates you must generate content to replace it. Example input: Go to <location>, Example output: Go to the garden\nAny output key containing < and > indicates you must generate the key name to replace it. Example input: {'<location>': 'description of location'}, Example output: {school: a place for education}`;
-    }
-
-    // if input is in a list format, ask it to generate json in a list
-    if (list_input) {
-      output_format_prompt += `\nGenerate a list of json, one json for each input element.`;
-    }
-
-    // Use OpenAI to get a response
-    const response = await openai.chat.completions.create({
-      temperature,
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: system_prompt + output_format_prompt + error_msg,
-        },
-        { role: 'user', content: user_prompt.toString() },
-      ],
-    });
-
-    let res = response.choices[0].message?.content?.replace(/'/g, '"') ?? '';
-
-    // ensure that we don't replace away apostrophes in text
-    res = res.replace(/(\w)"(\w)/g, "$1'$2");
-
-    if (verbose) {
-      console.log(
-        'System prompt:',
-        system_prompt + output_format_prompt + error_msg
-      );
-      console.log('\nUser prompt:', user_prompt);
-      console.log('\nGPT response:', res);
-    }
-
-    // try-catch block to ensure output format is adhered to
-    try {
-      let output = JSON.parse(res);
-
-      if (list_input) {
-        if (!Array.isArray(output)) {
-          throw new Error('Output format not in a list of json');
-        }
-      } else {
-        output = [output];
-      }
-
-      // check for each element in the output_list, the format is correctly adhered to
-      for (let index = 0; index < output.length; index++) {
-        for (const key in output_format) {
-          // unable to ensure accuracy of dynamic output header, so skip it
-          if (/<.*?>/.test(key)) {
-            continue;
-          }
-
-          // if output field missing, raise an error
-          if (!(key in output[index])) {
-            throw new Error(`${key} not in json output`);
-          }
-
-          // check that one of the choices given for the list of words is an unknown
-          if (Array.isArray(output_format[key])) {
-            const choices = output_format[key];
-            // ensure output is not a list
-            if (Array.isArray(output[index][key])) {
-              output[index][key] = output[index][key][0];
-            }
-            // output the default category (if any) if GPT is unable to identify the category
-            if (!choices.includes(output[index][key]) && default_category) {
-              output[index][key] = default_category;
-            }
-            // if the output is a description format, get only the label
-            if (output[index][key].includes(':')) {
-              output[index][key] = output[index][key].split(':')[0];
-            }
-          }
-        }
-
-        // if we just want the values for the outputs
-        if (output_value_only) {
-          output[index] = Object.values(output[index]);
-          // just output without the list if there is only one element
-          if (output[index].length === 1) {
-            output[index] = output[index][0];
-          }
-        }
-      }
-
-      return list_input ? output : output[0];
-    } catch (e) {
-      error_msg = `\n\nResult: ${res}\n\nError message: ${e}`;
-      console.log('An exception occurred:', e);
-      console.log('Current invalid json format:', res);
-    }
-  }
 }
 
 // Function to generate image from the OpenAI DALL-E API
