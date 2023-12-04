@@ -1,9 +1,10 @@
 const express = require("express");
-//test
+
 const app = express();
 const bodyParser = require("body-parser");
 
-const wa = require("@open-wa/wa-automate");
+
+const { Telegraf } = require('telegraf')
 
 const db = require("mongoose");
 
@@ -29,13 +30,15 @@ const upload = multer({ storage });
 
 let client;
 
-//
+
 
 let lastSender;
 
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
+const { Z_UNKNOWN } = require("zlib");
+const { error } = require("console");
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -231,6 +234,7 @@ const UsersTestSchema = new db.Schema(
 		drafts: Array,
 		challenges: Array,
 		createdChallenges: Array,
+    groups: Array,
 		isAdmin: Boolean,
 		players: Array,
 		photo: {
@@ -239,6 +243,7 @@ const UsersTestSchema = new db.Schema(
 			contentType: String,
 		},
 		articleSubscribed: Boolean,
+    telegramId: String,
 	},
 	{ versionKey: false }
 );
@@ -314,6 +319,43 @@ const PlayerSchema = new db.Schema(
 	},
 	{ versionKey: false }
 );
+ 
+const StarsSchema = new db.Schema(
+  {
+    _id: String,
+    image: String,
+    title: String,
+    names: Array,
+    text: String,
+    link: String,
+    linkText: String,
+    totalRateing: Number,
+    users: Array,
+  },
+  { versionKey: false }
+);
+  const GroupSchema = new db.Schema(
+    {
+      _id: String,
+      challengeID: String,
+      invite: String,
+      telInvite: String,
+      telGroupId: String,
+      name: String,
+      users: [Object],
+      messages:[Object],
+      botMessage:[Object],
+      emoji:[Object],
+      scored:[Object],
+    },
+);
+  const ChallengeArraySchema = new db.Schema(
+  {
+    _id: String,
+    challengeID: String,
+  },
+  { versionKey: false }
+);
 
 ///צריך לרשום לו עוד פרמטר עם אותו השם של הקולקשן כדי להגיד לו שאתה מתכוון למה שאתה מתכוון...
 const WaGroup = db.model("waGroups", waGroupSchema, "waGroups");
@@ -327,6 +369,13 @@ const Challenges = db.model("challenges", ChallengeSchema, "challenges");
 const TemplatesDB = db.model("templates", TemplateSchema, "templates");
 
 const PlayersDB = db.model("players", PlayerSchema, "players");
+
+const StarsDB = db.model("stars", StarsSchema, "stars");
+
+const GroupsDB = db.model("tel_groups", GroupSchema, "tel_groups");
+
+const ChallengeArray = db.model("group_challnge_array", ChallengeArraySchema, "group_challnge_array");
+
 
 // function start(client) { ///פונקציית ההתחלה שמקבלת את הקליינט
 
@@ -383,6 +432,337 @@ const PlayersDB = db.model("players", PlayerSchema, "players");
 //   start(client) ///שולח את הקליינט לפונקציית ההתחלה של לביצוע פעולות
 // })
 ///
+
+
+
+
+const token = '6510559827:AAGKzetnLXsASIqILp2Iw11tb-qFZAqxw9Q';
+
+const bot = new Telegraf(token)
+let hourmin = false;
+const task = [{}]
+const checkIf = () => {
+  const d = new Date();
+  let hour = d.getHours()
+  let min = d.getMinutes
+  if (!hourmin) {
+    if (hour != 8) {
+      setTimeout(()=>{
+        checkIf()
+          },1740000)
+    }else if (min != 30) {
+      setTimeout(()=>{
+        checkIf()
+      },60000)
+    }else{
+      hourmin = !hourmin
+      checkIf()
+    }
+  }else{
+    setInterval(()=>{
+      const dailyChallnges = async() =>{
+        task[0] = {}
+        const Challengearray = await ChallengeArray.find()
+        const _d = new Date()
+        const day = _d.getDate()
+        const month = _d.getMonth() + 1
+        const year = _d.getFullYear()
+        Challengearray.forEach(async (val) => {
+          const ID = val.challengeID
+          const Challenge = await Challenges.findone({_id:ID})
+          const Group = await GroupsDB.findone({challengeID:ID})
+          if (Challenge) {
+            const objectFound = Challenge.selection[0][day+'/'+month+'/'+year]
+            if (objectFound) {
+              objectFound.forEach(val => {
+                const time = val.time
+                objectFound.ids = ID
+                if (task[0][time]) {
+                  task[0][time].push(objectFound)
+                }else{
+                  task[0][time] = [objectFound]
+                }
+              });
+              Group.scored = []
+            }else{
+              Group.botMessage = [{text:'welcome to the group',ind:0}]
+              Group.emoji = []
+              if (Group.telGroupId) {
+                bot.telegram.sendMessage(Group.telGroupId,'good morning there is no challnge for today')  
+              }
+            }
+            await GroupsDB.updateOne({_id:ID},{ $set: Group });
+          }else{
+            console.error('Challenge not found');
+          }
+        });
+      }
+      dailyChallnges()
+    },86400000)
+  }
+}
+setInterval(()=>{
+  const d = new Date
+  const timeOfDay = d.getHours() + ':' + d.getMinutes()
+  if (task[0][timeOfDay]) {
+    const missions = task[0][timeOfDay]
+    missions.forEach(async (val,ind) => {
+      const ID = val.ids
+          const Group = await GroupsDB.findone({challengeID:ID})
+          
+          if (Group) {
+              Group.botMessage.push({text:val.message,ind})
+              Group.emoji.push({[val.emoji]:val.points})
+              if (Group.telGroupId) {
+                bot.telegram.sendMessage(Group.telGroupId,objectFound.message)
+                bot.telegram.sendMessage(Group.telGroupId,`To complete this challnge send this emoji ${objectFound.emoji}`)
+              }
+            }
+            await GroupsDB.updateOne({_id:ID},{ $set: Group });
+    });
+  }
+},60000)
+
+// checkIf()
+
+
+
+bot.start((ctx)=> ctx.reply('hello i am the ting global bot'))
+bot.command('findM',(ctx) => {
+
+  // const search = () =>{
+  //   Challenges.findOne({_id:'c_jafvUgNsrGHTyXaka5UJFw'})
+  //   .then ((response)=>{ctx.reply(response.selections[0]['1kpy8q9dj']['1kpy8q9dk'])})
+      
+    
+    
+  // }
+  // search()
+  
+
+  // bot.telegram.getChatMember()
+      // console.log(ctx.message);
+  // if (ctx.message.text.length === 6) {
+
+    
+  //   const search = async () => {
+  //     const player = await UsersTest.findOne({telegramId:ctx.message.from.id});
+  //     if (player) {
+  //      ctx.reply(`Welcome ${player.username}`)
+      //  let i = 0;
+//       let user
+//       user = await UsersTest.findOne({ phone: `${convertToNum(message.sender.id)}` })
+//       user.challengeScore += 10;
+//       user.totalScore += 10;
+//       await UsersTest.updateOne({ _id: `${user.phone}` }, {
+//         challengeScore: user.challengeScore,
+//         totalScore: user.totalScore
+//       })
+//         .then(() => {
+//           console.log(`User ${user.fullName} updated successfully!`)
+//         })
+//         .catch((error) => {
+//           console.log('Error: ', error)
+//         })
+      // }else{
+      //  ctx.reply('I didnt find a user with your Id.\nif you did not register please add your number after the /start command to register.')
+      // }
+    //  }
+    //  search()
+  // }else{
+    // const phonenumber = ctx.message.text.substring(7,ctx.message.text.length)
+    // // console.log(phonenumber);
+    // const addIdToUser = async () => {
+    //  let player = await UsersTest.findOne({phone:phonenumber});
+    // //  console.log(player);
+    // //  player['telegramId'] = ctx.message.from.id
+    //  if (player) {
+    //   //add id to user in database
+    //   //
+    //   // let obj = {
+    //   //   '1':'hi1',
+    //   //   '2':'hi2'
+    //   // }
+    //   // const num = '3'
+    //   // const info = 'gk'
+    //   // obj[num] = info
+    //   // console.log(obj);
+      
+    //   // console.log(player);
+
+
+    //   await UsersTest.findOneAndUpdate({ _id: phonenumber },{telegramId:ctx.message.from.id})
+    //     .then(() => {
+    //       console.log(`User ${player.username} updated successfully!`)
+    //     })
+    //     .catch((error) => {
+    //       console.log('Error: ', error)
+    //     })
+    //   ctx.reply(`Welcome ${player.username}`)
+    //  }else{
+    //   ctx.reply('I didnt find a user with that number.\nis the number correct?\nremember to use the same number you use to login.')
+    //  }
+    // }
+    // addIdToUser()
+
+  // }
+  // console.log(ctx.message.text);
+
+})
+bot.command('connect',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 8) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let link = msg.slice(8,msg.length)
+    if (link[0] == ' ') {
+      link = link.slice(1,link.length)
+    }
+    const findAndUpdate = async ()=>{
+      const group = await GroupsDB.findOne({invite:link})
+      if (group) {
+        try{
+          const telLink = await ctx.createChatInviteLink()
+          const botMessage = {
+            msg:`if you are the one that activeted this group use the telegram command with this link ${telLink.invite_link}`,
+            user:'telegram Ting Global Bot'
+          }
+          group.messages.push(botMessage)
+          await GroupsDB.updateOne({invite:link}, { messages:group.messages})
+          ctx.reply('Go to your Ting Global group to confirm')
+        } catch (error) {
+          console.error(error);
+          ctx.reply('Error generating invite link.');
+        }
+        
+      }else{
+        ctx.reply('I did not find a group with this invite link')
+      }
+    }
+    findAndUpdate()
+  }
+})
+bot.command('activate',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 9) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let message = msg.slice(9,msg.length)
+    if (message[0] == ' ') {
+      message = message.slice(1,message.length)
+    }
+    let Tinglink = message.slice(0,24)
+    let telLink = message.slice(24,message.length)
+    
+    if (telLink[0] == ' ') {
+      telLink = telLink.slice(1,telLink.length)
+    }
+    const findAndConfirm = async ()=>{
+      const group = await GroupsDB.findOne({invite:Tinglink})
+      if (group) {
+        if (telInvite == telLink) {
+          group.telGroupId = ctx.chat.id
+        
+          const botMessage = {
+            msg:`Telegram Group connected!!!\n the link is ${telLink}`,
+            user:'telegram Ting Global Bot'
+          }
+      
+          group.messages.push(botMessage)
+          await GroupsDB.updateOne({invite:Tinglink}, { $set: group })
+          ctx.reply(`your Ting Global group has been connected from here on all commands are available`)
+        }else{
+          ctx.reply('please connect the link to the group in the Ting Global website')
+        }
+      }else{
+        ctx.reply('I did not find a group with this invite link')
+      }
+    }
+    findAndConfirm()
+  }
+})
+bot.command('finish',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 7) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let message = msg.slice(7,msg.length)
+    if (message[0] == ' ') {
+      message = message.slice(1,message.length)
+    }
+    const findAndConfirm = async ()=>{
+      const group = await GroupsDB.findOne({telGroupId:ctx.chat.id})
+      // if (group) {
+      //   let userfound = group.scored.map((val)=>{if (val == user._id) {
+      //     return val
+      //   }});
+      //   if (userfound) {
+      //     botMessage = {msg:'you already did this task',time:hourmin,user:'Ting Global Bot'} 
+      //   }else{
+      //     const challenge = await Challenges.findOne({_id:group.challengeID},{selections:1})
+      //     botMessage = {msg:'Task Finished!!!',time:hourmin,user:'Ting Global Bot'} 
+      //     const mission = challenge[group.selectionPosition]
+      //     group.scored.push({user:user._id,points:mission.points})
+      //     // user.totalScore += mission.points
+      //     // updateUserInDB(user)
+      //     //
+      //     //
+      //     // give points to player
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+          
+      //     await GroupsDB.updateOne({_id:groupId},{scored:group.scored})
+          
+      //   }
+      //   group.messages.push(message)
+      //   group.messages.push(botMessage)
+      //   if (telInvite == telLink) {
+      //     group.telGroupId = ctx.chat.id
+        
+      //     const botMessage = {
+      //       msg:`Telegram Group connected!!!\n the link is ${telLink}`,
+      //       user:'telegram Ting Global Bot'
+      //     }
+      
+      //     group.messages.push(botMessage)
+      //     await GroupsDB.updateOne({invite:Tinglink}, { $set: group })
+      //     ctx.reply(`your Ting Global group has been connected from here on all commands are available`)
+      //   }else{
+      //     ctx.reply('please connect the link to the group in the Ting Global website')
+      //   }
+      // }else{
+      //   ctx.reply('please connect your group before doing missions')
+      // }
+    }
+    findAndConfirm()
+  }
+})
+bot.help((ctx) => ctx.reply('Send me a sticker (placeholder)'))
+bot.on('sticker', (ctx) => ctx.reply(ctx.message.sticker.emoji))
+bot.hears('hi', (ctx) => ctx.reply('Hey how can i help you?'))
+
+bot.command('createinvite', async (ctx) => {
+  // Replace 'chatId' with the ID of the group or channel for which you want to create an invite link.
+  const chatId = ctx.chat.id;
+
+  // Create an invite link for the specified chat.
+  const inviteLink = await ctx.telegram.createChatInviteLink(chatId);
+
+  // Send the invite link to the user who triggered the command.
+  ctx.reply(`Here is the invite link for the chat: ${inviteLink.invite_link}`);
+});
+
+bot.launch()
+
 app.post("/sendMessage", (req, res) => {
 	let temp = req.body.mText;
 
@@ -408,320 +788,292 @@ app.post("/sendMessage", (req, res) => {
 // ----end test----
 
 app.post("/api", upload.single("photo"), (req, res) => {
-	const start = async () => {
-		//i cant use hasOwnProperty method like i use in below
-		if (req.body.register != null) {
-			console.log("this works");
-			
-			const photo = {
-				name: "",
-				data: "",
-				contentType: "",
-			};
+  const start = async () => {
+    //i cant use hasOwnProperty method like i use in below
+    if (req.body.register != null) {
+      console.log("this works");
 
-			if (req.file) {
-				// Read the uploaded file as a Buffer
-				const fileBuffer = req.file.buffer;
-				// Convert the Buffer to a Base64-encoded string
-				const base64Data = fileBuffer.toString("base64");
-				// structure how photo will be stored in DB
-				photo = {
-					name: req.file.originalname,
-					data: base64Data,
-					contentType: req.file.mimetype,
-				};
+      const photo = {
+        name: "",
+        data: "",
+        contentType: "",
+      };
 
-				console.log("photo uploaded");
-			}
-			//parse body from JSON to object
-			let parseredRegister = JSON.parse(req.body.register);
+      if (req.file) {
+        // Read the uploaded file as a Buffer
+        const fileBuffer = req.file.buffer;
+        // Convert the Buffer to a Base64-encoded string
+        const base64Data = fileBuffer.toString("base64");
+        // structure how photo will be stored in DB
+        photo = {
+          name: req.file.originalname,
+          data: base64Data,
+          contentType: req.file.mimetype,
+        };
 
-			//check all propertise of parseredRegister object:
-			for (const keyTest in parseredRegister) {
-				console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
-			}
+        console.log("photo uploaded");
+      }
 
-			let _username = parseredRegister.username;
-			let _phone = parseredRegister.phone;
-			_phone = _phone.replace("+", "");
-			//if a name dosent already exists in DB
-			if ((await UsersTest.findOne({ username: `${_username}` })) == null) {
-				//if a phone dosent already exists in DB
-				if ((await UsersTest.findOne({ phone: `${_phone}` })) == null) {
-					let temp = {
-						_id: _phone,
-						username: _username,
-						phone: _phone,
-						fullName: parseredRegister.fullName,
-						organization: parseredRegister.organization,
-						country: parseredRegister.country,
-						memberName: "",
-						memberRole: "",
-						email: parseredRegister.email,
-						language: parseredRegister.language,
-						accountType: parseredRegister.accountType,
-						templates: [],
-						drafts: [],
-						challenges: [],
-						createdChallenges: [],
-						players: [],
-						isAdmin: false,
-						photo: photo,
-					};
-					console.log("all properties for a new user assigned");
-					addUserToDb(temp);
-					let [token, exp] = getToken(temp.phone);
-					res.status(200).json({ access_token: token, exp: exp, user: temp });
-				} else {
-					res
-						.status(200)
-						.json(
-							"Oops! This phone is already taken,\nplease choose another :)"
-						);
-					return;
-				}
-			} else {
-				res
-					.status(200)
-					.json(
-						"Oops! This username is already taken,\nplease choose another :)"
-					);
-				return;
-			}
-		} else {
-			if (req.body.hasOwnProperty("getTopPlayers")) {
-				const players = await PlayersDB.find();
-				let newPlayers = players.map((player) => playerData(player));
-				if (newPlayers.length > 18) {
-					newPlayers = newPlayers.slice(0, 18);
-				}
-				newPlayers.sort((a, b) => b.totalScore - a.totalScore);
-				function playerData(player) {
-					const pData = {};
-					const keys = ["userName", "fullName", "phone", "totalScore", "stats"];
-					for (let i = 0; i < keys.length; i++) {
-						const key = keys[i];
-						if (player._doc.hasOwnProperty(key)) {
-							pData[key] = player._doc[key];
-						} else {
-							pData[key] = null;
-						}
-					}
-					return pData;
-				}
-				res.status(200).json(newPlayers);
-			} else if (req.body.hasOwnProperty("checkUsername")) {
-				let check = await UsersTest.findOne({
-					username: `${req.body.checkUsername}`,
-				});
-				let [result, message] = [false, ""];
-				if (check == null) {
-					[result, message] = [
-						true,
-						`Great! you can register with username: ${req.body.checkUsername}`,
-					];
-				} else {
-					[result, message] = [
-						false,
-						"Oops! This username is already taken,\nplease choose another :)",
-					];
-				}
-				res.status(200).json({ result: result, msg: message });
-			}
+      //parse body from JSON to object
+      let parseredRegister = JSON.parse(req.body.register);
 
-			if (req.body.hasOwnProperty("checkPhone")) {
-				let phoneNum = req.body.checkPhone;
-				phoneNum = phoneNum.replace("+", "");
-				let check = await UsersTest.findOne({ phone: `${phoneNum}` });
-				let [result, message] = [false, ""];
-				if (check == null) {
-					[result, message] = [
-						true,
-						`Great! you can register with this phone: ${req.body.checkPhone}`,
-					];
-				} else {
-					[result, message] = [
-						false,
-						"Oops! This phone is already taken,\nplease choose another :)",
-					];
-				}
-				res.status(200).json({ result: result, msg: message });
-			}
+      //check all propertise of parseredRegister object:
+      for (const keyTest in parseredRegister) {
+        console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
+      }
 
-			if (req.body.hasOwnProperty("signIn")) {
-				let phoneNum = req.body.signIn.phone;
-				phoneNum = phoneNum.replace("+", "");
-				let userData = await UsersTest.findOne({ phone: `${phoneNum}` });
-				if (userData != null) {
-					let [token, exp] = getToken(userData["phone"]);
-					res
-						.status(200)
-						.json({ access_token: token, exp: exp, user: userData });
-				}
-			} else if (req.body.hasOwnProperty("getChallengeData")) {
-				data = req.body;
-				challengeData = await Challenges.findOne({
-					_id: `${data["getChallengeData"]}`,
-				});
-				if (challengeData == null) {
-					return res.status(404).json({
-						msg: `Challenge ${data["getChallengeData"]} was not found`,
-					});
-				}
-				templateData = await TemplatesDB.findOne({
-					_id: `${challengeData["template"]}`,
-				});
-				if (templateData == null) {
-					return res.status(400).json({
-						msg: `template ${challengeData["template"]} was not found`,
-					});
-				}
+      let _username = parseredRegister.username;
+      let _phone = parseredRegister.phone;
+      _phone = _phone.replace("+", "");
+      //if a name dosent already exists in DB
+      if ((await UsersTest.findOne({ username: `${_username}` })) == null) {
+        //if a phone dosent already exists in DB
+        if ((await UsersTest.findOne({ phone: `${_phone}` })) == null) {
+          let temp = {
+            _id: _phone,
+            username: _username,
+            phone: _phone,
+            fullName: parseredRegister.fullName,
+            organization: parseredRegister.organization,
+            country: parseredRegister.country,
+            memberName: "",
+            memberRole: "",
+            email: parseredRegister.email,
+            language: parseredRegister.language,
+            accountType: parseredRegister.accountType,
+            templates: [],
+            drafts: [],
+            challenges: [],
+            createdChallenges: [],
+            players: [],
+            isAdmin: false,
+            photo: photo,
+          };
+          console.log("all properties for a new user assigned");
+          addUserToDb(temp);
+          let [token, exp] = getToken(temp.phone);
+          res.status(200).json({ access_token: token, exp: exp, user: temp });
+        } else {
+          res
+            .status(200)
+            .json(
+              "Oops! This phone is already taken,\nplease choose another :)"
+            );
+          return;
+        }
+      } else {
+        res
+          .status(200)
+          .json(
+            "Oops! This username is already taken,\nplease choose another :)"
+          );
+        return;
+      }
+    } else {
+      if (req.body.hasOwnProperty("getTopPlayers")) {
+        const players = await PlayersDB.find();
+        let newPlayers = players.map((player) => playerData(player));
+        if (newPlayers.length > 18) {
+          newPlayers = newPlayers.slice(0, 18);
+        }
+        newPlayers.sort((a, b) => b.totalScore - a.totalScore);
+        function playerData(player) {
+          const pData = {};
+          const keys = ["userName", "fullName", "phone", "totalScore", "stats"];
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            if (player._doc.hasOwnProperty(key)) {
+              pData[key] = player._doc[key];
+            } else {
+              pData[key] = null;
+            }
+          }
+          return pData;
+        }
+        res.status(200).json(newPlayers);
+      } else if (req.body.hasOwnProperty("checkUsername")) {
+        let check = await UsersTest.findOne({
+          username: `${req.body.checkUsername}`,
+        });
+        let [result, message] = [false, ""];
+        if (check == null) {
+          [result, message] = [
+            true,
+            `Great! you can register with username: ${req.body.checkUsername}`,
+          ];
+        } else {
+          [result, message] = [
+            false,
+            "Oops! This username is already taken,\nplease choose another :)",
+          ];
+        }
+        res.status(200).json({ result: result, msg: message });
+      }
 
-				challengeData["name"] = templateId["name"];
+      if (req.body.hasOwnProperty("checkPhone")) {
+        let phoneNum = req.body.checkPhone;
+        phoneNum = phoneNum.replace("+", "");
+        let check = await UsersTest.findOne({ phone: `${phoneNum}` });
+        let [result, message] = [false, ""];
+        if (check == null) {
+          [result, message] = [
+            true,
+            `Great! you can register with this phone: ${req.body.checkPhone}`,
+          ];
+        } else {
+          [result, message] = [
+            false,
+            "Oops! This phone is already taken,\nplease choose another :)",
+          ];
+        }
+        res.status(200).json({ result: result, msg: message });
+      }
 
-				challengeData["image"] = templateId["image"];
+      if (req.body.hasOwnProperty("register")) {
+        let _username = req.body.register.username;
+        let _phone = req.body.register.phone;
+        _phone = _phone.replace("+", "");
+        if ((await UsersTest.findOne({ username: `${_username}` })) == null) {
+          if ((await UsersTest.findOne({ phone: `${_phone}` })) == null) {
+            let temp = {
+              _id: _phone,
+              username: _username,
+              phone: _phone,
+              fullName: req.body.register.fullName,
+              organization: req.body.register.organization,
+              country: req.body.register.country,
+              memberName: "",
+              memberRole: "",
+              email: req.body.register.email,
+              language: req.body.register.language,
+              accountType: req.body.register.accountType,
+              templates: [],
+              drafts: [],
+              challenges: [],
+              createdChallenges: [],
+              players: [],
+              isAdmin: false,
+            };
+            console.log("work");
+            addUserToDb(temp);
 
-				challengeData["language"] = templateData["language"];
+            let [token, exp] = getToken(temp.phone);
 
-				challengeData["isPublic"] = templateData["isPublic"];
+            res.status(200).json({ access_token: token, exp: exp, user: temp });
+          } else {
+            res
+              .status(200)
+              .json(
+                "Oops! This phone is already taken,\nplease choose another :)"
+              );
+            return;
+          }
+        } else {
+          res
+            .status(200)
+            .json(
+              "Oops! This username is already taken,\nplease choose another :)"
+            );
+          return;
+        }
+      }
+      if (req.body.hasOwnProperty("signIn")) {
+        let phoneNum = req.body.signIn.phone;
+        phoneNum = phoneNum.replace("+", "");
+        let userData = await UsersTest.findOne({ phone: `${phoneNum}` });
+        if (userData != null) {
+          let [token, exp] = getToken(userData["phone"]);
+          res.status(200).json({ access_token: token, exp: exp, user: userData });
+        }
+      } else if (req.body.hasOwnProperty("getChallengeData")) {
+        data = req.body;
+        let challengeData = await Challenges.findOne({
+          _id: `${data["getChallengeData"]}`,
+        });
+        if (challengeData == null) {
+          return res
+            .status(404)
+            .json({ msg: `Challenge ${data["getChallengeData"]} was not found` });
+        }
+        templateData = await TemplatesDB.findOne({
+          _id: `${challengeData["template"]}`,
+        });
+        if (templateData == null) {
+          return res
+            .status(400)
+            .json({ msg: `template ${challengeData["template"]} was not found` });
+        }
 
-				if (!templateData.hasOwnProperty("allowCopies")) {
-					templateData["allowCopies"] = false;
-				}
+        challengeData["name"] = templateId["name"];
 
-				challengeData["allowCopies"] = templateData["allowCopies"];
+        challengeData["image"] = templateId["image"];
 
-				if (templateData.hasOwnProperty("dayMargin")) {
-					challengeData["dayMargin"] = templateData["dayMargin"];
-				}
+        challengeData["language"] = templateData["language"];
 
-				if (templateData.hasOwnProperty("preDays")) {
-					challengeData["preDays"] = templateData["preDays"];
-				}
+        challengeData["isPublic"] = templateData["isPublic"];
 
-				challengeData["days"] = templateData["days"];
+        if (!templateData.hasOwnProperty("allowCopies")) {
+          templateData["allowCopies"] = false;
+        }
 
-				if (challengeData.hasOwnProperty("selections")) {
-					for (let day in challengeData["days"]) {
-						if (challengeData["selections"].hasOwnProperty(`${day["id"]}`)) {
-							for (let task in day["tasks"]) {
-								if (
-									challengeData["selections"][`${day["id"]}`].hasOwnProperty(
-										`${task["id"]}`
-									)
-								) {
-									task["selection"] =
-										challengeData["selections"][`${day["id"]}`][
-											`${task["id"]}`
-										];
-								} else if (Object.keys(task["options"]).length > 0) {
-									task["selection"] = task["options"][0]["text"];
-								} else {
-									task["selection"] = null;
-								}
-							}
-						} else {
-							for (let task in day["tasks"]) {
-								if (Object.keys(task["options"]).length > 0) {
-									task["selection"] = task["options"][0]["text"];
-								} else {
-									task["selection"] = null;
-								}
-							}
-						}
-					}
-				}
-				console.log("final is:", challengeData);
-				res.status(200).json(challengeData);
-			} else if (req.body.hasOwnProperty("getAllUsers")) {
-				let users = await UsersTest.find(
-					{},
-					{ drafts: 0, challenges: 0, templates: 0, createdChallenges: 0 }
-				);
-				// users  = users.flat()
-				users = users.map((val) => {
-					return getUserData(val);
-				});
-				users.reverse();
-				res.status(200).json(users);
-			}
-		}
-		
-		if ('getChallengesByName' in req.body) {
-			// check if user loggedin
-			const { loggedIn, msg } = isUserLoggedIn(req);
-			if (!loggedIn) {
-				return res.status(401).json({ msg });
-			}
-			
-			const names = req.body.getChallengesByName;
+        challengeData["allowCopies"] = templateData["allowCopies"];
 
-			const challenges = await Challenges.find(
-				{ name: { $in: names }, platforms: { $exists: true } },
-				{ days: 0, preMessages: 0, preDays: 0, selections: 0, scores: 0 }
-			);
+        if (templateData.hasOwnProperty("dayMargin")) {
+          challengeData["dayMargin"] = templateData["dayMargin"];
+        }
 
-			let final = await Promise.all(
-				challenges.map(async (challenge) => {
-					const templateId = challenge.template;
-					const template = await TemplatesDB.findOne(
-						{ _id: templateId },
-						{ language: 1 }
-					);
-					if (template !== null) {
-						challenge.language = template.language;
-						challenge.dayDiff = calculateDayDifference(challenge.date);
-						if (challenge.dayDiff <= 0) {
-							return challenge;
-						}
-					}
-				})
-			);
-			// final has undefined values, need to filter them, can't be done in the map
-			final = final.filter((challenge) => challenge !== undefined);
-			// also sort method doesn't work in the map
-			final.sort((a, b) => b.dayDiff - a.dayDiff);
+        if (templateData.hasOwnProperty("preDays")) {
+          challengeData["preDays"] = templateData["preDays"];
+        }
 
-			for (let i = 0; i < final.length; i++) {
-				const creator = await UsersTest.findOne(
-					// Crash sometimes because creator is null, need to check
-					{ _id: final[i]?.creator },
-					{ organization: 1, fullName: 1, username: 1 }
-				);
+        challengeData["days"] = templateData["days"];
 
-				if (!creator) {
-					final[i].creator = 'unknown';
-					continue;
-				}
+        if (challengeData.hasOwnProperty("selections")) {
+          for (let day in challengeData["days"]) {
+            if (challengeData["selections"].hasOwnProperty(`${day["id"]}`)) {
+              for (let task in day["tasks"]) {
+                if (
+                  challengeData["selections"][`${day["id"]}`].hasOwnProperty(
+                    `${task["id"]}`
+                  )
+                ) {
+                  task["selection"] =
+                    challengeData["selections"][`${day["id"]}`][`${task["id"]}`];
+                } else if (Object.keys(task["options"]).length > 0) {
+                  task["selection"] = task["options"][0]["text"];
+                } else {
+                  task["selection"] = null;
+                }
+              }
+            } else {
+              for (let task in day["tasks"]) {
+                if (Object.keys(task["options"]).length > 0) {
+                  task["selection"] = task["options"][0]["text"];
+                } else {
+                  task["selection"] = null;
+                }
+              }
+            }
+            res.status(200).json(challengeData);
+          }
+        } else if (req.body.hasOwnProperty("getAllUsers")) {
+          let users = await UsersTest.find(
+            {},
+            { drafts: 0, challenges: 0, templates: 0, createdChallenges: 0 }
+          );
+          // users  = users.flat()
+          users = users.map((val) => {
+            return getUserData(val);
+          });
+          users.reverse();
+          res.status(200).json(users);
+        }
+      };
 
-				final[i].creator =
-					creator.organization || creator.fullName || creator.username;
-			}
-
-			return res.status(200).json(final);
-		} else if ('getPublicTemplateID' in req.body) {
-			// check if user loggedin
-			const { loggedIn, msg } = isUserLoggedIn(req);
-			if (!loggedIn) {
-				return res.status(401).json({ msg });
-			}
-			
-			const names = req.body.getPublicTemplateID;
-			const template = await TemplatesDB.findOne(
-				{
-					name: { $in: names },
-					language: 'English',
-					isPublic: true,
-				},
-				{ language: 1, name: 1 }
-			);
-			console.log(template);
-			return res.status(200).json(template?._id);
-		}
-	};
-	//התחלה
-	start();
-});
+    }  //התחלה
+    start();
+  }
+})
 
 /**
  * Calculate the difference between two dates
@@ -866,25 +1218,24 @@ app.post("/xapi", async (req, res) => {
 
 					createdChallenges = {};
 
-					if (userData.hasOwnProperty("createdChallenges")) {
-						for (let challengeId in userData["createdChallenges"]) {
-							console.log("Fetching draft from DB:", draftID);
-							challenge = await findChallengeInDB(challengeId);
-							console.log("Receiving draft from DB:", draftID);
-							if (challenge != null) {
-								templateId = challenge["template"];
-								template = await findTemplateInDB(templateId);
-								if (template != null) {
-									challenge["name"] = template["name"];
-									challenge["language"] = template["language"];
-									if (template.hasOwnProperty("dayMargin")) {
-										challenge["dayMargin"] = template["dayMargin"];
-									}
-									createdChallenges[challengeId] = challenge;
-								}
-							}
-						}
-					}
+          if (userData.hasOwnProperty("createdChallenges")) {
+              for (let i = 0; i < userData["createdChallenges"].length; i++) {
+                const challengeId = userData["createdChallenges"][i];
+              challenge = await Challenges.findOne({ _id: challengeId })
+              if (challenge != null) {
+                templateId = challenge["template"];
+                template = await findTemplateInDB(templateId);
+                if (template != null) {
+                  challenge["name"] = template["name"];
+                  challenge["language"] = template["language"];
+                  if (template.hasOwnProperty("dayMargin")) {
+                    challenge["dayMargin"] = template["dayMargin"];
+                  }
+                  createdChallenges[challengeId] = challenge;
+                }
+              }
+            }
+          }
 
 					userData["createdChallenges"] = createdChallenges;
 
@@ -1207,37 +1558,491 @@ app.post("/xapi", async (req, res) => {
 
 					let creators = { current_user: user };
 
-					for (let template in templates) {
-						if (
-							template.hasOwnProperty("creator") &&
-							template["creator"] != null
-						) {
-							let creator;
-							let creatorId = template["creator"];
-							if (creators.hasOwnProperty(`${creatorId}`)) {
-								creator = creators[creatorID];
-							} else {
-								creator = UsersTest.findOne(
-									{ _id: creatorId },
-									{ phone: 1, username: 1 }
-								);
-								if (creator != null) {
-									creators[creatorId] = creator;
-								}
-							}
-							if (creator != null) {
-								template["creator"] = creator["username"] || creator["phone"];
-							}
-						}
-						final = templates;
-					}
-				}
-				res.status(200).json(final);
-			}
-		}
-	}
+          for (let template in templates) {
+            if (
+              template.hasOwnProperty("creator") &&
+              template["creator"] != null
+            ) {
+              let creator;
+              let creatorId = template["creator"];
+              if (creators.hasOwnProperty(`${creatorId}`)) {
+                creator = creators[creatorID];
+              } else {
+                creator = UsersTest.findOne(
+                  { _id: creatorId },
+                  { phone: 1, username: 1 }
+                );
+                if (creator != null) {
+                  creators[creatorId] = creator;
+                }
+              }
+              if (creator != null) {
+                template["creator"] = creator["username"] || creator["phone"];
+              }
+            }
+            final = templates;
+          }
+          
+        }else if (data.hasOwnProperty("deleteChallenge")) {
+          challengeId = data["deleteChallenge"]
+          if (!user.isAdmin && !user["createdChallenges"].includes(challengeId)) {
+            return res
+              .status(404)
+              .json({ msg: `No challenge found with this ID: ${challengeId}` });
+          }
+          await Challenges.deleteOne({_id:challengeId})
+          if (user["createdChallenges"].includes(challengeId)) {
+            user["createdChallenges"] = user["createdChallenges"].filter(id => id != challengeId)
+          }
+          if (user["challenges"].includes(challengeId)) {
+            user["challenges"] = user["challenges"].filter(id => id != challengeId)
+          }
+          updateUserInDB(user);
+
+          final = {
+            msg: `Successfully deleted challenge: ${challengeId}`,
+            challengeId: challengeId
+          }
+        }else if (data.hasOwnProperty("createChallenge")) {
+            
+
+            const templateId = data['createChallenge']['templateId'];
+            const challengeData = {
+              template: templateId,
+              selections: data['createChallenge']['selections'],
+              name: data['createChallenge']['name'],
+              date: data['createChallenge']['date'],
+            };
+        
+            challengeData.active = false;
+            challengeData.declined = false;
+        
+            if (!("isPublic" in challengeData)) {
+              challengeData.isPublic = true;
+            }
+            challengeData.createdOn = Date.now();
+            challengeData.creator = current_user;
+            challengeData.scores = {};
+        
+            const challengeId = "c_" + generateRandomString();
+            challengeData._id = challengeId;
+        
+            const template = await TemplatesDB.findOne({ _id: templateId });
+        
+            if (!template) {
+              return res.status(400).json({ msg: `No template found with this ID: ${templateId}` });
+            }
+        
+            let image = null;
+            if (template.image && template.image.length > 0) {
+              image = template.image.slice(1);
+            }
+        
+            if (isAdmin || template.isPublic) {
+              challengeData.verified = true;
+              verifyNow = true;
+            } else {
+              challengeData.verified = false;
+            }
+        
+            // Temporary code
+            verifyNow = true;
+            challengeData.verified = true;
+        
+            user.challenges.push(challengeId);
+            user.createdChallenges.push(challengeId);
+            await Challenges.insertMany(challengeData);
+        
+            if (verifyNow) {
+              console.log(`::: VERIFING Challenge ${challengeId}`);
+              //// const [verified, err] = verifyChallenge(challengeId, challengeData.creator, challengeData.name, image, challengeData.date);
+              //// console.log(`::: VERIFIED ${verified}, ${err}`);
+            }
+        
+            const draftId = data['createChallenge']['draftId'];
+
+            await UsersDrafts.deleteOne({ _id: draftId });
+            user['drafts'] = user['drafts'].filter((draft) => draft !== draftId);
+        
+            
+        
+            
+
+            const groupID = "g_" + generateRandomString();
+
+            const username = user.username ? user.username : 'Jhon Doe'
+            const groupChatInfo = {
+              _id:groupID,
+              challengeID: challengeId,
+              invite: '',
+              name: `${challengeData.name} group chat`,
+              users: [{userid:user._id,role:'admin',username:username}],
+              messages:[],
+              botMessage:[{text:'welcome to the group',ind:0}],
+              emoji:[], 
+              scored:[],
+
+            }
+            user.groups.push({_id:groupID,name:`${challengeData.name} group chat`})
+
+            await GroupsDB.insertMany(groupChatInfo);
+            const arrayItemID = "A_" + generateRandomString();
+            challengeItem = {
+              _id: arrayItemID,
+              challengeID: challengeId,
+              groupID:groupID
+            }
+            await ChallengeArray.insertMany(challengeItem)
+            updateUserInDB(user);
+            final = groupChatInfo;
+        }else if (data.hasOwnProperty("joinGroup")) {
+          const inviteId = data["joinGroup"]
+          const group = await GroupsDB.findOne({invite:inviteId})
+          if (group) {
+            let inGroup = false
+            for (let i = 0; i < group.users.length; i++) {
+              if (group.users[i].userid == user._id) {
+                inGroup = !inGroup
+                break
+              }
+            }
+            if (!inGroup) {
+              const username = user.username ? user.username : 'Jhon Doe'
+              const userinfo = {userid:user._id,role:'student',username:username}
+              group.users.push(userinfo)
+              user.groups.push({_id:group._id,name:group.name})
+              updateUserInDB(user);
+              await GroupsDB.updateOne({invite:inviteId},{users:group.users})
+              return res.status(200).json({ msg:'You are now a part of the group!'});
+            }else{
+              return res.status(400).json({ msg:'you are already in this group'});
+            }
+          }else{
+            return res.status(400).json({ msg: `No group found with this ID: ${inviteId}` });
+          }
+  
+
+
+
+
+        }else if (data.hasOwnProperty("loadGroup")) {
+          const groupId = data["loadGroup"]["_id"]
+          const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1,emoji:1})
+          if (group) {
+            final = group
+          }else{
+            return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+          }
+        }else if (data.hasOwnProperty("sendMessage")) {
+          const groupId = data["sendMessage"]["_id"]
+          const group = await GroupsDB.findOne({_id:groupId})
+          if (group) {
+            const msg = data["sendMessage"]["message"]
+            const removeAbove20 = () =>{
+              if (group.messages.length >=20) {
+                group.messages.shift()
+                removeAbove20()
+              }
+            }
+            removeAbove20()
+            const time = new Date
+            const hourmin = time.getHours()
+            const username = user.username ? user.username : 'Jhon Doe'
+            const message = {msg:msg,time:hourmin,user:user._id,nickname:username} 
+
+            let botMessage;
+            let goodEmoji = false
+            for (let i = 0; i < group.emoji.length; i++) {
+              if (group.emoji[i][msg]) {
+                goodEmoji = i
+                break
+              }
+            }
+            if (goodEmoji) {
+              let userfound = group.scored.map((val)=>{if (val.user == user._id && val.emoji == msg) {
+                return val
+              }});
+              if (userfound) {
+                botMessage = {msg:'you already did this task',time:hourmin,user:'Ting Global Bot'} 
+              }else{
+                botMessage = {msg:'Task Finished!!!',time:hourmin,user:'Ting Global Bot'}
+                const points = group.emoji[goodEmoji][msg][points] 
+                group.scored.push({user:user._id,emoji:msg})
+                user.totalScore += points
+                updateUserInDB(user)
+                await GroupsDB.updateOne({_id:groupId},{scored:group.scored})
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
+            }else if (msg == '/hello') {
+              botMessage = {msg:'hi there!',time:hourmin,user:'Ting Global Bot'} 
+
+              group.messages.push(message)
+              group.messages.push(botMessage)
+            }else if (msg.startsWith('/promote')) {
+              let number = msg.slice(8,msg.length)
+              if (number[0] == ' ') {
+                number = number.slice(1,msg.number)
+              }
+              let admin = false
+              for (let i = 0; i < group.users.length; i++) {
+                if (group.users[i].userid == user._id ) {
+                  if (group.users[i].role == 'admin') {
+                    admin =!admin
+                    break
+                  }else{
+                    break
+                  }
+                }
+              }
+              if (admin) {
+                let foundUser = false
+                let position;
+                for (let i = 0; i < group.users.length; i++) {
+                  if (group.users[i].userid == number) {
+                    foundUser =!foundUser
+                    position = i
+                    break
+                  }
+                }
+                if (foundUser) {
+                  if (group.users[position].role == 'student'){
+                    group.users[position].role = 'instructor'
+                  }else if (group.users[position].role == 'instructor') {
+                    group.users[position].role = 'admin'
+                  }
+                  await GroupsDB.updateOne({_id:groupId},{users:group.users})
+                  botMessage = {msg:'User has been premoted!!',time:hourmin,user:'Ting Global Bot'}
+                }else{
+                  botMessage = {msg:'I did not find a user with that number.\n did you type the correct one?',time:hourmin,user:'Ting Global Bot'}
+                }
+                group.messages.push(botMessage)
+              }else{
+                botMessage = {msg:'i am sorry only admins have accses to this command.\n if you would like to use it you can ask an admin for a promotion.',time:hourmin,user:'Ting Global Bot'} 
+                group.messages.push(message)
+                group.messages.push(botMessage)
+              }
+              
+               
+            }else if (msg == '/invite') {
+              let instructor = false
+              for (let i = 0; i < group.users.length; i++) {
+                if (group.users[i].userid == user._id ) {
+                  if (group.users[i].role == 'instructor' || group.users[i].role == 'admin') {
+                    instructor =!instructor
+                    break
+                  }else{
+                    break
+                  }
+                }
+              }
+              if (instructor) {
+                if (group.invite.length > 0) {
+                  botMessage = {msg:`this is the invite code for this group\n ${group.invite} send this to the users you want to invite`,time:hourmin,user:'Ting Global Bot'}
+                }else{
+                  const inviteCode = "i_" + generateRandomString();
+                  botMessage = {msg:`this is the invite code for this group\n ${inviteCode} send this to the users you want to invite`,time:hourmin,user:'Ting Global Bot'}
+                  group.invite = inviteCode
+                  await GroupsDB.updateOne({_id:groupId},{invite:group.invite})
+                }
+              }else{
+                botMessage = {msg:'sorry you need to be an instructor or above to use this command',time:hourmin,user:'Ting Global Bot'}
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
+              
+            }else if (msg.startsWith('/nickname')) {
+              let nickname = msg.slice(9,msg.length)
+              if (nickname[0] == ' ') {
+                nickname = nickname.slice(1,msg.length)
+              }
+              user.username = nickname
+              updateUserInDB(user)
+              botMessage = {
+                msg:`Username changed to ${nickname}`,
+                time:hourmin,
+                user:'Ting Global Bot'
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
+            }else if (msg.startsWith('/help')) {
+              group.messages.push(message)
+              if (msg == '/help') {
+                botMessage = {
+                  msg:'Here are the commands i know:\n1. /hello\n2. /invite\n3. /promote\n4. /nickname\n5. /help\n type (/help) then the number of the command you want info on',
+                  time:hourmin,
+                  user:'Ting Global Bot'
+                }
+                group.messages.push(botMessage)
+              }else{
+                let number = msg.slice(5,msg.length)
+                if (number[0] == ' ') {
+                  number = number.slice(1,msg.length)
+                }
+                if (number == 1) {
+                  botMessage = {
+                    msg:'This command is to say hello to me!',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 2) {
+                  botMessage = {
+                    msg:'This command is used to create an invite link to add players to the group,\n it can only be used by instructors.',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 3) {
+                  botMessage = {
+                    msg:'This command promotes a student to instructor and instructor to an admin,\n it can only be used by admins.',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 4) {
+                  botMessage = {
+                    msg:'This command gives you a nickname to identify in the group.',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 5) {
+                  botMessage = {
+                    msg:'This command gives a list of all commands available.',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else {
+                  botMessage = {
+                    msg:'I am sorry i dont know this command',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }
+                
+                group.messages.push(botMessage)
+                
+                
+              }
+
+
+              
+            }else if (msg.startsWith('/telegram')) {
+              let shortmsg = msg.slice(9,msg.length)
+              if (shortmsg[0] == ' ') {
+                shortmsg = shortmsg.slice(1,msg.length)
+              }
+              if (shortmsg == 'link') {
+                if (group.telInvite) {
+                  botMessage = {
+                    msg:`Here is the invite link to your telegram group\n${group.telInvite}`,
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else{
+                  botMessage = {
+                    msg:'I am sorry you didnt register a telegram group to do that please add the TingGlobalBot to your group and give it your groupid',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }
+                group.messages.push(message)
+                group.messages.push(botMessage)
+              }else{
+                let admin = false
+                for (let i = 0; i < group.users.length; i++) {
+                  if (group.users[i].userid == user._id ) {
+                    if (group.users[i].role == 'admin') {
+                      admin =!admin
+                    }
+                    break
+                  }
+                }
+                if (admin) {
+                  group.telInvite = shortmsg
+                  await GroupsDB.updateOne({_id:groupId},{telInvite:group.telInvite})
+                  botMessage = {
+                    msg:'telegram invite code registerd!!\n you can go to telegram and activate the group now!',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                  group.messages.push(message)
+                  group.messages.push(botMessage)
+                }else{
+                  botMessage = {
+                    msg:'only admins can use this command',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                  group.messages.push(message)
+                  group.messages.push(botMessage)
+                }
+              }
+              
+            }else if (msg.startsWith('/connect_account')) {
+              if (msg == '/connect_account') {
+                botMessage = {
+                  msg:'please use a 6 digit code after the command',
+                  time:hourmin,
+                  user:'Ting Global Bot'
+                }
+                group.messages.push(message)
+                group.messages.push(botMessage)
+              }else{
+                let code = msg.slice(17,msg.length)
+                code = parseInt(code)
+                if (code) {
+                  if (code <= 999999 && code >= 100000) {
+                    user.telegramId == code
+                    updateUserInDB(user)
+                    botMessage = {
+                      msg:'code accepted if you forget it you can set it again\nbut after connecting your telegram account it cannot be changed',
+                      time:hourmin,
+                      user:'Ting Global Bot'
+                    }
+                  }else{
+                    botMessage = {
+                      msg:'please use a 6 digit code',
+                      time:hourmin,
+                      user:'Ting Global Bot'
+                    }
+                  }
+                }else{
+                  botMessage = {
+                    msg:'please use only digits',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }
+                group.messages.push(botMessage)
+              }
+            }else{
+              group.messages.push(message)
+            }
+
+
+
+
+            await GroupsDB.updateOne({_id:groupId},{messages:group.messages})
+
+
+
+            final = group.messages
+          }else{
+            return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+          }
+        }else if (data.hasOwnProperty("deleteGroup")) {
+          const groupId = data["deleteGroup"]["_id"]
+          // const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1})
+          // if (group) {
+          //   final = group
+          // }else{
+          //   return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+          // }
+        }
+        res.status(200).json(final);
+      }
+    }
+  }
 });
 
 app.listen(3000, () => {
 	console.log("server works on port 3000!");
-});
+})
