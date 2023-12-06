@@ -1722,6 +1722,22 @@ app.post("/xapi", async (req, res) => {
 						}
 						final = templates;
 					}
+				} else if (data.hasOwnProperty("getQuestion")){
+					const result = await QuestionModel.find()
+					let i = Math.floor(Math.random() * 94)
+					final = result[i].text
+				}
+				 else if (data.hasOwnProperty("getAnswer")){
+					let question = data["getAnswer"]["question"]
+					let answer = data["getAnswer"]["answer"]
+					const findAndUpAnswer = await QuestionModel.findOneAndUpdate(
+						{text:question},{$set:{answers:answer}})
+					if(!findAndUpAnswer){
+						return res.status(400).json({msg:'the question not found'})
+					}else{
+						res.json({msg:'the question updated'})
+						final = findAndUpAnswer
+					}
 				}
 				res.status(200).json(final);
 			}
