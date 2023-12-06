@@ -1,9 +1,10 @@
 const express = require("express");
-//test
+
 const app = express();
 const bodyParser = require("body-parser");
 
-const wa = require("@open-wa/wa-automate");
+
+const { Telegraf } = require('telegraf')
 
 const db = require("mongoose");
 
@@ -29,13 +30,12 @@ const upload = multer({ storage });
 
 let client;
 
-//
-
 let lastSender;
 
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
+const { Z_UNKNOWN } = require("zlib");
 const { generateChallenge } = require('./GPT/ChallengeGenerator');
 // const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
 const fs = require("fs");
@@ -219,32 +219,34 @@ const waGroupSchema = new db.Schema(
 );
 
 const UsersTestSchema = new db.Schema(
-  {
-    _id: String,
-    username: String,
-    phone: String,
-    fullName: String,
-    organization: String,
-    country: String,
-    memberName: String,
-    memberRole: String,
-    email: String,
-    language: String,
-    accountType: String,
-    templates: Array,
-    drafts: Array,
-    challenges: Array,
-    createdChallenges: Array,
-    isAdmin: Boolean,
-    players: Array,
-    photo: {
-      name: String,
-      data: String,
-      contentType: String,
-    },
-    articleSubscribed: Boolean,
-  },
-  { versionKey: false }
+	{
+		_id: String,
+		username: String,
+		phone: String,
+		fullName: String,
+		organization: String,
+		country: String,
+		memberName: String,
+		memberRole: String,
+		email: String,
+		language: String,
+		accountType: String,
+		templates: Array,
+		drafts: Array,
+		challenges: Array,
+		createdChallenges: Array,
+    groups: Array,
+		isAdmin: Boolean,
+		players: Array,
+		photo: {
+			name: String,
+			data: String,
+			contentType: String,
+		},
+		articleSubscribed: Boolean,
+    telegramId: String,
+	},
+	{ versionKey: false }
 );
 
 const UserDraftSchema = new db.Schema(
@@ -309,12 +311,49 @@ const TemplateSchema = new db.Schema(
 );
 
 const PlayerSchema = new db.Schema(
+	{
+		_id: String,
+		phone: String,
+		userName: String,
+		totalScore: Number,
+		clubs: Array,
+	},
+	{ versionKey: false }
+);
+ 
+const StarsSchema = new db.Schema(
   {
     _id: String,
-    phone: String,
-    userName: String,
-    totalScore: Number,
-    clubs: Array,
+    image: String,
+    title: String,
+    names: Array,
+    text: String,
+    link: String,
+    linkText: String,
+    totalRateing: Number,
+    users: Array,
+  },
+  { versionKey: false }
+);
+  const GroupSchema = new db.Schema(
+    {
+      _id: String,
+      challengeID: String,
+      invite: String,
+      telInvite: String,
+      telGroupId: String,
+      name: String,
+      users: [Object],
+      messages:[Object],
+      botMessage:[Object],
+      emoji:[Object],
+      scored:[Object],
+    },
+);
+  const ChallengeArraySchema = new db.Schema(
+  {
+    _id: String,
+    challengeID: String,
   },
   { versionKey: false }
 );
@@ -331,6 +370,13 @@ const Challenges = db.model("challenges", ChallengeSchema, "challenges");
 const TemplatesDB = db.model("templates", TemplateSchema, "templates");
 
 const PlayersDB = db.model("players", PlayerSchema, "players");
+
+const StarsDB = db.model("stars", StarsSchema, "stars");
+
+const GroupsDB = db.model("tel_groups", GroupSchema, "tel_groups");
+
+const ChallengeArray = db.model("group_challnge_array", ChallengeArraySchema, "group_challnge_array");
+
 
 // function start(client) { ///פונקציית ההתחלה שמקבלת את הקליינט
 
@@ -387,6 +433,337 @@ const PlayersDB = db.model("players", PlayerSchema, "players");
 //   start(client) ///שולח את הקליינט לפונקציית ההתחלה של לביצוע פעולות
 // })
 ///
+
+
+
+
+const token = '6510559827:AAGKzetnLXsASIqILp2Iw11tb-qFZAqxw9Q';
+
+const bot = new Telegraf(token)
+let hourmin = false;
+const task = [{}]
+const checkIf = () => {
+  const d = new Date();
+  let hour = d.getHours()
+  let min = d.getMinutes
+  if (!hourmin) {
+    if (hour != 8) {
+      setTimeout(()=>{
+        checkIf()
+          },1740000)
+    }else if (min != 30) {
+      setTimeout(()=>{
+        checkIf()
+      },60000)
+    }else{
+      hourmin = !hourmin
+      checkIf()
+    }
+  }else{
+    setInterval(()=>{
+      const dailyChallnges = async() =>{
+        task[0] = {}
+        const Challengearray = await ChallengeArray.find()
+        const _d = new Date()
+        const day = _d.getDate()
+        const month = _d.getMonth() + 1
+        const year = _d.getFullYear()
+        Challengearray.forEach(async (val) => {
+          const ID = val.challengeID
+          const Challenge = await Challenges.findone({_id:ID})
+          const Group = await GroupsDB.findone({challengeID:ID})
+          if (Challenge) {
+            const objectFound = Challenge.selection[0][day+'/'+month+'/'+year]
+            if (objectFound) {
+              objectFound.forEach(val => {
+                const time = val.time
+                objectFound.ids = ID
+                if (task[0][time]) {
+                  task[0][time].push(objectFound)
+                }else{
+                  task[0][time] = [objectFound]
+                }
+              });
+              Group.scored = []
+            }else{
+              Group.botMessage = [{text:'welcome to the group',ind:0}]
+              Group.emoji = []
+              if (Group.telGroupId) {
+                bot.telegram.sendMessage(Group.telGroupId,'good morning there is no challnge for today')  
+              }
+            }
+            await GroupsDB.updateOne({_id:ID},{ $set: Group });
+          }else{
+            console.error('Challenge not found');
+          }
+        });
+      }
+      dailyChallnges()
+    },86400000)
+  }
+}
+setInterval(()=>{
+  const d = new Date
+  const timeOfDay = d.getHours() + ':' + d.getMinutes()
+  if (task[0][timeOfDay]) {
+    const missions = task[0][timeOfDay]
+    missions.forEach(async (val,ind) => {
+      const ID = val.ids
+          const Group = await GroupsDB.findone({challengeID:ID})
+          
+          if (Group) {
+              Group.botMessage.push({text:val.message,ind})
+              Group.emoji.push({[val.emoji]:val.points})
+              if (Group.telGroupId) {
+                bot.telegram.sendMessage(Group.telGroupId,objectFound.message)
+                bot.telegram.sendMessage(Group.telGroupId,`To complete this challnge send this emoji ${objectFound.emoji}`)
+              }
+            }
+            await GroupsDB.updateOne({_id:ID},{ $set: Group });
+    });
+  }
+},60000)
+
+// checkIf()
+
+
+
+bot.start((ctx)=> ctx.reply('hello i am the ting global bot'))
+bot.command('findM',(ctx) => {
+
+  // const search = () =>{
+  //   Challenges.findOne({_id:'c_jafvUgNsrGHTyXaka5UJFw'})
+  //   .then ((response)=>{ctx.reply(response.selections[0]['1kpy8q9dj']['1kpy8q9dk'])})
+      
+    
+    
+  // }
+  // search()
+  
+
+  // bot.telegram.getChatMember()
+      // console.log(ctx.message);
+  // if (ctx.message.text.length === 6) {
+
+    
+  //   const search = async () => {
+  //     const player = await UsersTest.findOne({telegramId:ctx.message.from.id});
+  //     if (player) {
+  //      ctx.reply(`Welcome ${player.username}`)
+      //  let i = 0;
+//       let user
+//       user = await UsersTest.findOne({ phone: `${convertToNum(message.sender.id)}` })
+//       user.challengeScore += 10;
+//       user.totalScore += 10;
+//       await UsersTest.updateOne({ _id: `${user.phone}` }, {
+//         challengeScore: user.challengeScore,
+//         totalScore: user.totalScore
+//       })
+//         .then(() => {
+//           console.log(`User ${user.fullName} updated successfully!`)
+//         })
+//         .catch((error) => {
+//           console.log('Error: ', error)
+//         })
+      // }else{
+      //  ctx.reply('I didnt find a user with your Id.\nif you did not register please add your number after the /start command to register.')
+      // }
+    //  }
+    //  search()
+  // }else{
+    // const phonenumber = ctx.message.text.substring(7,ctx.message.text.length)
+    // // console.log(phonenumber);
+    // const addIdToUser = async () => {
+    //  let player = await UsersTest.findOne({phone:phonenumber});
+    // //  console.log(player);
+    // //  player['telegramId'] = ctx.message.from.id
+    //  if (player) {
+    //   //add id to user in database
+    //   //
+    //   // let obj = {
+    //   //   '1':'hi1',
+    //   //   '2':'hi2'
+    //   // }
+    //   // const num = '3'
+    //   // const info = 'gk'
+    //   // obj[num] = info
+    //   // console.log(obj);
+      
+    //   // console.log(player);
+
+
+    //   await UsersTest.findOneAndUpdate({ _id: phonenumber },{telegramId:ctx.message.from.id})
+    //     .then(() => {
+    //       console.log(`User ${player.username} updated successfully!`)
+    //     })
+    //     .catch((error) => {
+    //       console.log('Error: ', error)
+    //     })
+    //   ctx.reply(`Welcome ${player.username}`)
+    //  }else{
+    //   ctx.reply('I didnt find a user with that number.\nis the number correct?\nremember to use the same number you use to login.')
+    //  }
+    // }
+    // addIdToUser()
+
+  // }
+  // console.log(ctx.message.text);
+
+})
+bot.command('connect',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 8) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let link = msg.slice(8,msg.length)
+    if (link[0] == ' ') {
+      link = link.slice(1,link.length)
+    }
+    const findAndUpdate = async ()=>{
+      const group = await GroupsDB.findOne({invite:link})
+      if (group) {
+        try{
+          const telLink = await ctx.createChatInviteLink()
+          const botMessage = {
+            msg:`if you are the one that activeted this group use the telegram command with this link ${telLink.invite_link}`,
+            user:'telegram Ting Global Bot'
+          }
+          group.messages.push(botMessage)
+          await GroupsDB.updateOne({invite:link}, { messages:group.messages})
+          ctx.reply('Go to your Ting Global group to confirm')
+        } catch (error) {
+          console.error(error);
+          ctx.reply('Error generating invite link.');
+        }
+        
+      }else{
+        ctx.reply('I did not find a group with this invite link')
+      }
+    }
+    findAndUpdate()
+  }
+})
+bot.command('activate',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 9) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let message = msg.slice(9,msg.length)
+    if (message[0] == ' ') {
+      message = message.slice(1,message.length)
+    }
+    let Tinglink = message.slice(0,24)
+    let telLink = message.slice(24,message.length)
+    
+    if (telLink[0] == ' ') {
+      telLink = telLink.slice(1,telLink.length)
+    }
+    const findAndConfirm = async ()=>{
+      const group = await GroupsDB.findOne({invite:Tinglink})
+      if (group) {
+        if (telInvite == telLink) {
+          group.telGroupId = ctx.chat.id
+        
+          const botMessage = {
+            msg:`Telegram Group connected!!!\n the link is ${telLink}`,
+            user:'telegram Ting Global Bot'
+          }
+      
+          group.messages.push(botMessage)
+          await GroupsDB.updateOne({invite:Tinglink}, { $set: group })
+          ctx.reply(`your Ting Global group has been connected from here on all commands are available`)
+        }else{
+          ctx.reply('please connect the link to the group in the Ting Global website')
+        }
+      }else{
+        ctx.reply('I did not find a group with this invite link')
+      }
+    }
+    findAndConfirm()
+  }
+})
+bot.command('finish',(ctx)=>{
+  const msg = ctx.message.text
+  if (msg.length == 7) {
+    ctx.reply('please add the link of your group to the message')
+  }else{
+    let message = msg.slice(7,msg.length)
+    if (message[0] == ' ') {
+      message = message.slice(1,message.length)
+    }
+    const findAndConfirm = async ()=>{
+      const group = await GroupsDB.findOne({telGroupId:ctx.chat.id})
+      // if (group) {
+      //   let userfound = group.scored.map((val)=>{if (val == user._id) {
+      //     return val
+      //   }});
+      //   if (userfound) {
+      //     botMessage = {msg:'you already did this task',time:hourmin,user:'Ting Global Bot'} 
+      //   }else{
+      //     const challenge = await Challenges.findOne({_id:group.challengeID},{selections:1})
+      //     botMessage = {msg:'Task Finished!!!',time:hourmin,user:'Ting Global Bot'} 
+      //     const mission = challenge[group.selectionPosition]
+      //     group.scored.push({user:user._id,points:mission.points})
+      //     // user.totalScore += mission.points
+      //     // updateUserInDB(user)
+      //     //
+      //     //
+      //     // give points to player
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+      //     //
+          
+      //     await GroupsDB.updateOne({_id:groupId},{scored:group.scored})
+          
+      //   }
+      //   group.messages.push(message)
+      //   group.messages.push(botMessage)
+      //   if (telInvite == telLink) {
+      //     group.telGroupId = ctx.chat.id
+        
+      //     const botMessage = {
+      //       msg:`Telegram Group connected!!!\n the link is ${telLink}`,
+      //       user:'telegram Ting Global Bot'
+      //     }
+      
+      //     group.messages.push(botMessage)
+      //     await GroupsDB.updateOne({invite:Tinglink}, { $set: group })
+      //     ctx.reply(`your Ting Global group has been connected from here on all commands are available`)
+      //   }else{
+      //     ctx.reply('please connect the link to the group in the Ting Global website')
+      //   }
+      // }else{
+      //   ctx.reply('please connect your group before doing missions')
+      // }
+    }
+    findAndConfirm()
+  }
+})
+bot.help((ctx) => ctx.reply('Send me a sticker (placeholder)'))
+bot.on('sticker', (ctx) => ctx.reply(ctx.message.sticker.emoji))
+bot.hears('hi', (ctx) => ctx.reply('Hey how can i help you?'))
+
+bot.command('createinvite', async (ctx) => {
+  // Replace 'chatId' with the ID of the group or channel for which you want to create an invite link.
+  const chatId = ctx.chat.id;
+
+  // Create an invite link for the specified chat.
+  const inviteLink = await ctx.telegram.createChatInviteLink(chatId);
+
+  // Send the invite link to the user who triggered the command.
+  ctx.reply(`Here is the invite link for the chat: ${inviteLink.invite_link}`);
+});
+
+// bot.launch()
+
 app.post("/sendMessage", (req, res) => {
   let temp = req.body.mText;
 
@@ -436,15 +813,15 @@ app.post("/api", upload.single("photo"), (req, res) => {
           contentType: req.file.mimetype,
         };
 
-        console.log("photo uploaded");
-      }
-      //parse body from JSON to object
-      let parseredRegister = JSON.parse(req.body.register);
+				console.log("photo uploaded");
+			}
+			//parse body from JSON to object
+			let parseredRegister = JSON.parse(req.body.register);
 
-      //check all propertise of parseredRegister object:
-      for (const keyTest in parseredRegister) {
-        console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
-      }
+			//check all propertise of parseredRegister object:
+			for (const keyTest in parseredRegister) {
+				console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
+			}
 
       let _username = parseredRegister.username;
       let _phone = parseredRegister.phone;
@@ -538,77 +915,123 @@ app.post("/api", upload.single("photo"), (req, res) => {
         res.status(200).json({ result: result, msg: message });
       }
 
-      if (req.body.hasOwnProperty("checkPhone")) {
-        let phoneNum = req.body.checkPhone;
-        phoneNum = phoneNum.replace("+", "");
-        let check = await UsersTest.findOne({ phone: `${phoneNum}` });
-        let [result, message] = [false, ""];
-        if (check == null) {
-          [result, message] = [
-            true,
-            `Great! you can register with this phone: ${req.body.checkPhone}`,
-          ];
-        } else {
-          [result, message] = [
-            false,
-            "Oops! This phone is already taken,\nplease choose another :)",
-          ];
-        }
-        res.status(200).json({ result: result, msg: message });
-      }
+			if (req.body.hasOwnProperty("checkPhone")) {
+				let phoneNum = req.body.checkPhone;
+				phoneNum = phoneNum.replace("+", "");
+				let check = await UsersTest.findOne({ phone: `${phoneNum}` });
+				let [result, message] = [false, ""];
+				if (check == null) {
+					[result, message] = [
+						true,
+						`Great! you can register with this phone: ${req.body.checkPhone}`,
+					];
+				} else {
+					[result, message] = [
+						false,
+						"Oops! This phone is already taken,\nplease choose another :)",
+					];
+				}
+				res.status(200).json({ result: result, msg: message });
+			}
 
+      if (req.body.hasOwnProperty("register")) {
+        let _username = req.body.register.username;
+        let _phone = req.body.register.phone;
+        _phone = _phone.replace("+", "");
+        if ((await UsersTest.findOne({ username: `${_username}` })) == null) {
+          if ((await UsersTest.findOne({ phone: `${_phone}` })) == null) {
+            let temp = {
+              _id: _phone,
+              username: _username,
+              phone: _phone,
+              fullName: req.body.register.fullName,
+              organization: req.body.register.organization,
+              country: req.body.register.country,
+              memberName: "",
+              memberRole: "",
+              email: req.body.register.email,
+              language: req.body.register.language,
+              accountType: req.body.register.accountType,
+              templates: [],
+              drafts: [],
+              challenges: [],
+              createdChallenges: [],
+              players: [],
+              isAdmin: false,
+            };
+            console.log("work");
+            addUserToDb(temp);
+
+            let [token, exp] = getToken(temp.phone);
+
+            res.status(200).json({ access_token: token, exp: exp, user: temp });
+          } else {
+            res
+              .status(200)
+              .json(
+                "Oops! This phone is already taken,\nplease choose another :)"
+              );
+            return;
+          }
+        } else {
+          res
+            .status(200)
+            .json(
+              "Oops! This username is already taken,\nplease choose another :)"
+            );
+          return;
+        }
+      }
       if (req.body.hasOwnProperty("signIn")) {
         let phoneNum = req.body.signIn.phone;
         phoneNum = phoneNum.replace("+", "");
         let userData = await UsersTest.findOne({ phone: `${phoneNum}` });
         if (userData != null) {
           let [token, exp] = getToken(userData["phone"]);
-          res
-            .status(200)
-            .json({ access_token: token, exp: exp, user: userData });
+          res.status(200).json({ access_token: token, exp: exp, user: userData });
         }
       } else if (req.body.hasOwnProperty("getChallengeData")) {
         data = req.body;
-        challengeData = await Challenges.findOne({
+        let challengeData = await Challenges.findOne({
           _id: `${data["getChallengeData"]}`,
         });
         if (challengeData == null) {
-          return res.status(404).json({
-            msg: `Challenge ${data["getChallengeData"]} was not found`,
-          });
+          return res
+            .status(404)
+            .json({ msg: `Challenge ${data["getChallengeData"]} was not found` });
         }
         templateData = await TemplatesDB.findOne({
           _id: `${challengeData["template"]}`,
         });
         if (templateData == null) {
-          return res.status(400).json({
-            msg: `template ${challengeData["template"]} was not found`,
-          });
+          return res
+            .status(400)
+            .json({ msg: `template ${challengeData["template"]} was not found` });
         }
 
-        challengeData["name"] = templateId["name"];
+				challengeData["name"] = templateId["name"];
 
-        challengeData["image"] = templateId["image"];
+				challengeData["image"] = templateId["image"];
 
-        challengeData["language"] = templateData["language"];
+				challengeData["language"] = templateData["language"];
 
-        challengeData["isPublic"] = templateData["isPublic"];
+				challengeData["isPublic"] = templateData["isPublic"];
 
-        if (!templateData.hasOwnProperty("allowCopies")) {
-          templateData["allowCopies"] = false;
-        }
+				if (!templateData.hasOwnProperty("allowCopies")) {
+					templateData["allowCopies"] = false;
+				}
 
-        challengeData["allowCopies"] = templateData["allowCopies"];
+				challengeData["allowCopies"] = templateData["allowCopies"];
 
-        if (templateData.hasOwnProperty("dayMargin")) {
-          challengeData["dayMargin"] = templateData["dayMargin"];
-        }
+				if (templateData.hasOwnProperty("dayMargin")) {
+					challengeData["dayMargin"] = templateData["dayMargin"];
+				}
 
-        if (templateData.hasOwnProperty("preDays")) {
-          challengeData["preDays"] = templateData["preDays"];
-        }
+				if (templateData.hasOwnProperty("preDays")) {
+					challengeData["preDays"] = templateData["preDays"];
+				}
 
-        challengeData["days"] = templateData["days"];
+				challengeData["days"] = templateData["days"];
 
         if (challengeData.hasOwnProperty("selections")) {
           for (let day in challengeData["days"]) {
@@ -879,31 +1302,30 @@ app.post("/xapi", async (req, res) => {
           createdChallenges = {};
 
           if (userData.hasOwnProperty("createdChallenges")) {
-            for (let challengeId in userData["createdChallenges"]) {
-              console.log("Fetching draft from DB:", draftID);
-              challenge = await findChallengeInDB(challengeId);
-              console.log("Receiving draft from DB:", draftID);
-              if (challenge != null) {
-                templateId = challenge["template"];
-                template = await findTemplateInDB(templateId);
-                if (template != null) {
-                  challenge["name"] = template["name"];
-                  challenge["language"] = template["language"];
-                  if (template.hasOwnProperty("dayMargin")) {
-                    challenge["dayMargin"] = template["dayMargin"];
-                  }
-                  createdChallenges[challengeId] = challenge;
+            for (let i = 0; i < userData["createdChallenges"].length; i++) {
+              const challengeId = userData["createdChallenges"][i];
+            challenge = await Challenges.findOne({ _id: challengeId })
+            if (challenge != null) {
+              templateId = challenge["template"];
+              template = await findTemplateInDB(templateId);
+              if (template != null) {
+                challenge["name"] = template["name"];
+                challenge["language"] = template["language"];
+                if (template.hasOwnProperty("dayMargin")) {
+                  challenge["dayMargin"] = template["dayMargin"];
                 }
+                createdChallenges[challengeId] = challenge;
               }
             }
           }
+        }
 
-          userData["createdChallenges"] = createdChallenges;
+        userData["createdChallenges"] = createdChallenges;
 
-          final["logged_in_as"] = current_user;
+        final["logged_in_as"] = current_user;
 
-          final["user"] = userData;
-        } else if (data.hasOwnProperty("getAvailableTemplates")) {
+        final["user"] = userData;
+      } else if (data.hasOwnProperty("getAvailableTemplates")) {
           let publicTemplates = await TemplatesDB.find({ isPublic: true });
 
           let privateTemplates = await Promise.all(
@@ -1269,113 +1691,593 @@ app.post("/xapi", async (req, res) => {
             }
             final = templates;
           }
-        } else if (data.hasOwnProperty('createTemplateWithAi')) {
-          try {
-            // try 3 times to create template with ai
-            const maxAttempts = maxTemplateAttempts;
-            // create array to store failed templates
-            const templates = [];
-            for (let i = 0; i < maxAttempts; i++) {
-              // update progress attempts
-              progressAttempts = i + 1;
-              progressEmitter.emit('progressAttemptsChanged');
-              // console.log('progressAttempts:', progressAttempts);
-
-              // delay of 2 secs
-              // await new Promise((resolve) => setTimeout(resolve, 2000));
-              // if (i+1==maxAttempts)
-              //   throw 'test';
-              // else continue;
-
-              console.log(
-                `Server attempt ${
-                  i + 1
-                } of ${maxAttempts} to create template with AI`
-              );
-
-              // cancel if user not in same page
-              if (current_user !== data.createTemplateWithAi.creator) {
-                console.log('User not in same page, cancelling');
-                throw 'User not in same page, cancelling';  
-              }
-              
-              // get data
-              const {
-                topic,
-                days,
-                tasks,
-                messages,
-                preDays,
-                preMessagesPerDay,
-                language,
-                targetAudience,
-              } = data.createTemplateWithAi;
-
-              // create template
-              const templateId = 't_' + generateRandomString();
-              let template = await generateChallenge({
-                creator: current_user,
-                id: templateId,
-                topic,
-                days,
-                tasks,
-                messages,
-                preDays,
-                preMessagesPerDay,
-                language: 'English', // only english supported for now
-                targetAudience,
-                numAttempts: 1,
-              });
-
-              if (template?.error) {
-                console.error('Failed to create template with AI');
-                if (template.response) {
-                  templates.push(template.response);
-                }
-                if (i + 1 === maxAttempts) {
-                  // take the template with the most days
-                  template = templates.reduce((prev, current) =>
-                  prev.days.length > current.days.length ? prev : current
-                  );
-                  console.log(
-                    `No more attempts left, returning template with the most days (${template.days.length})`
-                  );
-                } else {
-                  console.log('Trying again');
-                  continue;
-                }
-              }
-
-              progressAttempts = maxAttempts;
-              progressEmitter.emit('progressAttemptsChanged');
-              
-              // add template to db
-              await TemplatesDB.create(template);
-
-              // add template to user
-              const temp = {
-                _id: templateId,
-                name: template.name,
-                isPublic: template.isPublic,
-              };
-              user.templates = [...user.templates, temp];
-              updateUserInDB(user);
-
-              fs.writeFileSync(
-                'GPT/json/failed.json',
-                JSON.stringify(templates)
-              );
-
-              // return template
-              final = { template };
-              console.log('Template created successfully');
-              break;
-            }
-          } catch (error) {
-            progressAttempts = 0;
-            console.error(error);
-            return res.status(400).json({ msg: error });
+          
+        }else if (data.hasOwnProperty("deleteChallenge")) {
+          challengeId = data["deleteChallenge"]
+          if (!user.isAdmin && !user["createdChallenges"].includes(challengeId)) {
+            return res
+              .status(404)
+              .json({ msg: `No challenge found with this ID: ${challengeId}` });
           }
+          await Challenges.deleteOne({_id:challengeId})
+          if (user["createdChallenges"].includes(challengeId)) {
+            user["createdChallenges"] = user["createdChallenges"].filter(id => id != challengeId)
+          }
+          if (user["challenges"].includes(challengeId)) {
+            user["challenges"] = user["challenges"].filter(id => id != challengeId)
+          }
+          updateUserInDB(user);
+
+          final = {
+            msg: `Successfully deleted challenge: ${challengeId}`,
+            challengeId: challengeId
+          }
+        }else if (data.hasOwnProperty("createChallenge")) {
+            
+
+            const templateId = data['createChallenge']['templateId'];
+            const challengeData = {
+              template: templateId,
+              selections: data['createChallenge']['selections'],
+              name: data['createChallenge']['name'],
+              date: data['createChallenge']['date'],
+            };
+        
+            challengeData.active = false;
+            challengeData.declined = false;
+        
+            if (!("isPublic" in challengeData)) {
+              challengeData.isPublic = true;
+            }
+            challengeData.createdOn = Date.now();
+            challengeData.creator = current_user;
+            challengeData.scores = {};
+        
+            const challengeId = "c_" + generateRandomString();
+            challengeData._id = challengeId;
+        
+            const template = await TemplatesDB.findOne({ _id: templateId });
+        
+            if (!template) {
+              return res.status(400).json({ msg: `No template found with this ID: ${templateId}` });
+            }
+        
+            let image = null;
+            if (template.image && template.image.length > 0) {
+              image = template.image.slice(1);
+            }
+        
+            if (isAdmin || template.isPublic) {
+              challengeData.verified = true;
+              verifyNow = true;
+            } else {
+              challengeData.verified = false;
+            }
+        
+            // Temporary code
+            verifyNow = true;
+            challengeData.verified = true;
+        
+            user.challenges.push(challengeId);
+            user.createdChallenges.push(challengeId);
+            await Challenges.insertMany(challengeData);
+        
+            if (verifyNow) {
+              console.log(`::: VERIFING Challenge ${challengeId}`);
+              //// const [verified, err] = verifyChallenge(challengeId, challengeData.creator, challengeData.name, image, challengeData.date);
+              //// console.log(`::: VERIFIED ${verified}, ${err}`);
+            }
+        
+            const draftId = data['createChallenge']['draftId'];
+
+            await UsersDrafts.deleteOne({ _id: draftId });
+            user['drafts'] = user['drafts'].filter((draft) => draft !== draftId);
+        
+            
+        
+            
+
+            const groupID = "g_" + generateRandomString();
+
+            const username = user.username ? user.username : 'Jhon Doe'
+            const groupChatInfo = {
+              _id:groupID,
+              challengeID: challengeId,
+              invite: '',
+              name: `${challengeData.name} group chat`,
+              users: [{userid:user._id,role:'admin',username:username}],
+              messages:[],
+              botMessage:[{text:'welcome to the group',ind:0}],
+              emoji:[], 
+              scored:[],
+
+            }
+            user.groups.push({_id:groupID,name:`${challengeData.name} group chat`})
+
+            await GroupsDB.insertMany(groupChatInfo);
+            const arrayItemID = "A_" + generateRandomString();
+            challengeItem = {
+              _id: arrayItemID,
+              challengeID: challengeId,
+              groupID:groupID
+            }
+            await ChallengeArray.insertMany(challengeItem)
+            updateUserInDB(user);
+            final = groupChatInfo;
+        }else if (data.hasOwnProperty("joinGroup")) {
+          const inviteId = data["joinGroup"]
+          const group = await GroupsDB.findOne({invite:inviteId})
+          if (group) {
+            let inGroup = false
+            for (let i = 0; i < group.users.length; i++) {
+              if (group.users[i].userid == user._id) {
+                inGroup = !inGroup
+                break
+              }
+            }
+            if (!inGroup) {
+              const username = user.username ? user.username : 'Jhon Doe'
+              const userinfo = {userid:user._id,role:'student',username:username}
+              group.users.push(userinfo)
+              user.groups.push({_id:group._id,name:group.name})
+              updateUserInDB(user);
+              await GroupsDB.updateOne({invite:inviteId},{users:group.users})
+              return res.status(200).json({ msg:'You are now a part of the group!'});
+            }else{
+              return res.status(400).json({ msg:'you are already in this group'});
+            }
+          }else{
+            return res.status(400).json({ msg: `No group found with this ID: ${inviteId}` });
+          }
+  
+
+
+
+
+        }else if (data.hasOwnProperty("loadGroup")) {
+          const groupId = data["loadGroup"]["_id"]
+          const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1,emoji:1})
+          if (group) {
+            final = group
+          }else{
+            return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+          }
+        }else if (data.hasOwnProperty("sendMessage")) {
+          console.log('send message');
+          const groupId = data["sendMessage"]["_id"]
+          const group = await GroupsDB.findOne({_id:groupId})
+          if (group) {
+            const msg = data["sendMessage"]["message"]
+            const removeAbove20 = () =>{
+              if (group.messages.length >=20) {
+                group.messages.shift()
+                removeAbove20()
+              }
+            }
+            removeAbove20()
+            const time = new Date
+            const hourmin = time.getHours()
+            const username = user.username ? user.username : 'Jhon Doe'
+            const message = {msg:msg,time:hourmin,user:user._id,nickname:username} 
+
+            let botMessage;
+            let goodEmoji = false
+            for (let i = 0; i < group.emoji.length; i++) {
+              if (group.emoji[i][msg]) {
+                goodEmoji = i
+                break
+              }
+            }
+            if (goodEmoji) {
+              let userfound = group.scored.map((val)=>{if (val.user == user._id && val.emoji == msg) {
+                return val
+              }});
+              if (userfound) {
+                botMessage = {msg:'you already did this task',time:hourmin,user:'Ting Global Bot'} 
+              }else{
+                botMessage = {msg:'Task Finished!!!',time:hourmin,user:'Ting Global Bot'}
+                const points = group.emoji[goodEmoji][msg][points] 
+                group.scored.push({user:user._id,emoji:msg})
+                user.totalScore += points
+                updateUserInDB(user)
+                await GroupsDB.updateOne({_id:groupId},{scored:group.scored})
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
+            }else if (msg == '/hello') {
+              botMessage = {msg:'hi there!',time:hourmin,user:'Ting Global Bot'} 
+
+              group.messages.push(message)
+              group.messages.push(botMessage)
+            }else if (msg.startsWith('/promote')) {
+              let number = msg.slice(8,msg.length)
+              if (number[0] == ' ') {
+                number = number.slice(1,msg.number)
+              }
+              let admin = false
+              for (let i = 0; i < group.users.length; i++) {
+                if (group.users[i].userid == user._id ) {
+                  if (group.users[i].role == 'admin') {
+                    admin =!admin
+                    break
+                  }else{
+                    break
+                  }
+                }
+              }
+              if (admin) {
+                let foundUser = false
+                let position;
+                for (let i = 0; i < group.users.length; i++) {
+                  if (group.users[i].userid == number) {
+                    foundUser =!foundUser
+                    position = i
+                    break
+                  }
+                }
+                if (foundUser) {
+                  if (group.users[position].role == 'student'){
+                    group.users[position].role = 'instructor'
+                  }else if (group.users[position].role == 'instructor') {
+                    group.users[position].role = 'admin'
+                  }
+                  await GroupsDB.updateOne({_id:groupId},{users:group.users})
+                  botMessage = {msg:'User has been premoted!!',time:hourmin,user:'Ting Global Bot'}
+                }else{
+                  botMessage = {msg:'I did not find a user with that number.\n did you type the correct one?',time:hourmin,user:'Ting Global Bot'}
+                }
+                group.messages.push(botMessage)
+              }else{
+                botMessage = {msg:'i am sorry only admins have accses to this command.\n if you would like to use it you can ask an admin for a promotion.',time:hourmin,user:'Ting Global Bot'} 
+                group.messages.push(message)
+                group.messages.push(botMessage)
+              }
+              
+               
+            }else if (msg == '/invite') {
+              let instructor = false
+              for (let i = 0; i < group.users.length; i++) {
+                if (group.users[i].userid == user._id ) {
+                  if (group.users[i].role == 'instructor' || group.users[i].role == 'admin') {
+                    instructor =!instructor
+                    break
+                  }else{
+                    break
+                  }
+                }
+              }
+              if (instructor) {
+                if (group.invite.length > 0) {
+                  botMessage = {msg:`this is the invite code for this group\n ${group.invite} send this to the users you want to invite`,time:hourmin,user:'Ting Global Bot'}
+                }else{
+                  const inviteCode = "i_" + generateRandomString();
+                  botMessage = {msg:`this is the invite code for this group\n ${inviteCode} send this to the users you want to invite`,time:hourmin,user:'Ting Global Bot'}
+                  group.invite = inviteCode
+                  await GroupsDB.updateOne({_id:groupId},{invite:group.invite})
+                }
+              }else{
+                botMessage = {msg:'sorry you need to be an instructor or above to use this command',time:hourmin,user:'Ting Global Bot'}
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
+              
+            }else if (msg.startsWith('/nickname')) {
+              let nickname = msg.slice(9,msg.length)
+              if (nickname[0] == ' ') {
+                nickname = nickname.slice(1,msg.length)
+              }
+              user.username = nickname
+              updateUserInDB(user)
+              botMessage = {
+                msg:`Username changed to ${nickname}`,
+                time:hourmin,
+                user:'Ting Global Bot'
+              }
+              group.messages.push(message)
+              group.messages.push(botMessage)
+            }else if (msg.startsWith('/help')) {
+              group.messages.push(message)
+              if (msg == '/help') {
+                botMessage = {
+                  msg:'Here are the commands i know:\n1. /hello\n2. /invite\n3. /promote\n4. /nickname\n5. /help\n type (/help) then the number of the command you want info on',
+                  time:hourmin,
+                  user:'Ting Global Bot'
+                }
+                group.messages.push(botMessage)
+              }else{
+                let number = msg.slice(5,msg.length)
+                if (number[0] == ' ') {
+                  number = number.slice(1,msg.length)
+                }
+                if (number == 1) {
+                  botMessage = {
+                    msg:'This command is to say hello to me!',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 2) {
+                  botMessage = {
+                    msg:'This command is used to create an invite link to add players to the group,\n it can only be used by instructors.',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 3) {
+                  botMessage = {
+                    msg:'This command promotes a student to instructor and instructor to an admin,\n it can only be used by admins.',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 4) {
+                  botMessage = {
+                    msg:'This command gives you a nickname to identify in the group.',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else if (number == 5) {
+                  botMessage = {
+                    msg:'This command gives a list of all commands available.',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else {
+                  botMessage = {
+                    msg:'I am sorry i dont know this command',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }
+                
+                group.messages.push(botMessage)
+                
+                
+              }
+
+
+              
+            }else if (msg.startsWith('/telegram')) {
+              let shortmsg = msg.slice(9,msg.length)
+              if (shortmsg[0] == ' ') {
+                shortmsg = shortmsg.slice(1,msg.length)
+              }
+              if (shortmsg == 'link') {
+                if (group.telInvite) {
+                  botMessage = {
+                    msg:`Here is the invite link to your telegram group\n${group.telInvite}`,
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }else{
+                  botMessage = {
+                    msg:'I am sorry you didnt register a telegram group to do that please add the TingGlobalBot to your group and give it your groupid',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }
+                group.messages.push(message)
+                group.messages.push(botMessage)
+              }else{
+                let admin = false
+                for (let i = 0; i < group.users.length; i++) {
+                  if (group.users[i].userid == user._id ) {
+                    if (group.users[i].role == 'admin') {
+                      admin =!admin
+                    }
+                    break
+                  }
+                }
+                if (admin) {
+                  group.telInvite = shortmsg
+                  await GroupsDB.updateOne({_id:groupId},{telInvite:group.telInvite})
+                  botMessage = {
+                    msg:'telegram invite code registerd!!\n you can go to telegram and activate the group now!',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                  group.messages.push(message)
+                  group.messages.push(botMessage)
+                }else{
+                  botMessage = {
+                    msg:'only admins can use this command',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                  group.messages.push(message)
+                  group.messages.push(botMessage)
+                }
+              }
+              
+            }else if (msg.startsWith('/connect_account')) {
+              if (msg == '/connect_account') {
+                botMessage = {
+                  msg:'please use a 6 digit code after the command',
+                  time:hourmin,
+                  user:'Ting Global Bot'
+                }
+                group.messages.push(message)
+                group.messages.push(botMessage)
+              }else{
+                let code = msg.slice(17,msg.length)
+                code = parseInt(code)
+                if (code) {
+                  if (code <= 999999 && code >= 100000) {
+                    user.telegramId == code
+                    updateUserInDB(user)
+                    botMessage = {
+                      msg:'code accepted if you forget it you can set it again\nbut after connecting your telegram account it cannot be changed',
+                      time:hourmin,
+                      user:'Ting Global Bot'
+                    }
+                  }else{
+                    botMessage = {
+                      msg:'please use a 6 digit code',
+                      time:hourmin,
+                      user:'Ting Global Bot'
+                    }
+                  }
+                }else{
+                  botMessage = {
+                    msg:'please use only digits',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
+                }
+                group.messages.push(botMessage)
+              }
+            }else{
+              group.messages.push(message)
+            }
+
+
+
+
+            await GroupsDB.updateOne({_id:groupId},{messages:group.messages})
+
+            for (let template in templates) {
+              if (
+                template.hasOwnProperty("creator") &&
+                template["creator"] != null
+              ) {
+                let creator;
+                let creatorId = template["creator"];
+                if (creators.hasOwnProperty(`${creatorId}`)) {
+                  creator = creators[creatorID];
+                } else {
+                  creator = UsersTest.findOne(
+                    { _id: creatorId },
+                    { phone: 1, username: 1 }
+                  );
+                  if (creator != null) {
+                    creators[creatorId] = creator;
+                  }
+                }
+                if (creator != null) {
+                  template["creator"] = creator["username"] || creator["phone"];
+                }
+              }
+              final = templates;
+            }
+          } 
+
+            final = group.messages
+        }else if (data.hasOwnProperty("deleteGroup")) {
+            const groupId = data["deleteGroup"]["_id"]
+            // const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1})
+            // if (group) {
+            //   final = group
+            // }else{
+            //   return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+            // }
+        } else if (data.hasOwnProperty('createTemplateWithAi')) {
+            try {
+              // try 3 times to create template with ai
+              const maxAttempts = progressMaxAttempts;
+              // create array to store failed templates
+              const templates = [];
+              for (let i = 0; i < maxAttempts; i++) {
+                // update progress attempts
+                progressAttempts = i + 1;
+                progressEmitter.emit('progressAttemptsChanged');
+                // console.log('progressAttempts:', progressAttempts);
+  
+                // delay of 5 secs for testing
+                // await new Promise((resolve) => setTimeout(resolve, 5000));
+                // if (i + 1 == maxAttempts) {
+                //   progressAttempts = 0;
+                //   return;
+                //   // throw 'test';
+                // } else {
+                //   continue;
+                // }
+  
+                console.log(
+                  `Server attempt ${
+                    i + 1
+                  } of ${maxAttempts} to create template with AI`
+                );
+  
+                // cancel if user not in same page
+                if (current_user !== data.createTemplateWithAi.creator) {
+                  console.log('User not in same page, cancelling');
+                  throw 'User not in same page, cancelling';  
+                }
+                
+                // get data
+                const {
+                  topic,
+                  days,
+                  tasks,
+                  messages,
+                  preDays,
+                  preMessagesPerDay,
+                  language,
+                  targetAudience,
+                } = data.createTemplateWithAi;
+  
+                // create template
+                const templateId = 't_' + generateRandomString();
+                let template = await generateChallenge({
+                  creator: current_user,
+                  id: templateId,
+                  topic,
+                  days,
+                  tasks,
+                  messages,
+                  preDays,
+                  preMessagesPerDay,
+                  language: 'English', // only english supported for now
+                  targetAudience,
+                  numAttempts: 1,
+                });
+  
+                if (template?.error) {
+                  console.error('Failed to create template with AI');
+                  if (template.response) {
+                    templates.push(template.response);
+                  }
+                  if (i + 1 === maxAttempts) {
+                    // take the template with the most days
+                    template = templates.reduce((prev, current) =>
+                    prev.days.length > current.days.length ? prev : current
+                    );
+                    console.log(
+                      `No more attempts left, returning template with the most days (${template.days.length})`
+                    );
+                  } else {
+                    console.log('Trying again');
+                    continue;
+                  }
+                }
+  
+                progressAttempts = maxAttempts;
+                progressEmitter.emit('progressAttemptsChanged');
+                
+                // add template to db
+                await TemplatesDB.create(template);
+  
+                // add template to user
+                const temp = {
+                  _id: templateId,
+                  name: template.name,
+                  isPublic: template.isPublic,
+                };
+                user.templates = [...user.templates, temp];
+                updateUserInDB(user);
+  
+                fs.writeFileSync(
+                  'GPT/json/failed.json',
+                  JSON.stringify(templates)
+                );
+  
+                // return template
+                final = { template };
+                console.log('Template created successfully');
+                break;
+              }
+            } catch (error) {
+              progressAttempts = 0;
+              console.error(error);
+              return res.status(400).json({ msg: error });
+            }          
         }
         res.status(200).json(final);
       }
@@ -1394,34 +2296,33 @@ app.listen(3000, () => {
 const progressEmitter = new EventEmitter();
 
 let progressAttempts = 0;
-let maxTemplateAttempts = 3;
+let progressMaxAttempts = 3;
 
 app.get('/progress', (req, res) => {
-  console.log('/progress');
-
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
   const progressListener = () => {
     // calculate progress percentage
-    const progress = Math.floor((progressAttempts / maxTemplateAttempts) * 100);
-
+    const progress = Math.floor(
+      (progressAttempts / progressMaxAttempts) * 100
+    );
     const data = {
       progress,
       attempts: progressAttempts,
-      maxAttempts: maxTemplateAttempts,
+      maxAttempts: progressMaxAttempts,
     };
-
+    if (progress === 100) {
+      data.done = true;
+    }
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
-
   progressListener();
+
   progressEmitter.on('progressAttemptsChanged', progressListener);
-  console.log('progressEmitter started');
   req.on('close', () => {
     progressEmitter.removeListener('progressAttemptsChanged', progressListener);
-    console.log('progressEmitter closed');
   });
 });
 
