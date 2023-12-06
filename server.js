@@ -959,6 +959,7 @@ app.post("/api", upload.single("photo"), (req, res) => {
         }
       }
       if (req.body.hasOwnProperty("signIn")) {
+        console.log('hi');
         let phoneNum = req.body.signIn.phone;
         phoneNum = phoneNum.replace("+", "");
         let userData = await UsersTest.findOne({ phone: `${phoneNum}` });
@@ -1051,9 +1052,10 @@ app.post("/api", upload.single("photo"), (req, res) => {
         }
       };
 
-    }  //התחלה
-    start();
+    }  
   }
+  //התחלה
+  start();
 })
 
 /**
