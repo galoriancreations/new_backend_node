@@ -1070,9 +1070,9 @@ app.post("/api", upload.single("photo"), (req, res) => {
         }
       };
 
-    }  //התחלה
-    start();
-  }
+    }  
+  }//התחלה
+  start();
 })
 
 /**
