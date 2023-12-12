@@ -58,6 +58,13 @@ export const UserDraftSchema = new db.Schema(
   { versionKey: false }
 );
 
+const SelectionSchema = new db.Schema({
+  day: Number,
+  text: String,
+  emoji: String, 
+  score: Number,
+});
+
 export const ChallengeSchema = new db.Schema(
   {
     _id: String,
@@ -70,7 +77,7 @@ export const ChallengeSchema = new db.Schema(
     isPublic: Boolean,
     name: String,
     scores: Array,
-    selections: Array,
+    selections: [SelectionSchema], // Reference the SelectionSchema
     template: String,
     verified: Boolean,
     days: Array,
