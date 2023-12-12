@@ -36,7 +36,7 @@ const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
 const { Z_UNKNOWN } = require("zlib");
-const { generateChallenge } = require('./GPT/ChallengeGenerator');
+const { generateChallenge, generateDay } = require('./GPT/ChallengeGenerator');
 // const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
 const fs = require("fs");
 const EventEmitter = require('events');
@@ -2170,6 +2170,7 @@ app.post("/xapi", async (req, res) => {
         } else if (data.hasOwnProperty('createTemplateWithAi')) {
             try {
               // try 3 times to create template with ai
+              // progressMaxAttempts = 1;
               const maxAttempts = progressMaxAttempts;
               // create array to store failed templates
               const templates = [];
@@ -2223,10 +2224,10 @@ app.post("/xapi", async (req, res) => {
                   tasks,
                   messages,
                   preDays,
-                  preMessagesPerDay,
+                  preMessages: preMessagesPerDay,
                   language: 'English', // only english supported for now
                   targetAudience,
-                  numAttempts: 1,
+                  numAttempts: 3,
                 });
   
                 if (template?.error) {
@@ -2236,9 +2237,14 @@ app.post("/xapi", async (req, res) => {
                   }
                   if (i + 1 === maxAttempts) {
                     // take the template with the most days
-                    template = templates.reduce((prev, current) =>
-                    prev.days.length > current.days.length ? prev : current
-                    );
+                    template =
+                      templates.length > 1
+                        ? templates.reduce((prev, current) =>
+                            prev.days.length > current.days.length
+                              ? prev
+                              : current
+                          )
+                        : templates[0];
                     console.log(
                       `No more attempts left, returning template with the most days (${template.days.length})`
                     );
@@ -2278,6 +2284,26 @@ app.post("/xapi", async (req, res) => {
               console.error(error);
               return res.status(400).json({ msg: error });
             }          
+        } else if (data.hasOwnProperty('generateDayWithAi')) {
+          // create challenge day with AI
+          const { templateId } = data.generateDayWithAi;
+          const template = await TemplatesDB.findOne({ _id: templateId });
+          if (!template) {
+            return res.status(404).json({ msg: 'Template not found' });
+          }
+          // get last day data
+          const dayIndex = template.days.length;
+          const lastDay = template.days[dayIndex - 1];
+
+          // generate day
+          const day = await generateDay({
+            challengeName: template.name,
+            challengeIntroduction: template.days[0].introduction,
+            lastDay,
+            dayIndex,
+          });
+          // send day data
+          final = { day };
         }
         res.status(200).json(final);
       }

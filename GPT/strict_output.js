@@ -19,7 +19,7 @@ async function strict_output2(
   output_format,
   {
     num_tries = 3,
-    temperature = 1,
+    temperature = 0.8,
     model = 'gpt-3.5-turbo-1106',
     verbose = false,
   } = {}
@@ -34,7 +34,7 @@ async function strict_output2(
     let error_msg = '';
 
     // Use OpenAI to get a response
-    const response = await openai.chat.completions.create({
+    const data = {
       temperature,
       model,
       messages: [
@@ -45,15 +45,20 @@ async function strict_output2(
         { role: 'user', content: user_prompt.toString() },
       ],
       response_format: { type: 'json_object' },
-    });
+      max_tokens: 4096,
+    };
+    fs.writeFileSync('GPT/json/strict_output2_data.json', JSON.stringify(data));
 
+    const response = await openai.chat.completions.create(data);
     fs.writeFileSync('GPT/json/strict_output2.json', JSON.stringify(response));
+    // call openai api with fine-tuned model
 
     if (response.choices[0].finish_reason === 'length') {
       console.error('Error: response length is too long');
     }
 
     let res = response.choices[0].message?.content?.replace(/'/g, "'");
+    res = res.replace(/\/&/g, '&');
 
     if (!res) {
       console.log('Invalid json format, trying to fetch again');
@@ -109,7 +114,7 @@ async function strict_output2(
       }
       if (i < num_tries - 1) {
         console.log(
-          `Trying again, strict_output attempt ${i + 2} of ${num_tries}`
+          `Trying again\nstrict_output attempt ${i + 2} of ${num_tries}`
         );
       } else if (num_tries !== 1) {
         console.log('No more tries left');

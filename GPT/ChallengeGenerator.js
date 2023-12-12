@@ -11,13 +11,13 @@ async function generateChallenge({
   tasks = 5,
   messages = 0,
   preDays = 0,
-  preMessagesPerDay = 0,
+  preMessages = 0,
   language = 'English',
   targetAudience = 'Everyone',
   numAttempts = 3,
 }) {
   console.log(`Generating challenge about: ${topic}... this may take a few minutes, depending on the parameters.
-(${days} days, ${tasks} tasks per day, ${messages} messages per day, ${preDays} preDays, ${preMessagesPerDay} messages per preDay, lang: ${language}, target: ${targetAudience})`);
+(${days} days, ${tasks} tasks per day, ${messages} messages per day, ${preDays} preDays, ${preMessages} messages per preDay, lang: ${language}, target: ${targetAudience})`);
 
   // const challengeExample = fs.readFileSync(
   //   'GPT/json/input_challenge_example.json',
@@ -28,7 +28,7 @@ async function generateChallenge({
     name: '<challenge name>',
     days: [
       {
-        introduction: '<introduction>',
+        introduction: '<day introduction>',
         tasks: [
           {
             emoji: '<emoji>',
@@ -39,21 +39,21 @@ async function generateChallenge({
               },
             ],
             points: 1,
-            time: '<time>',
+            time: '<HH:MM:SS>',
           },
         ],
-        time: '<time>',
+        time: '<HH:MM:SS>',
         title: '<title>',
-        // image: '<image>',
+        image: '<description of a relative image>',
       },
     ],
-    // image: '<image>',
+    image: '<description of a relative image>',
   };
   if (messages) {
     outputFormat.days[0].messages = [
       {
         content: '<message>',
-        time: '<time>',
+        time: '<HH:MM:SS>',
       },
     ];
   }
@@ -63,7 +63,7 @@ async function generateChallenge({
         messages: [
           {
             content: '<message>',
-            time: '<time>',
+            time: '<HH:MM:SS>',
           },
         ],
       },
@@ -71,66 +71,18 @@ async function generateChallenge({
   }
 
   const response = await strict_output2(
-    `You are to generate a multi-day challenge, based on the following parameters:
-Topic: ${topic}
-Days: ${days}
-Tasks per Day: ${tasks}
-Messages per Day: ${messages}
-PreDays: ${preDays}
-PreMessages per PreDay (preMessagesPerDay): ${preMessagesPerDay}
-Audience: ${targetAudience}
-
-Challenge JSON fields: name, days, ${
-      /*image, */ ''
-    }preDays. The detailed structure is as follows:
-
-1. 'name':
-- Title of the challenge. no more than 21 characters.
-
-2. 'days':
-- An array with each element representing a day in the challenge.
-- Array length must be equal to the number of days.
-- Each day includes: introduction, messages, tasks, time, title, ${
-      /*image*/ ''
-    }.
-- Ensure content diversity across different days.
-
-
-Each 'day' object in the days array should include:
-a. Introduction: A brief introduction.
-b. Time: The specific time for releasing the day's content, in HH:MM:SS format.
-c. Messages: An array of messages, each with content and a specific time.
-d. Tasks: An array of tasks, each with emoji, isBonus, options, points, time.
-${/*e. Image: Description of the image.*/ ''}
-
-Each 'task' object in the tasks array should include:
-a. Emoji: A related emoji.
-b. IsBonus: A boolean indicating whether the task is a bonus task.
-c. Options: An array of task, containing text. 1 task per option.
-d. Points: The number of points awarded for completing the task. (first task of the day is worth 1 points, second task of the same day is worth 2 points etc.)
-
-3. 'preDays':
-- An array with each element representing the days before the challenge starts (-1, -2, etc).
-- Each pre day includes: messages.
-- Each message includes: content, time.
-
-Emphasize text with asterisks to get audience's attention.
-${
-  /*4. 'image':
-  - Prompt description a related image to the overall theme.*/ ''
-}
-
-The tasks should be engaging, creative, collaborative wth other participants, related to ${topic}, and suitable for the ${targetAudience}. The challenge aims to educate and connect people globally.
-
-Ensure the JSON structure is consistent and scalable for the specified number of days and tasks.
-`,
-    // user prompt:
-    `Generate a challenge with topic: ${topic}, days: ${days}, tasks: ${tasks}, messages: ${messages}, preDays: ${preDays}, preMessagesPerDay: ${preMessagesPerDay}, targetAudience: ${targetAudience}`,
+    `You are an helpful assistant that is able to generate a multi-day challenge.
+    Challenge length is ${days} days, with ${tasks} tasks per day, ${messages} messages per day,
+    ${preDays} preDays, ${preMessages} messages per preDay, lang: ${language}, target: ${targetAudience}.
+    The topic of the challenge is ${topic}.
+    Each task in the day start with 1 point and increase by 1 point for each task in the day.`,
+    // user prompt
+    `Generate a challenge with the following parameters: topic: ${topic}, days: ${days}, tasks: ${tasks}, messages: ${messages}, preDays: ${preDays}, preMessages: ${preMessages}, targetAudience: ${targetAudience}`,
     outputFormat,
     {
       num_tries: numAttempts,
       // verbose: true,
-      // model: 'gpt-4',
+      model: 'ft:gpt-3.5-turbo-1106:liminal-village::8UwQb8WJ', // fine-tuned model
     }
   );
 
@@ -160,7 +112,7 @@ Ensure the JSON structure is consistent and scalable for the specified number of
     ...response,
   };
 
-  // check if length of challenge is equal to the number of days and tasks, preDays and preMessagesPerDay, return error if not
+  // check if length of challenge is equal to the number of days and tasks, preDays and preMessages, return error if not
   let errorFlag = false;
   let errorMessage = 'Error: challenge length is not equal to: ';
   if (response?.days?.length !== days) {
@@ -183,10 +135,10 @@ Ensure the JSON structure is consistent and scalable for the specified number of
       errorFlag = true;
     }
     if (
-      preMessagesPerDay &&
-      response?.preDays[0]?.messages?.length !== preMessagesPerDay
+      preMessages &&
+      response?.preDays[0]?.messages?.length !== preMessages
     ) {
-      errorMessage += `preMessagesPerDay (${response?.preDays[0]?.messages?.length}), `;
+      errorMessage += `preMessages (${response?.preDays[0]?.messages?.length}), `;
       errorFlag = true;
     }
   }
@@ -216,4 +168,64 @@ Ensure the JSON structure is consistent and scalable for the specified number of
   return challenge;
 }
 
-module.exports = { generateChallenge };
+async function generateDay({ challengeName, challengeIntroduction, lastDay, dayIndex }) {
+  console.log('Generating day with AI... this may take a while.');
+  
+  // save day to file
+  fs.writeFileSync('GPT/json/input_day.json', JSON.stringify(lastDay));
+
+  const outputFormat = {
+    introduction: '<day introduction>',
+    tasks: [
+      {
+        emoji: '<emoji>',
+        isBonus: false,
+        options: [
+          {
+            text: '<task>',
+          },
+        ],
+        points: 1,
+        time: '<HH:MM:SS>',
+      },
+    ],
+    time: '<HH:MM:SS>',
+    title: '<title>',
+    image: '<description of a relative image>',
+  };
+  if (lastDay.messages) {
+    outputFormat.messages = [
+      {
+        content: '<message>',
+        time: '<HH:MM:SS>',
+      },
+    ];
+  }
+
+  // generate day introduction
+  const generatedDay = await strict_output2(
+    `You are an helpful assistant that is able to generate a day in a challenge.
+    Stay relevant to the challenge name and introduction.
+    The point of the first task is 1 and increase by 1 for each task in the day.`,
+    // user prompt
+    `Generate a day for a challenge with the following parameters.
+    challenge name: ${challengeName}.
+    introduction of the first day of the challenge: ${challengeIntroduction},
+    Last day in the challenge structure: ${lastDay}. Genereate a day for the provided challenge.
+    Do not copy the first or last day, but stay relevant to the challenge name and introduction.
+    Generated day index is ${dayIndex + 1}`,
+    outputFormat,
+    {
+      num_tries: 3,
+      // verbose: true,
+      model: 'ft:gpt-3.5-turbo-1106:liminal-village::8UwQb8WJ', // fine-tuned model
+    }
+  );
+
+  // console.log(generatedDay);
+  // save to file also
+  fs.writeFileSync('GPT/json/generatedDay.json', JSON.stringify(generatedDay));
+  return generatedDay;
+}
+
+module.exports = { generateChallenge, generateDay };
