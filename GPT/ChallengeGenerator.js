@@ -1,6 +1,11 @@
-require('dotenv').config();
 const fs = require('fs');
-const { strict_output2 } = require('./strict_output');
+const {
+  strict_output2,
+  strict_image,
+  downloadImage,
+  convertFile,
+} = require('./strict_output');
+const { uploadFileToDB } = require('../database');
 
 async function generateChallenge({
   creator,
@@ -86,7 +91,7 @@ async function generateChallenge({
   // const response = JSON.parse(fs.readFileSync('GPT/json/challenge_output.json', 'utf8'));
 
   if (!response) {
-    console.error('Error generating challenge');
+    console.log('Error generating challenge');
     return { error: true, response: null };
   }
 
@@ -137,7 +142,7 @@ async function generateChallenge({
   }
   if (errorFlag) {
     errorMessage = errorMessage.slice(0, -2) + '.';
-    console.error(errorMessage);
+    console.log(errorMessage);
     return { error: true, response: challenge };
   }
 
@@ -151,12 +156,36 @@ async function generateChallenge({
     });
   }
 
-  // if (
-  //   !preDays ||
-  //   (Array.isArray(challenge.preDays[0]) && !challenge.preDays[0].messages)
-  // ) {
-  //   challenge.preDays = [{ messages: [] }];
-  // }
+  // for each image field in challenge replace with strict_image
+  async function replaceImage(obj) {
+    for (const prop in obj) {
+      if (prop === 'image') {
+        console.log('Replacing image:', obj[prop]);
+        const image = await strict_image(obj[prop]);
+        const { url } = image[0];
+
+        const imagePath = await downloadImage(
+          url,
+          `./GPT/images/challenge.jpg`
+        );
+        if (!imagePath) {
+          console.log('Error downloading image, no image path');
+          continue;
+        }
+        // convert image to meme
+        const meme = convertFile(imagePath);
+
+        // upload image to database
+        const fileDB = await uploadFileToDB(meme);
+
+        // replace image desc to a real image
+        obj[prop] = `/uploads/${fileDB._id}`;
+      } else if (typeof obj[prop] === 'object') {
+        await replaceImage(obj[prop]);
+      }
+    }
+  }
+  await replaceImage(challenge);
 
   return challenge;
 }
@@ -211,7 +240,7 @@ async function generateDay({
     }
   }
   removeId(lastDay);
-  
+
   // generate day introduction
   const generatedDay = await strict_output2(
     `You are an helpful assistant that is able to generate a day in a challenge.

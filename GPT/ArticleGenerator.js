@@ -1,18 +1,10 @@
 require('dotenv').config();
 
-const fs = require('fs');
-const axios = require('axios');
 const schedule = require('node-schedule');
-const stream = require('stream');
-const util = require('util');
-
 const { UsersTest } = require('../database/indexJS');
 const { sendMessageViaEmail } = require('../services/nodemailer.js');
 // const { sendMessageViaWhatsApp } = require('../services/twilio');
-const { strict_image, strict_output2 } = require('./strict_output');
-
-const pipeline = stream.pipeline;
-const promisify = util.promisify;
+const { strict_image, strict_output2, downloadImage } = require('./strict_output');
 
 // Function to generate an article using the OpenAI CHATGPT-3 API
 async function generateArticle({
@@ -57,30 +49,6 @@ async function generateAndSaveImage(prompt) {
   const downloadPath = await downloadImage(imageUrl, imagePath);
   return downloadPath;
 }
-
-const downloadImage = async (imageUrl, downloadPath) => {
-  try {
-    const response = await axios({
-      url: imageUrl,
-      method: 'GET',
-      responseType: 'stream',
-    });
-
-    const writer = fs.createWriteStream(downloadPath);
-
-    const pipelineAsync = promisify(pipeline);
-    await pipelineAsync(response.data, writer);
-
-    console.log(`Image downloaded as ${downloadPath}`);
-    return downloadPath;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`Error downloading image: ${error.message}`);
-    }
-    fs.unlink(downloadPath, () => {});
-    return null;
-  }
-};
 
 // Function to generate and send articles to subscribers
 async function sendArticle(article, subscribers = { fullName, phone, email }) {

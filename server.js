@@ -36,10 +36,12 @@ const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
 const { Z_UNKNOWN } = require("zlib");
-const { generateChallenge, generateDay } = require('./GPT/ChallengeGenerator');
-// const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
+
 const fs = require("fs");
 const EventEmitter = require('events');
+const { generateChallenge, generateDay } = require('./GPT/ChallengeGenerator');
+// const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
+const { uploadFileToDB, FilesDB } = require('./database');
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -357,14 +359,6 @@ const StarsSchema = new db.Schema(
   },
   { versionKey: false }
 );
-
-const ImagesDBSchema = new db.Schema({
-  name: String,
-  data: Buffer,
-  contentType: String,
-});
-
-const ImagesDB = db.model('images', ImagesDBSchema);
 
 ///צריך לרשום לו עוד פרמטר עם אותו השם של הקולקשן כדי להגיד לו שאתה מתכוון למה שאתה מתכוון...
 const WaGroup = db.model("waGroups", waGroupSchema, "waGroups");
@@ -2360,30 +2354,32 @@ app.get('/progress', (req, res) => {
   });
 });
 
+/**************************
+ *** Article Generatror ***
+ *************************/
 // start article generator schedule to run every Monday at 9:00
 // scheduleArticleJob(1, 9, 0);
 
-// /upload to upload images to db and return the path from the db
+/************************
+ *** Uploads Handler ***
+ ***********************/
+// /upload to upload files to db and return the path from the db
 app.post('/upload', upload.single('file'), async (req, res) => {
   const file = req.file;
   if (!file) {
     return res.status(400).json({ msg: 'No file uploaded' });
   }
-  const image = await ImagesDB.create({
-    name: file.originalname,
-    data: file.buffer,
-    contentType: file.mimetype,
-  });
-  // create path to image in server and send it
-  res.status(200).send(`/images/${image._id}`);
+  const uploadedFile = await uploadFileToDB(file);
+  // create path to file in server and send it
+  res.status(200).send(`/uploads/${uploadedFile._id}`);
 });
 
-// /images/:id to get image from db
-app.get('/images/:id', async (req, res) => {
-  const image = await ImagesDB.findById(req.params.id);
-  if (!image) {
-    return res.status(404).json({ msg: 'Image not found' });
+// /uploads/:id to get image from db
+app.get('/uploads/:id', async (req, res) => {
+  const file = await FilesDB.findById(req.params.id);
+  if (!file || !file.contentType) {
+    return res.status(404).json({ msg: 'File not found' });
   }
-  res.setHeader('Content-Type', image.contentType);
-  res.send(image.data);
+  res.setHeader('Content-Type', file.contentType);
+  res.send(file.data);
 });

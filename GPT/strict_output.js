@@ -1,3 +1,4 @@
+require('dotenv').config();
 /**
  * This file contain functions that generate output from the OpenAI API
  * The output is strictly checked to ensure that it adheres to the output format
@@ -5,6 +6,14 @@
 const fs = require('fs');
 const OpenAI = require('openai');
 const { jsonrepair } = require('jsonrepair');
+const axios = require('axios');
+const stream = require('stream');
+const util = require('util');
+const mime = require('mime-types');
+const path = require('path');
+
+const pipeline = stream.pipeline;
+const promisify = util.promisify;
 
 const openai = new OpenAI({
   // organization: process.env.OPENAI_ORGANIZATION_ID,
@@ -137,6 +146,30 @@ async function strict_image(prompt, n = 1, size = '1024x1024') {
   return imageUrl;
 }
 
+const downloadImage = async (imageUrl, downloadPath) => {
+  try {
+    const response = await axios({
+      url: imageUrl,
+      method: 'GET',
+      responseType: 'stream',
+    });
+
+    const writer = fs.createWriteStream(downloadPath);
+
+    const pipelineAsync = promisify(pipeline);
+    await pipelineAsync(response.data, writer);
+
+    console.log(`Image downloaded as ${downloadPath}`);
+    return downloadPath;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(`Error downloading image: ${error.message}`);
+    }
+    fs.unlink(downloadPath, () => {});
+    return null;
+  }
+};
+
 // // Function to generate audio from the OpenAI API
 // async function strict_audio(prompt: string) {
 //   const transcription = await openai.audio.transcriptions.create({
@@ -147,4 +180,16 @@ async function strict_image(prompt, n = 1, size = '1024x1024') {
 //   console.log(transcription.text);
 // }
 
-module.exports = { strict_output2 };
+function convertFile(filePath) {
+  const buffer = fs.readFileSync(filePath);
+  const originalname = path.basename(filePath);
+  const mimetype = mime.lookup(filePath) || 'application/octet-stream';
+
+  return {
+    buffer,
+    originalname,
+    mimetype,
+  };
+}
+
+module.exports = { strict_output2, strict_image, downloadImage, convertFile };

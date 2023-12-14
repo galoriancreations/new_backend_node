@@ -119,6 +119,12 @@ const PlayerSchema = new db.Schema(
   { versionKey: false }
 );
 
+const FilesDBSchema = new db.Schema({
+  name: String,
+  data: Buffer,
+  contentType: String,
+});
+
 module.exports = {
   waGroupSchema,
   UsersTestSchema,
@@ -126,4 +132,5 @@ module.exports = {
   ChallengeSchema,
   TemplateSchema,
   PlayerSchema,
+  FilesDBSchema,
 };
