@@ -11,32 +11,34 @@ const waGroupSchema = new db.Schema(
 );
 
 const UsersTestSchema = new db.Schema(
-  {
-    _id: String,
-    username: String,
-    phone: String,
-    fullName: String,
-    organization: String,
-    country: String,
-    memberName: String,
-    memberRole: String,
-    email: String,
-    language: String,
-    accountType: String,
-    templates: Array,
-    drafts: Array,
-    challenges: Array,
-    createdChallenges: Array,
-    isAdmin: Boolean,
-    players: Array,
-    photo: {
-      name: String,
-      data: String,
-      contentType: String,
-    },
-    articleSubscribed: Boolean,
-  },
-  { versionKey: false }
+	{
+		_id: String,
+		username: String,
+		phone: String,
+		fullName: String,
+		organization: String,
+		country: String,
+		memberName: String,
+		memberRole: String,
+		email: String,
+		language: String,
+		accountType: String,
+		templates: Array,
+		drafts: Array,
+		challenges: Array,
+		createdChallenges: Array,
+    groups: Array,
+		isAdmin: Boolean,
+		players: Array,
+		photo: {
+			name: String,
+			data: String,
+			contentType: String,
+		},
+		articleSubscribed: Boolean,
+    telegramId: String,
+	},
+	{ versionKey: false }
 );
 
 const UserDraftSchema = new db.Schema(
@@ -117,7 +119,7 @@ const PlayerSchema = new db.Schema(
   { versionKey: false }
 );
 
-exports = {
+module.exports = {
   waGroupSchema,
   UsersTestSchema,
   UserDraftSchema,

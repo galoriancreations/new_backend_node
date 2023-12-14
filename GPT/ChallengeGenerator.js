@@ -1,7 +1,6 @@
 require('dotenv').config();
 const fs = require('fs');
 const { strict_output2 } = require('./strict_output');
-// const { addChallengeToDb } = require('../database/indexJS');
 
 async function generateChallenge({
   creator,
@@ -71,11 +70,7 @@ async function generateChallenge({
   }
 
   const response = await strict_output2(
-    `You are an helpful assistant that is able to generate a multi-day challenge.
-    Challenge length is ${days} days, with ${tasks} tasks per day, ${messages} messages per day,
-    ${preDays} preDays, ${preMessages} messages per preDay, lang: ${language}, target: ${targetAudience}.
-    The topic of the challenge is ${topic}.
-    Each task in the day start with 1 point and increase by 1 point for each task in the day.`,
+    `You are an helpful assistant that is able to generate a multi-day challenge.`,
     // user prompt
     `Generate a challenge with the following parameters: topic: ${topic}, days: ${days}, tasks: ${tasks}, messages: ${messages}, preDays: ${preDays}, preMessages: ${preMessages}, targetAudience: ${targetAudience}`,
     outputFormat,
@@ -83,6 +78,7 @@ async function generateChallenge({
       num_tries: numAttempts,
       // verbose: true,
       model: 'ft:gpt-3.5-turbo-1106:liminal-village::8UwQb8WJ', // fine-tuned model
+      temperature: 0.8,
     }
   );
 
@@ -134,10 +130,7 @@ async function generateChallenge({
       errorMessage += `preDays (${response?.preDays?.length}), `;
       errorFlag = true;
     }
-    if (
-      preMessages &&
-      response?.preDays[0]?.messages?.length !== preMessages
-    ) {
+    if (preMessages && response?.preDays[0]?.messages?.length !== preMessages) {
       errorMessage += `preMessages (${response?.preDays[0]?.messages?.length}), `;
       errorFlag = true;
     }
@@ -168,9 +161,14 @@ async function generateChallenge({
   return challenge;
 }
 
-async function generateDay({ challengeName, challengeIntroduction, lastDay, dayIndex }) {
+async function generateDay({
+  challengeName,
+  challengeIntroduction,
+  lastDay,
+  dayIndex,
+}) {
   console.log('Generating day with AI... this may take a while.');
-  
+
   // save day to file
   fs.writeFileSync('GPT/json/input_day.json', JSON.stringify(lastDay));
 
@@ -196,29 +194,43 @@ async function generateDay({ challengeName, challengeIntroduction, lastDay, dayI
   if (lastDay.messages) {
     outputFormat.messages = [
       {
-        content: '<message>',
+        content: '<day message>',
         time: '<HH:MM:SS>',
       },
     ];
   }
 
+  // delete 'id', 'type', 'fileUrl' property from lastDay object, check inner objects too
+  function removeId(obj) {
+    for (const prop in obj) {
+      if (prop === 'id' || prop === 'type' || prop === 'fileUrl') {
+        delete obj[prop];
+      } else if (typeof obj[prop] === 'object') {
+        removeId(obj[prop]);
+      }
+    }
+  }
+  removeId(lastDay);
+  
   // generate day introduction
   const generatedDay = await strict_output2(
     `You are an helpful assistant that is able to generate a day in a challenge.
-    Stay relevant to the challenge name and introduction.
-    The point of the first task is 1 and increase by 1 for each task in the day.`,
+Stay relevant to the challenge name and introduction.
+The point of the first task is 1 and increase by 1 for each task in the day.`,
     // user prompt
     `Generate a day for a challenge with the following parameters.
-    challenge name: ${challengeName}.
-    introduction of the first day of the challenge: ${challengeIntroduction},
-    Last day in the challenge structure: ${lastDay}. Genereate a day for the provided challenge.
-    Do not copy the first or last day, but stay relevant to the challenge name and introduction.
-    Generated day index is ${dayIndex + 1}`,
+challenge name: ${challengeName}
+Introduction of the first day of the challenge: ${challengeIntroduction}
+Last day in the challenge data: ${JSON.stringify(lastDay)}
+Genereate a day for the provided challenge.
+Do not copy the first or last day, but stay relevant to the challenge name and introduction.
+Generated day index is ${dayIndex + 1}`,
     outputFormat,
     {
       num_tries: 3,
       // verbose: true,
       model: 'ft:gpt-3.5-turbo-1106:liminal-village::8UwQb8WJ', // fine-tuned model
+      temperature: 0.8,
     }
   );
 
