@@ -358,6 +358,14 @@ const StarsSchema = new db.Schema(
   { versionKey: false }
 );
 
+const ImagesDBSchema = new db.Schema({
+  name: String,
+  data: Buffer,
+  contentType: String,
+});
+
+const ImagesDB = db.model('images', ImagesDBSchema);
+
 ///צריך לרשום לו עוד פרמטר עם אותו השם של הקולקשן כדי להגיד לו שאתה מתכוון למה שאתה מתכוון...
 const WaGroup = db.model("waGroups", waGroupSchema, "waGroups");
 
@@ -2352,6 +2360,30 @@ app.get('/progress', (req, res) => {
   });
 });
 
-
 // start article generator schedule to run every Monday at 9:00
 // scheduleArticleJob(1, 9, 0);
+
+// /upload to upload images to db and return the path from the db
+app.post('/upload', upload.single('file'), async (req, res) => {
+  const file = req.file;
+  if (!file) {
+    return res.status(400).json({ msg: 'No file uploaded' });
+  }
+  const image = await ImagesDB.create({
+    name: file.originalname,
+    data: file.buffer,
+    contentType: file.mimetype,
+  });
+  // create path to image in server and send it
+  res.status(200).send(`/images/${image._id}`);
+});
+
+// /images/:id to get image from db
+app.get('/images/:id', async (req, res) => {
+  const image = await ImagesDB.findById(req.params.id);
+  if (!image) {
+    return res.status(404).json({ msg: 'Image not found' });
+  }
+  res.setHeader('Content-Type', image.contentType);
+  res.send(image.data);
+});
