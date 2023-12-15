@@ -3,6 +3,26 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 
+//==== Its help to resolve  
+/*error 413 // payload too large, 
+for base64 string after adjusting size in express */
+
+app.use(bodyParser.json({limit: '50mb', extended: true}));
+app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
+app.use(bodyParser.text({ limit: '200mb' }));
+
+//=============================================
+
+//==== Its help to resolve  
+/*error 413 // payload too large, 
+for base64 string after adjusting size in express */
+
+app.use(bodyParser.json({limit: '50mb', extended: true}));
+app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
+app.use(bodyParser.text({ limit: '200mb' }));
+
+//=============================================
+
 //==== Its help to resolve
 /*error 413 // payload too large, 
 for base64 string after adjusting size in express */
@@ -333,22 +353,22 @@ const ChallengeSchema = new db.Schema(
 );
 
 const TemplateSchema = new db.Schema(
-  {
-    _id: String,
-    allowCopies: Boolean,
-    creator: String,
-    dayMargin: Number,
-    days: Array,
-    image: String,
-    isPublic: Boolean,
-    language: String,
-    lastSave: String,
-    name: String,
-    preDays: Array,
-    challenges: Array,
-    preMessages: Array,
-  },
-  { versionKey: false }
+	{
+		_id: String,
+		allowCopies: Boolean,
+		creator: String,
+		dayMargin: Number,
+		days: Array,
+		image:String,
+		isPublic: Boolean,
+		language: String,
+		lastSave: String,
+		name: String,
+		preDays: Array,
+		challenges: Array,
+		preMessages: Array,
+	},
+	{ versionKey: false }
 );
 
 const PlayerSchema = new db.Schema(
@@ -1528,103 +1548,73 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 				{ $set: playerToRemove }
 			);
 
-			final = {
-				msg: `sucessfully deleted user '${playerToRemove.username}`,
-				playerId: `${playerToRemove["_id"]}`,
-			};
-
-			//---------------------end of addPlayer-----------------------
-
-			//---------------------Start of getTemplateData-----------------------
-		} else if (Object.hasOwn(data, "getTemplateData")) {
-			console.log(`--getTemplateData--: start`);
-			// find template in DB, collection templates:
-			let template = await TemplatesDB.findOne({
-				_id: `${data["getTemplateData"]}`,
-			});
-			// send back to front:
-			final = template;
-			console.log(`--getTemplateData--: Template Ready!`);
-
-			//---------------------end of getTemplateData-----------------------
-
-			//---------------------Start of saveTemplate------------------------
-		} else if (Object.hasOwn(data, "saveTemplate")) {
-			console.log(`--saveTemplate--: start`);
-			let templateId = data["saveTemplate"]["templateId"];
-			console.log(`--saveTemplate--: template id is: ${templateId}`);
-			let templateData = data["saveTemplate"]["templateData"];
+					final = {
+						msg: `sucessfully deleted user '${playerToRemove.username}`,
+						playerId: `${playerToRemove["_id"]}`,
+					};
+				} else if (Object.hasOwn(data, "getTemplateData")) {
+					let template = await TemplatesDB.findOne({
+						_id: `${data["getTemplateData"]}`,
+					});
+					final = template;
+					console.log("Template Ready!");
+///=======================templates // save challenge image //=============================
+				} else if (Object.hasOwn(data, "saveTemplate")) {
+					let templateId = data["saveTemplate"]["templateId"];
+					console.log("template id is : " + templateId);
+					let templateData = data["saveTemplate"]["templateData"];
 
 			templateData["creator"] = current_user;
 			templateData["lastSave"] = new Date();
 
-			// if template is new there will be empty templateId,
-			// and here it will be created:
-			if (templateId == null) {
-				templateId = "t_" + generateRandomString();
-				templateData["_id"] = templateId;
-				// if user is Not Admin create template in DB templates collection:
-				if (isAdmin == false) {
-					templateData["isPublic"] = false;
-					await TemplatesDB.create(templateData);
-					let temp = {
-						_id: templateId,
-						name: templateData.name,
-						isPublic: templateData.isPublic,
-					};
-					user["templates"] = [...user["templates"], temp];
-				}
+					if (templateId == null) {
+						templateId = "t_" + generateRandomString();
+						templateData["_id"] = templateId;
+						if (isAdmin == false) {
+							templateData["isPublic"] = false;
+							await TemplatesDB.create(templateData);
+							let temp = {
+								_id: templateId,
+								name: templateData.name,
+								isPublic: templateData.isPublic,
+							};
+							user["templates"] = [...user["templates"], temp];
+							// to save templets in model "users" in drafts arr but not in model "user_drafts"
+							// user["drafts"] = [...user["drafts"], temp];
+							// user['templates'] = [...user['templates'], templateId]
+						}
+					} else {
+						templateData["_id"] = templateId;
 
-				// user.templates.forEach((t) => {
-				// 	for (let key in t) {
-				// 		console.log(`${key}: ${t[key]}`);
-				// 	}
-				// });
-
-				await updateUserInDB(user);
-			}
-			// if templateId is already exists:
-			else {
-				// do we need this row? is id is the same templateID in front already?:)
-				templateData["_id"] = templateId;
-
-				// if a user is Admin OR there is such template in user variable already:
-				if (
-					isAdmin == true ||
-					user["templates"].find((val) => val._id == templateId) != undefined
-				) {
-					// if user is Not Admin template will be privat:
-					if (isAdmin == false) {
-						templateData["isPublic"] = false;
-					}
-					// update DB - templates collection:
-					await TemplatesDB.updateOne(
-						{ _id: `${templateId}` },
-						{ $set: templateData }
-					);
-					// update user variable:
-					let temp = {
-						_id: templateId,
-						name: templateData.name,
-						isPublic: templateData.isPublic,
-					};
-					let index = user["templates"].findIndex(
-						(val) => val._id == templateId
-					);
-					user["templates"][index] = temp;
-
-					//update DB - users collection:
-					await updateUserInDB(user);
-					// if user is Not Admin AND there that templateId in user variable already exists:
-				} else {
-					let existingTemplate = await TemplatesDB.findOne({
-						_id: templateId,
-						isPublic: true,
-					});
-					console.log(
-						`--saveTemplate--: existingTemplateData: ${existingTemplateData}`
-					);
-					let excludedKeys = ["lastSave", "creator", "challenges", "_id"];
+						if (
+							isAdmin == true ||
+							user["templates"].find((val) => val._id == templateId) !=
+								undefined
+						) {
+							if (isAdmin == false) {
+								templateData["isPublic"] = false;
+							}
+							await TemplatesDB.updateOne(
+								{ _id: `${templateId}` },
+								{ $set: templateData }
+							);
+							let temp = {
+								_id: templateId,
+								name: templateData.name,
+								isPublic: templateData.isPublic,
+							};
+							let index = user["templates"].findIndex(
+								(val) => val._id == templateId
+							);
+							user["templates"][index] = temp;
+							updateUserInDB(user);
+						} else {
+							let existingTemplate = await TemplatesDB.findOne({
+								_id: templateId,
+								isPublic: true,
+							});
+							console.log("existingTemplateData :" + existingTemplateData);
+							let excludedKeys = ["lastSave", "creator", "challenges", "_id"];
 
 					existingTemplateData = Object.entries(existingTemplate).reduce(
 						(result, [key, value]) => {
