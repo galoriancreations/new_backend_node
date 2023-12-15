@@ -3,6 +3,38 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 
+//==== Its help to resolve
+/*error 413 // payload too large, 
+for base64 string after adjusting size in express */
+
+app.use(bodyParser.json({ limit: "50mb", extended: true }));
+app.use(
+	bodyParser.urlencoded({
+		limit: "50mb",
+		extended: true,
+		parameterLimit: 50000,
+	})
+);
+app.use(bodyParser.text({ limit: "200mb" }));
+
+//=============================================
+
+//==== Its help to resolve
+/*error 413 // payload too large, 
+for base64 string after adjusting size in express */
+
+app.use(bodyParser.json({ limit: "50mb", extended: true }));
+app.use(
+	bodyParser.urlencoded({
+		limit: "50mb",
+		extended: true,
+		parameterLimit: 50000,
+	})
+);
+app.use(bodyParser.text({ limit: "200mb" }));
+
+//=============================================
+
 
 const { Telegraf } = require('telegraf')
 
@@ -148,11 +180,13 @@ const fetchUserFromID = async (id) => {
 };
 
 const updateUserInDB = async (user) => {
-  console.log("new user to update:", user);
-  await UsersTest.updateOne({ _id: `${user["_id"]}` }, { $set: user });
-  return;
+	console.log("new user to update:", user.templates);
+
+	await UsersTest.updateOne({ _id: `${user["_id"]}` }, { $set: user });
 };
 
+// why in this three searches i exculde:
+//  "days" "preMessages", "preDays"?
 const findDraftInDB = async (draft) => {
   return await UsersDrafts.findOne(
     { _id: draft },
@@ -245,7 +279,7 @@ const UsersTestSchema = new db.Schema(
     groups: Array,
 		isAdmin: Boolean,
 		players: Array,
-		photo: {
+		image: {
 			name: String,
 			data: String,
 			contentType: String,
@@ -257,23 +291,23 @@ const UsersTestSchema = new db.Schema(
 );
 
 const UserDraftSchema = new db.Schema(
-  {
-    _id: String,
-    days: Array,
-    image: String,
-    allowTemplateCopies: Boolean,
-    date: String,
-    isTemplatePublic: Boolean,
-    language: String,
-    lastSave: Number,
-    name: String,
-    preMessages: Array,
-    preDays: Array,
-    days: Array,
-    templateId: String,
-    templateOnly: Boolean,
-  },
-  { versionKey: false }
+	{
+		_id: String,
+		allowTemplateCopies: Boolean,
+		days: Array,
+		image: String,
+		date: String,
+		isTemplatePublic: Boolean,
+		language: String,
+		lastSave: Number,
+		name: String,
+		preDays: Array,
+		preMessages: Array,
+		dayMargin: Number,
+		templateId: String,
+		templateOnly: Boolean,
+	},
+	{ versionKey: false }
 );
 
 const ChallengeSchema = new db.Schema(
@@ -780,143 +814,133 @@ app.post("/sendMessage", (req, res) => {
 
   sendReply(temp);
 });
-// ---test if i can take a photo from database----
-// app.get("/photo", async (req, res) => {
-// 	// Create a file path where you want to save the photo
-// 	const testPhoto = await UsersTest.findOne({ username: "YanaTest" });
-// 	console.log(testPhoto);
-// 	// const filePath = `./uploads/${photo.name}`;
 
-// 	// // Convert the Base64 data back to a Buffer
-// 	// const buffer = Buffer.from(testPhoto.photo.data, "base64");
+// ----------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------
+//  ----------------------------------!!-- API --!!---------------------------------------------
+// ----------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------
 
-// 	// // Write the Buffer to the file
-// 	// fs.writeFileSync(filePath, buffer);
-// });
-// ----end test----
+app.post("/api", upload.single("image"), (req, res) => {
+	const start = async () => {
+		//i cant use hasOwnProperty method like i use in below
+		// instead i using Object.hasOwn
+		if (Object.hasOwn(req.body, "register")) {
+			const image = {
+				name: "",
+				data: "",
+				contentType: "",
+			};
 
-app.post("/api", upload.single("photo"), (req, res) => {
-  const start = async () => {
-    //i cant use hasOwnProperty method like i use in below
-    if (req.body.register != null) {
-      console.log("this works");
+			if (req.file) {
+				// Read the uploaded file as a Buffer
+				const fileBuffer = req.file.buffer;
+				// Convert the Buffer to a Base64-encoded string
+				const base64Data = fileBuffer.toString("base64");
+				// structure how image will be stored in DB
+				image.name = req.file.originalname;
+				image.data = base64Data;
+				image.contentType = req.file.mimetype;
 
-      const photo = {
-        name: "",
-        data: "",
-        contentType: "",
-      };
+				console.log(`API: image uploaded`);
+			}
+			//parse body from JSON to object
+			let parseredRegister = JSON.parse(req.body.register);
 
-      if (req.file) {
-        // Read the uploaded file as a Buffer
-        const fileBuffer = req.file.buffer;
-        // Convert the Buffer to a Base64-encoded string
-        const base64Data = fileBuffer.toString("base64");
-        // structure how photo will be stored in DB
-        photo = {
-          name: req.file.originalname,
-          data: base64Data,
-          contentType: req.file.mimetype,
-        };
+			//check all propertise of parseredRegister object:
+			console.log(`API: check all properties:`);
+			for (const keyTest in parseredRegister) {
+				console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
+			}
 
-        console.log("photo uploaded");
-      }
-
-      //parse body from JSON to object
-      let parseredRegister = JSON.parse(req.body.register);
-
-      //check all propertise of parseredRegister object:
-      for (const keyTest in parseredRegister) {
-        console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
-      }
-
-      let _username = parseredRegister.username;
-      let _phone = parseredRegister.phone;
-      _phone = _phone.replace("+", "");
-      //if a name dosent already exists in DB
-      if ((await UsersTest.findOne({ username: `${_username}` })) == null) {
-        //if a phone dosent already exists in DB
-        if ((await UsersTest.findOne({ phone: `${_phone}` })) == null) {
-          let temp = {
-            _id: _phone,
-            username: _username,
-            phone: _phone,
-            fullName: parseredRegister.fullName,
-            organization: parseredRegister.organization,
-            country: parseredRegister.country,
-            memberName: "",
-            memberRole: "",
-            email: parseredRegister.email,
-            language: parseredRegister.language,
-            accountType: parseredRegister.accountType,
-            templates: [],
-            drafts: [],
-            challenges: [],
-            createdChallenges: [],
-            players: [],
-            isAdmin: false,
-            photo: photo,
-          };
-          console.log("all properties for a new user assigned");
-          addUserToDb(temp);
-          let [token, exp] = getToken(temp.phone);
-          res.status(200).json({ access_token: token, exp: exp, user: temp });
-        } else {
-          res
-            .status(200)
-            .json(
-              "Oops! This phone is already taken,\nplease choose another :)"
-            );
-          return;
-        }
-      } else {
-        res
-          .status(200)
-          .json(
-            "Oops! This username is already taken,\nplease choose another :)"
-          );
-        return;
-      }
-    } else {
-      if (req.body.hasOwnProperty("getTopPlayers")) {
-        const players = await PlayersDB.find();
-        let newPlayers = players.map((player) => playerData(player));
-        if (newPlayers.length > 18) {
-          newPlayers = newPlayers.slice(0, 18);
-        }
-        newPlayers.sort((a, b) => b.totalScore - a.totalScore);
-        function playerData(player) {
-          const pData = {};
-          const keys = ["userName", "fullName", "phone", "totalScore", "stats"];
-          for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
-            if (player._doc.hasOwnProperty(key)) {
-              pData[key] = player._doc[key];
-            } else {
-              pData[key] = null;
-            }
-          }
-          return pData;
-        }
-        res.status(200).json(newPlayers);
-      } else if (req.body.hasOwnProperty("checkUsername")) {
-        let check = await UsersTest.findOne({
-          username: `${req.body.checkUsername}`,
-        });
-        let [result, message] = [false, ""];
-        if (check == null) {
-          [result, message] = [
-            true,
-            `Great! you can register with username: ${req.body.checkUsername}`,
-          ];
-        } else {
-          [result, message] = [
-            false,
-            "Oops! This username is already taken,\nplease choose another :)",
-          ];
-        }
-        res.status(200).json({ result: result, msg: message });
-      }
+			let _username = parseredRegister.username;
+			let _phone = parseredRegister.phone;
+			_phone = _phone.replace("+", "");
+			//if a name dosent already exists in DB
+			if ((await UsersTest.findOne({ username: `${_username}` })) == null) {
+				//if a phone dosent already exists in DB
+				if ((await UsersTest.findOne({ phone: `${_phone}` })) == null) {
+					let temp = {
+						_id: _phone,
+						username: _username,
+						phone: _phone,
+						fullName: parseredRegister.fullName,
+						organization: parseredRegister.organization,
+						country: parseredRegister.country,
+						memberName: "",
+						memberRole: "",
+						email: parseredRegister.email,
+						language: parseredRegister.language,
+						accountType: parseredRegister.accountType,
+						templates: [],
+						drafts: [],
+						challenges: [],
+						createdChallenges: [],
+						players: [],
+						isAdmin: false,
+						image: image,
+					};
+					console.log("API: all properties for a new user assigned");
+					//add new user to DB
+					addUserToDb(temp);
+					let [token, exp] = getToken(temp.phone);
+					res.status(200).json({ access_token: token, exp: exp, user: temp });
+				} else {
+					res
+						.status(200)
+						.json(
+							"Oops! This phone is already taken,\nplease choose another :)"
+						);
+					return;
+				}
+			} else {
+				res
+					.status(200)
+					.json(
+						"Oops! This username is already taken,\nplease choose another :)"
+					);
+				return;
+			}
+		} else {
+			if (req.body.hasOwnProperty("getTopPlayers")) {
+				const players = await PlayersDB.find();
+				let newPlayers = players.map((player) => playerData(player));
+				if (newPlayers.length > 18) {
+					newPlayers = newPlayers.slice(0, 18);
+				}
+				newPlayers.sort((a, b) => b.totalScore - a.totalScore);
+				function playerData(player) {
+					const pData = {};
+					const keys = ["userName", "fullName", "phone", "totalScore", "stats"];
+					for (let i = 0; i < keys.length; i++) {
+						const key = keys[i];
+						if (player._doc.hasOwnProperty(key)) {
+							pData[key] = player._doc[key];
+						} else {
+							pData[key] = null;
+						}
+					}
+					return pData;
+				}
+				res.status(200).json(newPlayers);
+			} else if (req.body.hasOwnProperty("checkUsername")) {
+				let check = await UsersTest.findOne({
+					username: `${req.body.checkUsername}`,
+				});
+				let [result, message] = [false, ""];
+				if (check == null) {
+					[result, message] = [
+						true,
+						`Great! you can register with username: ${req.body.checkUsername}`,
+					];
+				} else {
+					[result, message] = [
+						false,
+						"Oops! This username is already taken,\nplease choose another :)",
+					];
+				}
+				res.status(200).json({ result: result, msg: message });
+			}
 
       if (req.body.hasOwnProperty("checkPhone")) {
         let phoneNum = req.body.checkPhone;
@@ -1129,929 +1153,730 @@ function isUserLoggedIn(req) {
   return { mesg: null, loggedIn: true };
 }
 
-app.post("/xapi", async (req, res) => {
-  data = req.body;
-  console.log("XAPI START");
-  goodToken = false;
+// ==============================================================================================
+// ----------------------------------------------------------------------------------------------
+//  ----------------------------------!!-- XAPI --!!---------------------------------------------
+// ----------------------------------------------------------------------------------------------
+// ==============================================================================================
 
-  let headerToken = req.headers["authorization"];
-  try {
-    headerToken = headerToken.split(" ")[1];
+app.post("/xapi", upload.single("image"), async (req, res) => {
+	data = req.body;
+	console.log("XAPI START");
+	goodToken = false;
 
-    goodToken = true;
-  } catch (error) {
-    console.trace(error);
-    console.log(" ::: ERROR OCCURRED ON XAPI, ignoring");
-  }
-  if (goodToken) {
-    let current_user = decode_auth_token(headerToken, secretKey);
-    if (!current_user) {
-      return res.status(401).json({
-        msg: "Invalid or expired token. Please refresh the page and login",
-      });
-    }
-    let user = await UsersTest.findOne({ _id: current_user });
+	let headerToken = req.headers["authorization"];
 
-    const isAdmin = user["isAdmin"];
+	try {
+		headerToken = headerToken.split(" ")[1];
+		goodToken = true;
+	} catch (error) {
+		console.trace(error);
+		console.log(" ::: ERROR OCCURRED ON XAPI, ignoring");
+	}
 
-    let final = {};
+	// ---------------------RETURN---------------------------------
+	if (!goodToken) {
+		return;
+	}
+	// ------------------------------------------------------------
 
-    if (!data.hasOwnProperty("userID")) {
-      data["userID"] = current_user;
-    }
+	let current_user = decode_auth_token(headerToken, secretKey);
 
-    if (data.hasOwnProperty("userID")) {
-      console.log(`data's userID is now ${data["userID"]}`);
-      if (String(current_user).trim() === String(data["userID"]).trim()) {
-        ///אנחנו בסוף נשלח את את זה חזרה לפרונט
-        let userData = {};
+	// ---------------------RETURN---------------------------------
+	if (!current_user) {
+		return res.status(401).json({
+			msg: "Invalid or expired token. Please refresh the page and login",
+		});
+	}
+	// ------------------------------------------------------------
 
-        if (data.hasOwnProperty("editProfile")) {
-          let newData = data["editProfile"];
-          let allowedChanges = [
-            "username",
-            "phone",
-            "email",
-            "fullName",
-            "image",
-            "language",
-            "memberName",
-            "memberRole",
-            "organization",
-            "city",
-            "country",
-          ];
+	let user = await UsersTest.findOne({ _id: current_user });
 
-          for (let key in allowedChanges) {
-            if (newData.hasOwnProperty(allowedChanges[key])) {
-              user[allowedChanges[key]] = newData[allowedChanges[key]];
-            }
-          }
+	// user.templates.forEach((t) => {
+	// 	for (let key in t) {
+	// 		console.log(`==XAPI==: ${key}: ${t[key]}`);
+	// 	}
+	// });
 
-          // ///תוספת שלי, הפרונט אנד מחפש קטגוריה של שחקנים למרות שהיא לא קיימת כשנוצר משתמש חדש
-          // if (!(user.hasOwnProperty('players'))) {
-          //   user['players'] = []
-          // }
-          await updateUserInDB(user);
+	const isAdmin = user["isAdmin"];
 
-          const userDoc = user.toObject();
-          for (let key in userDoc) {
-            if (userDoc.hasOwnProperty(key)) {
-              userData[key] = userDoc[key];
-            }
-          }
+	// value that xapi returns:
+	let final = {};
 
-          // if (!String(userData["phone"]).startsWith("+")) {
-          //   userData["phone"] = "+" + String(userData["phone"]);
-          // }
+	if (!Object.hasOwn(data, "userID")) {
+		data["userID"] = current_user;
+	}
 
-          userDrafts = {};
-          if (userData.hasOwnProperty("drafts")) {
-            for (let draftID in userData["drafts"]) {
-              console.log("Fetching draft from DB:", draftID);
-              let result = await findDraftInDB(draftID);
-              console.log("Receiving draft from DB:", result);
-              if (result != null) {
-                userDrafts[draftID] = {
-                  _id: result["_id"],
-                  name: result["name"],
-                  language: result["language"],
-                };
-                if (result.hasOwnProperty("challengeId")) {
-                  userDrafts[draftID]["challengeId"] = result["challengeId"];
-                }
-              }
-            }
-          }
-          userData["drafts"] = userDrafts;
+	console.log(`XAPI: data's userID is now ${data["userID"]}`);
 
-          userData["challenges"] = {};
+	if (String(current_user).trim() === String(data["userID"]).trim()) {
+		//object that will return to front
+		let userData = {};
+		// must have this "editProfile" field when entering dashboard
+		//---------------------Start of editProfile-----------------------
 
-          createdChallenges = {};
+		if (Object.hasOwn(data, "editProfile")) {
+			console.log(`--editProfile--: start`);
+			let allowedChanges = [
+				"username",
+				"phone",
+				"email",
+				"fullName",
+				"image",
+				"language",
+				"memberName",
+				"memberRole",
+				"organization",
+				"city",
+				"country",
+			];
+			// 	this value is needed when editing profile, because user data is send in json
+			let parseredBody = null;
+			//  this value is needed in another cases
+			let newData = null;
+			//  try, catch is for two cases:
+			//  1. if user is editing profile
+			//  2. any another case
+			try {
+				//parse body from JSON to object
+				JSON.parse(req.body.editProfile);
+				parseredBody = JSON.parse(req.body.editProfile);
 
-          if (userData.hasOwnProperty("createdChallenges")) {
-              for (let i = 0; i < userData["createdChallenges"].length; i++) {
-                const challengeId = userData["createdChallenges"][i];
-              challenge = await Challenges.findOne({ _id: challengeId })
-              if (challenge != null) {
-                templateId = challenge["template"];
-                template = await findTemplateInDB(templateId);
-                if (template != null) {
-                  challenge["name"] = template["name"];
-                  challenge["language"] = template["language"];
-                  if (template.hasOwnProperty("dayMargin")) {
-                    challenge["dayMargin"] = template["dayMargin"];
-                  }
-                  createdChallenges[challengeId] = challenge;
-                }
-              }
-            }
-          }
+				// image variable structure
+				const image = {
+					name: "",
+					data: "",
+					contentType: "",
+				};
+				// if user sended image to update
+				if (req.file) {
+					// Read the uploaded image as a Buffer
+					const fileBuffer = req.file.buffer;
+					// Convert the Buffer to a Base64-encoded string
+					const base64Data = fileBuffer.toString("base64");
+					// structure how image will be stored in DB
+					image.name = req.file.originalname;
+					image.data = base64Data;
+					image.contentType = req.file.mimetype;
+				}
+				// copy all user data that sended from front to user variable
+				for (let key in allowedChanges) {
+					if (parseredBody.hasOwnProperty(allowedChanges[key])) {
+						user[allowedChanges[key]] = parseredBody[allowedChanges[key]];
+					}
+				}
+				// copy image
+				user.image = image;
+				console.log(`--editProfile--: 1.here`);
+				// if it is not edit profile case:
+			} catch (error) {
+				console.log(`--editProfile--: 2.here`);
+				newData = data["editProfile"];
+				// copy all user data that sended from front to user variable
+				for (let key in allowedChanges) {
+					if (newData.hasOwnProperty(allowedChanges[key])) {
+						user[allowedChanges[key]] = newData[allowedChanges[key]];
+						console.log(`--editProfile--: 2.2.here`);
+					}
+				}
+			}
 
-          userData["createdChallenges"] = createdChallenges;
+			// ///תוספת שלי, הפרונט אנד מחפש קטגוריה של שחקנים למרות שהיא לא קיימת כשנוצר משתמש חדש
+			// if (!(user.hasOwnProperty('players'))) {
+			//   user['players'] = []
+			// }
 
-          final["logged_in_as"] = current_user;
+			// update DataBase
+			console.log(`--editProfile--: 3.here`, user.templates.length);
 
-          final["user"] = userData;
-        } else if (data.hasOwnProperty("getAvailableTemplates")) {
-          let publicTemplates = await TemplatesDB.find({ isPublic: true });
+			await updateUserInDB(user);
 
-          let privateTemplates = await Promise.all(
-            user.templates.map(async (val) => {
-              return await TemplatesDB.find({
-                _id: `${val._id}`,
-                isPublic: false,
-              });
-            })
-          );
+			// why i need this? why i use userData variable instead of just user variable?
+			const userDoc = user.toObject();
+			for (let key in userDoc) {
+				if (userDoc.hasOwnProperty(key)) {
+					userData[key] = userDoc[key];
+				}
+			}
 
-          privateTemplates = privateTemplates.flat(); ///המערך שמתקבל מהלולאה הקודמת הוא מערך של מערכים שמכילים כל אובייקט, לכן אנחנו צריכים להוציא את האובייקטים מתוך המערכים הפנימיים
-          ///מחבר את שני המערכים
-          let templates = publicTemplates.concat(privateTemplates);
-          templates.filter((val) => val !== null);
+			// userDoc.templates.forEach((t) => {
+			// 	for (let key in t) {
+			// 		console.log(`==XAPI==: ${key}: ${t[key]}`);
+			// 	}
+			// });
 
-          final = { templates: templates };
-        } else if (data.hasOwnProperty("addPlayer")) {
-          let phoneNum = req.body.addPlayer.phone;
-          phoneNum = phoneNum.replace("+", "");
-          if (user["accountType"] == "individual") {
-            return res.status(403).json({
-              msg: "Your account is not an organization, you can't add players.",
-            });
-          }
-          let findIndividual = await UsersTest.findOne({
-            phone: `${phoneNum}`,
-          });
-          if (findIndividual == null) {
-            return res.status(403).json({
-              msg: `No user found with this phone number: ${req.body.addPlayer.phone}`,
-            });
-          }
+			// if (!String(userData["phone"]).startsWith("+")) {
+			//   userData["phone"] = "+" + String(userData["phone"]);
+			// }
 
-          let findPlayer = await PlayersDB.findOne({
-            userName: `${findIndividual["username"]}`,
-          });
-          console.log("findPlayer :", findPlayer);
-          if (findPlayer == null) {
-            let playerId = null;
-            while (
-              playerId == null ||
-              (await PlayersDB.findOne({ _id: `${playerId}` })) != null
-            ) {
-              playerId = "p_" + generateRandomString();
-            }
-            let temp = {
-              _id: playerId,
-              phone: phoneNum,
-              userName: findIndividual.username,
-              totalScore: 0,
-              clubs: [
-                {
-                  clubId: current_user,
-                  groupName: req.body.addPlayer.groupName,
-                  role: req.body.addPlayer.role,
-                  score: 0,
-                },
-              ],
-            };
-            await PlayersDB.create(temp);
-            user["players"] = [
-              ...user["players"],
-              {
-                playerId: playerId,
-                username: findIndividual.username,
-                fullName: findIndividual.fullName,
-                role: req.body.addPlayer.role,
-              },
-            ];
-            console.log("user with players" + user);
-            updateUserInDB(user);
-          } else {
-            let checkId = findPlayer.clubs.find(
-              (val) => val.clubId == user["_id"]
-            );
-            console.log("checkId:", checkId);
-            if (checkId == undefined) {
-              findPlayer["clubs"] = [
-                ...findPlayer["clubs"],
-                {
-                  clubId: current_user,
-                  groupName: req.body.addPlayer.groupName,
-                  role: req.body.addPlayer.role,
-                  score: 0,
-                },
-              ];
-              await PlayersDB.updateOne(
-                { _id: `${findPlayer["_id"]}` },
-                { $set: findPlayer }
-              );
-              user["players"] = [
-                ...user["players"],
-                {
-                  playerId: findPlayer["_id"],
-                  username: findPlayer.userName,
-                  fullName: findIndividual.fullName,
-                  role: req.body.addPlayer.role,
-                },
-              ];
-              updateUserInDB(user);
-            } else {
-              return res.status(403).json({
-                msg: "A player with this phone number is already assigned to your organization!",
-              });
-            }
-          }
-          final = {
-            logged_in_as: current_user,
-            msg: `${findIndividual.username}`,
-            playerId: `${findIndividual["_id"]}`,
-          };
-        } else if (data.hasOwnProperty("deletePlayer")) {
-          let playerToRemove = await PlayersDB.findOne({
-            _id: `${data.deletePlayer}`,
-          });
+			let userDrafts = {};
 
-          playerToRemove.clubs = playerToRemove.clubs.filter(
-            (val) => val.clubId !== user.phone
-          );
+			// if user have drafts
+			if (userData.hasOwnProperty("drafts")) {
+				for (let draftID in userData["drafts"]) {
+					console.log(`--editProfile--: Fetching draft from DB: 
+						${draftID} : ${userData["drafts"][draftID]}`);
 
-          user.players = user.players.filter(
-            (val) => val.playerId !== data.deletePlayer
-          );
+					// ---
+					// if i want to erase all drafts in user.
+					// for test and development only:
+					// user.drafts = [];
+					// await UsersTest.updateOne({ _id: `${user["_id"]}` }, { $set: user });
+					// ---
 
-          updateUserInDB(user);
+					// find current draft in draft collection:
+					let result = await findDraftInDB(userData["drafts"][draftID]);
 
-          await PlayersDB.updateOne(
-            { _id: `${playerToRemove["_id"]}` },
-            { $set: playerToRemove }
-          );
+					// console.log(`--editProfile--: Receiving draft from DB: ${result}`);
+					// but takes from it only three parameters,
+					// beacause on dashboard page i dont need all the info:
+					// id, name, language and challengeId
 
-          final = {
-            msg: `sucessfully deleted user '${playerToRemove.username}`,
-            playerId: `${playerToRemove["_id"]}`,
-          };
-        } else if (data.hasOwnProperty("getTemplateData")) {
-          let template = await TemplatesDB.findOne({
-            _id: `${data["getTemplateData"]}`,
-          });
-          final = template;
-          console.log("Template Ready!");
-        } else if (data.hasOwnProperty("saveTemplate")) {
-          let templateId = data["saveTemplate"]["templateId"];
-          console.log("template id is : " + templateId);
-          let templateData = data["saveTemplate"]["templateData"];
+					if (result != null) {
+						userDrafts[draftID] = {
+							_id: result["_id"],
+							name: result["name"],
+							language: result["language"],
+						};
+						if (result.hasOwnProperty("challengeId")) {
+							userDrafts[draftID]["challengeId"] = result["challengeId"];
+						}
+					}
+				}
+			}
+			userData["drafts"] = userDrafts;
 
-          templateData["creator"] = current_user;
-          templateData["lastSave"] = new Date();
+			userData["challenges"] = {};
 
-          if (templateId == null) {
-            templateId = "t_" + generateRandomString();
-            templateData["_id"] = templateId;
-            if (isAdmin == false) {
-              templateData["isPublic"] = false;
-              await TemplatesDB.create(templateData);
-              let temp = {
-                _id: templateId,
-                name: templateData.name,
-                isPublic: templateData.isPublic,
-              };
-              user["templates"] = [...user["templates"], temp];
-              // user['templates'] = [...user['templates'], templateId]
-            }
-          } else {
-            templateData["_id"] = templateId;
-            if (
-              isAdmin == true ||
-              user["templates"].find((val) => val._id == templateId) !=
-                undefined
-            ) {
-              if (isAdmin == false) {
-                templateData["isPublic"] = false;
-              }
-              await TemplatesDB.updateOne(
-                { _id: `${templateId}` },
-                { $set: templateData }
-              );
-              let temp = {
-                _id: templateId,
-                name: templateData.name,
-                isPublic: templateData.isPublic,
-              };
-              let index = user["templates"].findIndex(
-                (val) => val._id == templateId
-              );
-              user["templates"][index] = temp;
-              updateUserInDB(user);
-            } else {
-              let existingTemplate = await TemplatesDB.findOne({
-                _id: templateId,
-                isPublic: true,
-              });
-              console.log("existingTemplateData :" + existingTemplateData);
-              let excludedKeys = ["lastSave", "creator", "challenges", "_id"];
+			createdChallenges = {};
 
-              existingTemplateData = Object.entries(existingTemplate).reduce(
-                (result, [key, value]) => {
-                  if (key in templateData && !excludedKeys.includes(key)) {
-                    result[key] = value;
-                  }
-                  return result;
-                },
-                {}
-              );
-              let filteredTemplateData = {};
-              for (let key in templateData) {
-                if (!excludedKeys.includes(key)) {
-                  filteredTemplateData[key] = templateData[key];
-                }
-              }
-              if (
-                String(existingTemplateData) !== String(filteredTemplateData)
-              ) {
-                let originId = templateId;
-                templateId = "t_" + generateRandomString();
-                templateData["_id"] = templateId;
-                templateData["isPublic"] = false;
-                templateData["origin"] = originId;
-                await TemplatesDB.create(templateData);
-                let temp = {
-                  _id: templateId,
-                  name: templateData.name,
-                  isPublic: templateData.isPublic,
-                };
-                user["templates"] = [...user["templates"], temp];
-              }
-            }
-          }
-          updateUserInDB(user);
-          final = { logged_in_as: current_user, templateId: templateId };
-        } else if (data.hasOwnProperty("deleteTemplate")) {
-          let templateId = data["deleteTemplate"]["templateId"];
-          if (
-            !isAdmin &&
-            !(
-              user["templates"].find((val) => val._id == templateId) !=
-              undefined
-            )
-          ) {
-            return res
-              .status(404)
-              .json({ msg: `Template not found ${templateId}` });
-          }
-          await TemplatesDB.deleteOne({ _id: `${templateId}` });
-          user.templates = user.templates.filter(
-            (val) => val._id !== templateId
-          );
-          console.log("user templates:", user.templates);
-          updateUserInDB(user);
-          final = {
-            msg: `Successfully deleted template: ${templateId}`,
-            templateId: templateId,
-          };
-        } else if (data.hasOwnProperty("cloneTemplate")) {
-          let originId = data["cloneTemplate"];
-          let originTemplate = await TemplatesDB.findOne({
-            _id: `${originId}`,
-          });
-          if (
-            originTemplate == null ||
-            (user["templates"].find((val) => val._id == originId) ==
-              undefined &&
-              !originTemplate["isPublic"])
-          ) {
-            return res
-              .status(404)
-              .json({ msg: `Template not found ${originId}` });
-          }
-          let newTemplate = {};
+			if (userData.hasOwnProperty("createdChallenges")) {
+				for (let challengeId in userData["createdChallenges"]) {
+					console.log("Fetching draft from DB:", draftID);
+					challenge = await findChallengeInDB(challengeId);
+					console.log("Receiving draft from DB:", draftID);
+					if (challenge != null) {
+						templateId = challenge["template"];
+						template = await findTemplateInDB(templateId);
+						if (template != null) {
+							challenge["name"] = template["name"];
+							challenge["language"] = template["language"];
+							if (template.hasOwnProperty("dayMargin")) {
+								challenge["dayMargin"] = template["dayMargin"];
+							}
+							createdChallenges[challengeId] = challenge;
+						}
+					}
+				}
+			}
 
-          const originDoc = originTemplate.toObject();
-          for (let key in originDoc) {
-            newTemplate[`${key}`] = originTemplate[`${key}`];
-          }
+			userData["createdChallenges"] = createdChallenges;
 
-          let newId = "t_" + generateRandomString();
-          newTemplate["_id"] = newId;
-          newTemplate["isPublic"] = originTemplate["isPublic"] && isAdmin;
-          newTemplate["name"] = `${originTemplate["name"]} (copy)`;
-          newTemplate["creator"] = current_user;
-          await TemplatesDB.create(newTemplate);
-          let temp = {
-            _id: newId,
-            name: newTemplate["name"],
-            isPublic: newTemplate["isPublic"],
-          };
-          user["templates"] = [...user["templates"], temp];
-          updateUserInDB(user);
-          let excludedKeys = ["days", "preDays", "preMessages"];
+			// send back to front:
+			final["logged_in_as"] = current_user;
 
-          for (let key in newTemplate) {
-            if (!excludedKeys.includes(key)) {
-              newTemplate[key] = newTemplate[key];
-            }
-          }
+			final["user"] = userData;
 
-          newTemplate["creator"] = user["phone"];
+			//----------------end of editProfile-----------------------
 
-          final = newTemplate;
-        } else if (data.hasOwnProperty("getAllTemplates")) {
-          if (isAdmin == false) {
-            return res
-              .status(403)
-              .json({ msg: "user not authorized to view all templates" });
-          }
-          let templates = await TemplatesDB.find(
-            {},
-            { days: 0, preMessages: 0, preDays: 0 }
-          );
+			//---------------------Start of getAvailableTemplates-----------------------
+		} else if (Object.hasOwn(data, "getAvailableTemplates")) {
+			console.log(`--getAvailableTemplates--: start`);
 
-          templates.reverse();
+			// ---
+			// if i want to erase all templates in user.
+			// for test and development only:
+			// user.templates = [];
+			// await UsersTest.updateOne({ _id: `${user["_id"]}` }, { $set: user });
+			// ---
 
-          let creators = { current_user: user };
+			let publicTemplates = await TemplatesDB.find({ isPublic: true });
 
-          for (let template in templates) {
-            if (
-              template.hasOwnProperty("creator") &&
-              template["creator"] != null
-            ) {
-              let creator;
-              let creatorId = template["creator"];
-              if (creators.hasOwnProperty(`${creatorId}`)) {
-                creator = creators[creatorID];
-              } else {
-                creator = UsersTest.findOne(
-                  { _id: creatorId },
-                  { phone: 1, username: 1 }
-                );
-                if (creator != null) {
-                  creators[creatorId] = creator;
-                }
-              }
-              if (creator != null) {
-                template["creator"] = creator["username"] || creator["phone"];
-              }
-            }
-            final = templates;
-          }
-          
-        }else if (data.hasOwnProperty("deleteChallenge")) {
-          challengeId = data["deleteChallenge"]
-          if (!user.isAdmin && !user["createdChallenges"].includes(challengeId)) {
-            return res
-              .status(404)
-              .json({ msg: `No challenge found with this ID: ${challengeId}` });
-          }
-          await Challenges.deleteOne({_id:challengeId})
-          if (user["createdChallenges"].includes(challengeId)) {
-            user["createdChallenges"] = user["createdChallenges"].filter(id => id != challengeId)
-          }
-          if (user["challenges"].includes(challengeId)) {
-            user["challenges"] = user["challenges"].filter(id => id != challengeId)
-          }
-          updateUserInDB(user);
+			//  in user collection storages only three parametors of template.
+			//  all details storages in templates collection
+			// get all details for each users template:
+			let privateTemplates = await Promise.all(
+				user.templates.map(async (val) => {
+					return await TemplatesDB.find({
+						_id: `${val._id}`,
+						isPublic: false,
+					});
+				})
+			);
 
-          final = {
-            msg: `Successfully deleted challenge: ${challengeId}`,
-            challengeId: challengeId
-          }
-        }else if (data.hasOwnProperty("createChallenge")) {
-            
+			privateTemplates = privateTemplates.flat(); ///המערך שמתקבל מהלולאה הקודמת הוא מערך של מערכים שמכילים כל אובייקט, לכן אנחנו צריכים להוציא את האובייקטים מתוך המערכים הפנימיים
+			///מחבר את שני המערכים
+			let templates = publicTemplates.concat(privateTemplates);
+			templates.filter((val) => val !== null);
 
-            const templateId = data['createChallenge']['templateId'];
-            const challengeData = {
-              template: templateId,
-              selections: data['createChallenge']['selections'],
-              name: data['createChallenge']['name'],
-              date: data['createChallenge']['date'],
-            };
-        
-            challengeData.active = false;
-            challengeData.declined = false;
-        
-            if (!("isPublic" in challengeData)) {
-              challengeData.isPublic = true;
-            }
-            challengeData.createdOn = Date.now();
-            challengeData.creator = current_user;
-            challengeData.scores = {};
-        
-            const challengeId = "c_" + generateRandomString();
-            challengeData._id = challengeId;
-        
-            const template = await TemplatesDB.findOne({ _id: templateId });
-        
-            if (!template) {
-              return res.status(400).json({ msg: `No template found with this ID: ${templateId}` });
-            }
-        
-            let image = null;
-            if (template.image && template.image.length > 0) {
-              image = template.image.slice(1);
-            }
-        
-            if (isAdmin || template.isPublic) {
-              challengeData.verified = true;
-              verifyNow = true;
-            } else {
-              challengeData.verified = false;
-            }
-        
-            // Temporary code
-            verifyNow = true;
-            challengeData.verified = true;
-        
-            user.challenges.push(challengeId);
-            user.createdChallenges.push(challengeId);
-            await Challenges.insertMany(challengeData);
-        
-            if (verifyNow) {
-              console.log(`::: VERIFING Challenge ${challengeId}`);
-              //// const [verified, err] = verifyChallenge(challengeId, challengeData.creator, challengeData.name, image, challengeData.date);
-              //// console.log(`::: VERIFIED ${verified}, ${err}`);
-            }
-        
-            const draftId = data['createChallenge']['draftId'];
+			// send back to front:
+			final = { templates: templates };
 
-            await UsersDrafts.deleteOne({ _id: draftId });
-            user['drafts'] = user['drafts'].filter((draft) => draft !== draftId);
-        
-            
-        
-            
+			//---------------------end of getAvailableTemplates-----------------------
 
-            const groupID = "g_" + generateRandomString();
+			//---------------------Start of addPlayer-----------------------
+		} else if (Object.hasOwn(data, "addPlayer")) {
+			let phoneNum = req.body.addPlayer.phone;
+			phoneNum = phoneNum.replace("+", "");
+			if (user["accountType"] == "individual") {
+				return res.status(403).json({
+					msg: "Your account is not an organization, you can't add players.",
+				});
+			}
+			let findIndividual = await UsersTest.findOne({
+				phone: `${phoneNum}`,
+			});
+			if (findIndividual == null) {
+				return res.status(403).json({
+					msg: `No user found with this phone number: ${req.body.addPlayer.phone}`,
+				});
+			}
 
-            const username = user.username ? user.username : 'Jhon Doe'
-            const groupChatInfo = {
-              _id:groupID,
-              challengeID: challengeId,
-              invite: '',
-              name: `${challengeData.name} group chat`,
-              users: [{userid:user._id,role:'admin',username:username}],
-              messages:[],
-              botMessage:[{text:'welcome to the group',ind:0}],
-              emoji:[], 
-              scored:[],
+			let findPlayer = await PlayersDB.findOne({
+				userName: `${findIndividual["username"]}`,
+			});
+			console.log("findPlayer :", findPlayer);
+			if (findPlayer == null) {
+				let playerId = null;
+				while (
+					playerId == null ||
+					(await PlayersDB.findOne({ _id: `${playerId}` })) != null
+				) {
+					playerId = "p_" + generateRandomString();
+				}
+				let temp = {
+					_id: playerId,
+					phone: phoneNum,
+					userName: findIndividual.username,
+					totalScore: 0,
+					clubs: [
+						{
+							clubId: current_user,
+							groupName: req.body.addPlayer.groupName,
+							role: req.body.addPlayer.role,
+							score: 0,
+						},
+					],
+				};
+				await PlayersDB.create(temp);
+				user["players"] = [
+					...user["players"],
+					{
+						playerId: playerId,
+						username: findIndividual.username,
+						fullName: findIndividual.fullName,
+						role: req.body.addPlayer.role,
+					},
+				];
+				console.log("user with players" + user);
+				await updateUserInDB(user);
+			} else {
+				let checkId = findPlayer.clubs.find((val) => val.clubId == user["_id"]);
+				console.log("checkId:", checkId);
+				if (checkId == undefined) {
+					findPlayer["clubs"] = [
+						...findPlayer["clubs"],
+						{
+							clubId: current_user,
+							groupName: req.body.addPlayer.groupName,
+							role: req.body.addPlayer.role,
+							score: 0,
+						},
+					];
+					await PlayersDB.updateOne(
+						{ _id: `${findPlayer["_id"]}` },
+						{ $set: findPlayer }
+					);
+					user["players"] = [
+						...user["players"],
+						{
+							playerId: findPlayer["_id"],
+							username: findPlayer.userName,
+							fullName: findIndividual.fullName,
+							role: req.body.addPlayer.role,
+						},
+					];
+					await updateUserInDB(user);
+				} else {
+					return res.status(403).json({
+						msg: "A player with this phone number is already assigned to your organization!",
+					});
+				}
+			}
+			final = {
+				logged_in_as: current_user,
+				msg: `${findIndividual.username}`,
+				playerId: `${findIndividual["_id"]}`,
+			};
+		} else if (Object.hasOwn(data, "deletePlayer")) {
+			let playerToRemove = await PlayersDB.findOne({
+				_id: `${data.deletePlayer}`,
+			});
 
-            }
-            user.groups.push({_id:groupID,name:`${challengeData.name} group chat`})
+			playerToRemove.clubs = playerToRemove.clubs.filter(
+				(val) => val.clubId !== user.phone
+			);
 
-            await GroupsDB.insertMany(groupChatInfo);
-            const arrayItemID = "A_" + generateRandomString();
-            challengeItem = {
-              _id: arrayItemID,
-              challengeID: challengeId,
-              groupID:groupID
-            }
-            await ChallengeArray.insertMany(challengeItem)
-            updateUserInDB(user);
-            final = groupChatInfo;
-        }else if (data.hasOwnProperty("joinGroup")) {
-          const inviteId = data["joinGroup"]
-          const group = await GroupsDB.findOne({invite:inviteId})
-          if (group) {
-            let inGroup = false
-            for (let i = 0; i < group.users.length; i++) {
-              if (group.users[i].userid == user._id) {
-                inGroup = !inGroup
-                break
-              }
-            }
-            if (!inGroup) {
-              const username = user.username ? user.username : 'Jhon Doe'
-              const userinfo = {userid:user._id,role:'student',username:username}
-              group.users.push(userinfo)
-              user.groups.push({_id:group._id,name:group.name})
-              updateUserInDB(user);
-              await GroupsDB.updateOne({invite:inviteId},{users:group.users})
-              return res.status(200).json({ msg:'You are now a part of the group!'});
-            }else{
-              return res.status(400).json({ msg:'you are already in this group'});
-            }
-          }else{
-            return res.status(400).json({ msg: `No group found with this ID: ${inviteId}` });
-          }
-  
+			user.players = user.players.filter(
+				(val) => val.playerId !== data.deletePlayer
+			);
 
+			await updateUserInDB(user);
 
+			await PlayersDB.updateOne(
+				{ _id: `${playerToRemove["_id"]}` },
+				{ $set: playerToRemove }
+			);
 
+			final = {
+				msg: `sucessfully deleted user '${playerToRemove.username}`,
+				playerId: `${playerToRemove["_id"]}`,
+			};
 
-        }else if (data.hasOwnProperty("loadGroup")) {
-          const groupId = data["loadGroup"]["_id"]
-          const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1,emoji:1})
-          if (group) {
-            final = group
-          }else{
-            return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
-          }
-        }else if (data.hasOwnProperty("sendMessage")) {
-          const groupId = data["sendMessage"]["_id"]
-          const group = await GroupsDB.findOne({_id:groupId})
-          if (group) {
-            const msg = data["sendMessage"]["message"]
-            const removeAbove20 = () =>{
-              if (group.messages.length >=20) {
-                group.messages.shift()
-                removeAbove20()
-              }
-            }
-            removeAbove20()
-            const time = new Date
-            const hourmin = time.getHours()
-            const username = user.username ? user.username : 'Jhon Doe'
-            const message = {msg:msg,time:hourmin,user:user._id,nickname:username} 
+			//---------------------end of addPlayer-----------------------
 
-            let botMessage;
-            let goodEmoji = false
-            for (let i = 0; i < group.emoji.length; i++) {
-              if (group.emoji[i][msg]) {
-                goodEmoji = i
-                break
-              }
-            }
-            if (goodEmoji) {
-              let userfound = group.scored.map((val)=>{if (val.user == user._id && val.emoji == msg) {
-                return val
-              }});
-              if (userfound) {
-                botMessage = {msg:'you already did this task',time:hourmin,user:'Ting Global Bot'} 
-              }else{
-                botMessage = {msg:'Task Finished!!!',time:hourmin,user:'Ting Global Bot'}
-                const points = group.emoji[goodEmoji][msg][points] 
-                group.scored.push({user:user._id,emoji:msg})
-                user.totalScore += points
-                updateUserInDB(user)
-                await GroupsDB.updateOne({_id:groupId},{scored:group.scored})
-              }
-              group.messages.push(message)
-              group.messages.push(botMessage)
-            }else if (msg == '/hello') {
-              botMessage = {msg:'hi there!',time:hourmin,user:'Ting Global Bot'} 
+			//---------------------Start of getTemplateData-----------------------
+		} else if (Object.hasOwn(data, "getTemplateData")) {
+			console.log(`--getTemplateData--: start`);
+			// find template in DB, collection templates:
+			let template = await TemplatesDB.findOne({
+				_id: `${data["getTemplateData"]}`,
+			});
+			// send back to front:
+			final = template;
+			console.log(`--getTemplateData--: Template Ready!`);
 
-              group.messages.push(message)
-              group.messages.push(botMessage)
-            }else if (msg.startsWith('/promote')) {
-              let number = msg.slice(8,msg.length)
-              if (number[0] == ' ') {
-                number = number.slice(1,msg.number)
-              }
-              let admin = false
-              for (let i = 0; i < group.users.length; i++) {
-                if (group.users[i].userid == user._id ) {
-                  if (group.users[i].role == 'admin') {
-                    admin =!admin
-                    break
-                  }else{
-                    break
-                  }
-                }
-              }
-              if (admin) {
-                let foundUser = false
-                let position;
-                for (let i = 0; i < group.users.length; i++) {
-                  if (group.users[i].userid == number) {
-                    foundUser =!foundUser
-                    position = i
-                    break
-                  }
-                }
-                if (foundUser) {
-                  if (group.users[position].role == 'student'){
-                    group.users[position].role = 'instructor'
-                  }else if (group.users[position].role == 'instructor') {
-                    group.users[position].role = 'admin'
-                  }
-                  await GroupsDB.updateOne({_id:groupId},{users:group.users})
-                  botMessage = {msg:'User has been premoted!!',time:hourmin,user:'Ting Global Bot'}
-                }else{
-                  botMessage = {msg:'I did not find a user with that number.\n did you type the correct one?',time:hourmin,user:'Ting Global Bot'}
-                }
-                group.messages.push(botMessage)
-              }else{
-                botMessage = {msg:'i am sorry only admins have accses to this command.\n if you would like to use it you can ask an admin for a promotion.',time:hourmin,user:'Ting Global Bot'} 
-                group.messages.push(message)
-                group.messages.push(botMessage)
-              }
-              
-               
-            }else if (msg == '/invite') {
-              let instructor = false
-              for (let i = 0; i < group.users.length; i++) {
-                if (group.users[i].userid == user._id ) {
-                  if (group.users[i].role == 'instructor' || group.users[i].role == 'admin') {
-                    instructor =!instructor
-                    break
-                  }else{
-                    break
-                  }
-                }
-              }
-              if (instructor) {
-                if (group.invite.length > 0) {
-                  botMessage = {msg:`this is the invite code for this group\n ${group.invite} send this to the users you want to invite`,time:hourmin,user:'Ting Global Bot'}
-                }else{
-                  const inviteCode = "i_" + generateRandomString();
-                  botMessage = {msg:`this is the invite code for this group\n ${inviteCode} send this to the users you want to invite`,time:hourmin,user:'Ting Global Bot'}
-                  group.invite = inviteCode
-                  await GroupsDB.updateOne({_id:groupId},{invite:group.invite})
-                }
-              }else{
-                botMessage = {msg:'sorry you need to be an instructor or above to use this command',time:hourmin,user:'Ting Global Bot'}
-              }
-              group.messages.push(message)
-              group.messages.push(botMessage)
-              
-            }else if (msg.startsWith('/nickname')) {
-              let nickname = msg.slice(9,msg.length)
-              if (nickname[0] == ' ') {
-                nickname = nickname.slice(1,msg.length)
-              }
-              user.username = nickname
-              updateUserInDB(user)
-              botMessage = {
-                msg:`Username changed to ${nickname}`,
-                time:hourmin,
-                user:'Ting Global Bot'
-              }
-              group.messages.push(message)
-              group.messages.push(botMessage)
-            }else if (msg.startsWith('/help')) {
-              group.messages.push(message)
-              if (msg == '/help') {
-                botMessage = {
-                  msg:'Here are the commands i know:\n1. /hello\n2. /invite\n3. /promote\n4. /nickname\n5. /help\n type (/help) then the number of the command you want info on',
-                  time:hourmin,
-                  user:'Ting Global Bot'
-                }
-                group.messages.push(botMessage)
-              }else{
-                let number = msg.slice(5,msg.length)
-                if (number[0] == ' ') {
-                  number = number.slice(1,msg.length)
-                }
-                if (number == 1) {
-                  botMessage = {
-                    msg:'This command is to say hello to me!',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }else if (number == 2) {
-                  botMessage = {
-                    msg:'This command is used to create an invite link to add players to the group,\n it can only be used by instructors.',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }else if (number == 3) {
-                  botMessage = {
-                    msg:'This command promotes a student to instructor and instructor to an admin,\n it can only be used by admins.',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }else if (number == 4) {
-                  botMessage = {
-                    msg:'This command gives you a nickname to identify in the group.',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }else if (number == 5) {
-                  botMessage = {
-                    msg:'This command gives a list of all commands available.',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }else {
-                  botMessage = {
-                    msg:'I am sorry i dont know this command',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }
-                
-                group.messages.push(botMessage)
-                
-                
-              }
+			//---------------------end of getTemplateData-----------------------
 
+			//---------------------Start of saveTemplate------------------------
+		} else if (Object.hasOwn(data, "saveTemplate")) {
+			console.log(`--saveTemplate--: start`);
+			let templateId = data["saveTemplate"]["templateId"];
+			console.log(`--saveTemplate--: template id is: ${templateId}`);
+			let templateData = data["saveTemplate"]["templateData"];
 
-              
-            }else if (msg.startsWith('/telegram')) {
-              let shortmsg = msg.slice(9,msg.length)
-              if (shortmsg[0] == ' ') {
-                shortmsg = shortmsg.slice(1,msg.length)
-              }
-              if (shortmsg == 'link') {
-                if (group.telInvite) {
-                  botMessage = {
-                    msg:`Here is the invite link to your telegram group\n${group.telInvite}`,
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }else{
-                  botMessage = {
-                    msg:'I am sorry you didnt register a telegram group to do that please add the TingGlobalBot to your group and give it your groupid',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }
-                group.messages.push(message)
-                group.messages.push(botMessage)
-              }else{
-                let admin = false
-                for (let i = 0; i < group.users.length; i++) {
-                  if (group.users[i].userid == user._id ) {
-                    if (group.users[i].role == 'admin') {
-                      admin =!admin
-                    }
-                    break
-                  }
-                }
-                if (admin) {
-                  group.telInvite = shortmsg
-                  await GroupsDB.updateOne({_id:groupId},{telInvite:group.telInvite})
-                  botMessage = {
-                    msg:'telegram invite code registerd!!\n you can go to telegram and activate the group now!',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                  group.messages.push(message)
-                  group.messages.push(botMessage)
-                }else{
-                  botMessage = {
-                    msg:'only admins can use this command',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                  group.messages.push(message)
-                  group.messages.push(botMessage)
-                }
-              }
-              
-            }else if (msg.startsWith('/connect_account')) {
-              if (msg == '/connect_account') {
-                botMessage = {
-                  msg:'please use a 6 digit code after the command',
-                  time:hourmin,
-                  user:'Ting Global Bot'
-                }
-                group.messages.push(message)
-                group.messages.push(botMessage)
-              }else{
-                let code = msg.slice(17,msg.length)
-                code = parseInt(code)
-                if (code) {
-                  if (code <= 999999 && code >= 100000) {
-                    user.telegramId == code
-                    updateUserInDB(user)
-                    botMessage = {
-                      msg:'code accepted if you forget it you can set it again\nbut after connecting your telegram account it cannot be changed',
-                      time:hourmin,
-                      user:'Ting Global Bot'
-                    }
-                  }else{
-                    botMessage = {
-                      msg:'please use a 6 digit code',
-                      time:hourmin,
-                      user:'Ting Global Bot'
-                    }
-                  }
-                }else{
-                  botMessage = {
-                    msg:'please use only digits',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                }
-                group.messages.push(botMessage)
-              }
-            }else{
-              group.messages.push(message)
-            }
+			templateData["creator"] = current_user;
+			templateData["lastSave"] = new Date();
 
+			// if template is new there will be empty templateId,
+			// and here it will be created:
+			if (templateId == null) {
+				templateId = "t_" + generateRandomString();
+				templateData["_id"] = templateId;
+				// if user is Not Admin create template in DB templates collection:
+				if (isAdmin == false) {
+					templateData["isPublic"] = false;
+					await TemplatesDB.create(templateData);
+					let temp = {
+						_id: templateId,
+						name: templateData.name,
+						isPublic: templateData.isPublic,
+					};
+					user["templates"] = [...user["templates"], temp];
+				}
 
+				// user.templates.forEach((t) => {
+				// 	for (let key in t) {
+				// 		console.log(`${key}: ${t[key]}`);
+				// 	}
+				// });
 
+				await updateUserInDB(user);
+			}
+			// if templateId is already exists:
+			else {
+				// do we need this row? is id is the same templateID in front already?:)
+				templateData["_id"] = templateId;
 
-            await GroupsDB.updateOne({_id:groupId},{messages:group.messages})
+				// if a user is Admin OR there is such template in user variable already:
+				if (
+					isAdmin == true ||
+					user["templates"].find((val) => val._id == templateId) != undefined
+				) {
+					// if user is Not Admin template will be privat:
+					if (isAdmin == false) {
+						templateData["isPublic"] = false;
+					}
+					// update DB - templates collection:
+					await TemplatesDB.updateOne(
+						{ _id: `${templateId}` },
+						{ $set: templateData }
+					);
+					// update user variable:
+					let temp = {
+						_id: templateId,
+						name: templateData.name,
+						isPublic: templateData.isPublic,
+					};
+					let index = user["templates"].findIndex(
+						(val) => val._id == templateId
+					);
+					user["templates"][index] = temp;
 
+					//update DB - users collection:
+					await updateUserInDB(user);
+					// if user is Not Admin AND there that templateId in user variable already exists:
+				} else {
+					let existingTemplate = await TemplatesDB.findOne({
+						_id: templateId,
+						isPublic: true,
+					});
+					console.log(
+						`--saveTemplate--: existingTemplateData: ${existingTemplateData}`
+					);
+					let excludedKeys = ["lastSave", "creator", "challenges", "_id"];
 
+					existingTemplateData = Object.entries(existingTemplate).reduce(
+						(result, [key, value]) => {
+							if (key in templateData && !excludedKeys.includes(key)) {
+								result[key] = value;
+							}
+							return result;
+						},
+						{}
+					);
+					let filteredTemplateData = {};
+					for (let key in templateData) {
+						if (!excludedKeys.includes(key)) {
+							filteredTemplateData[key] = templateData[key];
+						}
+					}
+					if (String(existingTemplateData) !== String(filteredTemplateData)) {
+						let originId = templateId;
+						templateId = "t_" + generateRandomString();
+						templateData["_id"] = templateId;
+						templateData["isPublic"] = false;
+						templateData["origin"] = originId;
+						await TemplatesDB.create(templateData);
+						let temp = {
+							_id: templateId,
+							name: templateData.name,
+							isPublic: templateData.isPublic,
+						};
+						user["templates"] = [...user["templates"], temp];
+					}
+					await updateUserInDB(user);
+				}
+			}
+			// updateUserInDB(user);
 
-            final = group.messages
-          }else{
-            return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
-          }
-        }else if (data.hasOwnProperty("deleteGroup")) {
-          const groupId = data["deleteGroup"]["_id"]
-          // const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1})
-          // if (group) {
-          //   final = group
-          // }else{
-          //   return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
-          // }
-        }
-        res.status(200).json(final);
-      }
-    }
-  }
+			// send back to front:
+			final = { logged_in_as: current_user, templateId: templateId };
+
+			//---------------------end of saveTemplate------------------------
+
+			//---------------------Start of deleteTemplate-----------------------
+		} else if (Object.hasOwn(data, "deleteTemplate")) {
+			console.log(`--deleteTemplate--: start`);
+			let templateId = data["deleteTemplate"]["templateId"];
+			if (
+				!isAdmin &&
+				!(user["templates"].find((val) => val._id == templateId) != undefined)
+			) {
+				return res
+					.status(404)
+					.json({ msg: `Template not found ${templateId}` });
+			}
+			// delete template from DB, collection templates:
+			await TemplatesDB.deleteOne({ _id: `${templateId}` });
+			// update user virable:
+			user.templates = user.templates.filter((val) => val._id !== templateId);
+			console.log(`--deleteTemplate--: user templates are: ${user.templates}`);
+			// delete template from DB, collection users:
+			await updateUserInDB(user);
+
+			// send back to front:
+			final = {
+				msg: `Successfully deleted template: ${templateId}`,
+				templateId: templateId,
+			};
+
+			//---------------------end of deleteTemplate-----------------------
+
+			//---------------------Start of cloneTemplate-----------------------
+		} else if (Object.hasOwn(data, "cloneTemplate")) {
+			console.log(`--cloneTemplate--: start`);
+			let originId = data["cloneTemplate"];
+			let originTemplate = await TemplatesDB.findOne({
+				_id: `${originId}`,
+			});
+			if (
+				originTemplate == null ||
+				(user["templates"].find((val) => val._id == originId) == undefined &&
+					!originTemplate["isPublic"])
+			) {
+				return res.status(404).json({ msg: `Template not found ${originId}` });
+			}
+			// create new object for the copy of a template:
+			let newTemplate = {};
+
+			// toObject is not a native methos in JS. where it is gets from?:)
+			const originDoc = originTemplate.toObject();
+			// cope all the property of a template to a new one:
+			for (let key in originDoc) {
+				newTemplate[`${key}`] = originTemplate[`${key}`];
+			}
+
+			let newId = "t_" + generateRandomString();
+			newTemplate["_id"] = newId;
+			newTemplate["isPublic"] = originTemplate["isPublic"] && isAdmin;
+			newTemplate["name"] = `${originTemplate["name"]} (copy)`;
+			newTemplate["creator"] = current_user;
+			// place cloned template in DB, collection templates:
+			await TemplatesDB.create(newTemplate);
+			let temp = {
+				_id: newId,
+				name: newTemplate["name"],
+				isPublic: newTemplate["isPublic"],
+			};
+			// update user virable:
+			user["templates"] = [...user["templates"], temp];
+
+			// place cloned template in DB, collection users:
+			await updateUserInDB(user);
+
+			let excludedKeys = ["days", "preDays", "preMessages"];
+
+			// what it is doing?
+			for (let key in newTemplate) {
+				if (!excludedKeys.includes(key)) {
+					newTemplate[key] = newTemplate[key];
+				}
+			}
+
+			newTemplate["creator"] = user["phone"];
+
+			// send back to front:
+			final = newTemplate;
+
+			//---------------------end of cloneTemplate-----------------------
+
+			//---------------------Start of getAllTemplates-----------------------
+		} else if (Object.hasOwn(data, "getAllTemplates")) {
+			console.log(`--getAllTemplates--: start`);
+			if (isAdmin == false) {
+				return res
+					.status(403)
+					.json({ msg: "user not authorized to view all templates" });
+			}
+			let templates = await TemplatesDB.find(
+				{},
+				{ days: 0, preMessages: 0, preDays: 0 }
+			);
+
+			templates.reverse();
+
+			let creators = { current_user: user };
+
+			for (let template in templates) {
+				if (template.hasOwnProperty("creator") && template["creator"] != null) {
+					let creator;
+					let creatorId = template["creator"];
+					if (creators.hasOwnProperty(`${creatorId}`)) {
+						creator = creators[creatorID];
+					} else {
+						creator = UsersTest.findOne(
+							{ _id: creatorId },
+							{ phone: 1, username: 1 }
+						);
+						if (creator != null) {
+							creators[creatorId] = creator;
+						}
+					}
+					if (creator != null) {
+						template["creator"] = creator["username"] || creator["phone"];
+					}
+				}
+				final = templates;
+			}
+			//---------------------end of getAllTemplates-----------------------
+
+			//---------------------Start of saveDraft-----------------------
+		} else if (Object.hasOwn(data, "saveDraft")) {
+			console.log(`--saveDraft--: start`);
+			let draftData = data["saveDraft"]["draftData"];
+			let draftId = data["saveDraft"]["draftId"];
+			draftData["lastSave"] = Date.now();
+			// if draft is new there will be empty draftId,
+			// and here it will be created:
+			if (draftId === null) {
+				// console.log(`--saveDraft--: draftId is null: ${draftId}`);
+				draftId = "d_" + generateRandomString();
+				draftData["_id"] = draftId;
+				// create draft in DB UserDrafts collection:
+				await UsersDrafts.create(draftData);
+				// if there is no drafts in user variable:
+				if (!user["drafts"]) {
+					user["drafts"] = [];
+				}
+				// put a new draftID in user variable
+				user["drafts"].push(draftId);
+				// update DB - users collection:
+				await updateUserInDB(user);
+			} else {
+				// console.log(`--saveDraft--: draftId is exists: ${draftId}`);
+				// if draft is no in user virable (i dont know how it is possible?):
+				if (!user["drafts"].includes(draftId)) {
+					return res
+						.status(404)
+						.json({ msg: `No draft found with this ID: ${draftId} ` });
+				}
+				// update draft in DB UserDrafts collection:
+				await UsersDrafts.updateOne({ _id: draftId }, { $set: draftData });
+			}
+			// send back to front:
+			final = { logged_in_as: current_user, draftId: draftId };
+			//---------------------end of saveDraft-----------------------
+
+			//---------------------Start of getDraftData-----------------------
+		} else if (Object.hasOwn(data, "getDraftData")) {
+			console.log(`--getDraftData--: start`);
+			// "getDraftData" includes id only. there are no another data
+			let draftId = data["getDraftData"];
+			// get draft data from DB UserDrafts collection:
+			let draft = await UsersDrafts.findOne({ _id: draftId });
+			// if draft is no in user virable (i dont know how it is possible?)
+			// or there is no such draft data in DB:
+			if (!user["drafts"].includes(draftId) || !draft) {
+				return res
+					.status(404)
+					.json({ msg: `No draft found with this ID: ${draftId} ` });
+			}
+
+			// console.log(`--getDraftData--: ${draft}`);
+			// send back to front:
+			final = draft;
+			//---------------------end of getDraftData-----------------------
+
+			//---------------------Start of deleteDraft-----------------------
+		} else if (Object.hasOwn(data, "deleteDraft")) {
+			console.log(`--deleteDraft--: start`);
+			let draftId = data["deleteDraft"];
+			if (!user["drafts"].includes(draftId)) {
+				return res
+					.status(404)
+					.json({ msg: `No draft found with this ID: ${draftId} ` });
+			}
+
+			// delete draft in DB UserDrafts collection:
+			await UsersDrafts.deleteOne({ _id: draftId });
+
+			if (user["drafts"].includes(draftId)) {
+				user["drafts"].splice(user["drafts"].indexOf(draftId), 1);
+				// delete draft in DB Users collection:
+				await updateUserInDB(user);
+			}
+			// send back to front:
+			final = {
+				msg: "Successfully deleted draft",
+				draftId: draftId,
+			};
+
+			//---------------------end of deleteDraft-----------------------
+		}
+
+		res.status(200).json(final);
+	}
 });
 
 app.listen(3000, () => {
