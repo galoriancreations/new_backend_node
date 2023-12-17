@@ -205,6 +205,7 @@ app.get("/addUser", (req, res) => {
 
 db.connect(
 	"mongodb+srv://Yinon:Challenge18@challenge18.hclji.mongodb.net/challenge"
+  /////////////////////////////////////////////////////////////MOVE TO ENV FILE ASAP
 );
 
 const waGroupSchema = new db.Schema(
@@ -443,6 +444,46 @@ const bot = new Telegraf(token)
 let hourmin = false;
 const task = []
 const dailyTask = [{}]
+const bootUpChallenges = async() =>{
+  task[0] = {}
+  dailyTask[0] = {}
+  const Challengearray = await ChallengeArray.find()
+  const _d = new Date()
+  const day = _d.getDate()
+  const month = _d.getMonth() + 1
+  const year = _d.getFullYear()
+  Challengearray.forEach(async (val) => {
+    const ID = val.challengeID
+    const Challenge = await Challenges.findone({_id:ID})
+    const Group = await GroupsDB.findone({challengeID:ID})
+    if (Challenge) {
+      const objectFound = Challenge.selection[0][day+'/'+month+'/'+year]
+      if (objectFound) {
+        objectFound.ids = ID
+        objectFound.forEach(val => {
+          const time = val.time
+          if (task[0][time]) {
+            task[0][time].push(objectFound)
+          }else{
+            task[0][time] = [objectFound]
+          }
+        });
+        Group.scored = []
+      }else{
+        Group.botMessage = [{text:'welcome to the group',ind:0}]
+        Group.emoji = []
+        if (Group.telGroupId) {
+          bot.telegram.sendMessage(Group.telGroupId,'good morning there is no challnge for today')  
+        }
+      }
+      await GroupsDB.updateOne({_id:ID},{ $set: Group });
+    }else{
+      console.error('Challenge not found');
+    }
+  });
+}
+// bootUpChallenges()
+
 const checkIf = () => {
   const d = new Date();
   let hour = d.getHours()
@@ -742,7 +783,7 @@ bot.help((ctx) => ctx.reply('Send me a sticker (placeholder)'))
 bot.on('sticker', (ctx) => ctx.reply(ctx.message.sticker.emoji))
 bot.hears('hi', (ctx) => ctx.reply('Hey how can i help you?'))
 
-bot.launch()
+// bot.launch()
 
 app.post("/sendMessage", (req, res) => {
 	let temp = req.body.mText;
