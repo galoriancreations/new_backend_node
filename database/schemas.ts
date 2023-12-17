@@ -116,3 +116,13 @@ export const PlayerSchema = new db.Schema(
   },
   { versionKey: false }
 );
+
+const QuestionSchema = new db.Schema(
+	{
+		_id: String,
+		qnum:Number,
+		text:String,
+		answers: Array
+	},
+	{ versionKey: false }
+)

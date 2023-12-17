@@ -196,7 +196,7 @@ const decode_auth_token = (auth_token, secretKey) => {
 const fetchUserFromID = async (id) => {
   let user = await UsersTest.findOne({ _id: id });
 
-  return user;
+	return user; 
 };
 
 const updateUserInDB = async (user) => {
@@ -418,6 +418,53 @@ const StarsSchema = new db.Schema(
   },
   { versionKey: false }
 );
+ 
+const StarsSchema = new db.Schema(
+  {
+    _id: String,
+    image: String,
+    title: String,
+    names: Array,
+    text: String,
+    link: String,
+    linkText: String,
+    totalRateing: Number,
+    users: Array,
+  },
+  { versionKey: false }
+);
+  const GroupSchema = new db.Schema(
+    {
+      _id: String,
+      challengeID: String,
+      invite: String,
+      telInvite: String,
+      telGroupId: String,
+      name: String,
+      users: [Object],
+      messages:[Object],
+      botMessage:[Object],
+      emoji:[Object],
+      scored:[Object],
+    },
+);
+  const ChallengeArraySchema = new db.Schema(
+  {
+    _id: String,
+    challengeID: String,
+  },
+  { versionKey: false }
+);
+
+const QuestionSchema = new db.Schema(
+	{
+		_id: String,
+		qnum:Number,
+		text:String,
+		answers: Array
+	},
+	{ versionKey: false }
+)
 
 ///צריך לרשום לו עוד פרמטר עם אותו השם של הקולקשן כדי להגיד לו שאתה מתכוון למה שאתה מתכוון...
 const WaGroup = db.model("waGroups", waGroupSchema, "waGroups");
@@ -432,11 +479,485 @@ const TemplatesDB = db.model("templates", TemplateSchema, "templates");
 
 const PlayersDB = db.model("players", PlayerSchema, "players");
 
-const StarsDB = db.model("stars", StarsSchema, "stars");
+const QuestionModel = db.model("questions", QuestionSchema, "questions")
 
-const GroupsDB = db.model("tel_groups", GroupSchema, "tel_groups");
+// let quest=[
+//     {
+// 		_id:'',
+//         qnum: "1",
+//         text: "What is the greatest achievement in your life?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "2",
+//         text: "What do you value most in friendship, & why?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "3",
+//         text: "Share a personal challenge, & ask the other(s) how they would tackle it."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "4",
+//         text: "In a crisis situation, whom would you call first, & why?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "5",
+//         text: "What is your most cherished memory, & why?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "6",
+//         text: "Tell the other(s) what you like about them. Be honest!"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "7",
+//         text: "What does friendship mean to you?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "8",
+//         text: "What are the 3 things that make a relationship work?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "9",
+//         text: "What are you most curious to know about each other?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "10",
+//         text: "What do you enjoy doing the most with your family members?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "11",
+//         text: "Present your favorite 3 yoga positions"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "12",
+//         text: "Truth or Dare: ask each other anything 😊"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "13",
+//         text: "What is the most silly thing that you have ever done with a friend?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "14",
+//         text: "Invent a new TikTok challegne"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "15",
+//         text: "Are there people in your life with whom you want to reconnect?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "16",
+//         text: "What is freedom in a relationship?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "17",
+//         text: "List 3 personal boundaries."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "18",
+//         text: "Draft together 3 statements that begin with: “We are feeling...”"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "19",
+//         text: "What is the most important thing in your life?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "20",
+//         text: "If you were of a different gender, nationality or religion, what would be the difference?"
+//     },
+//     {
+// 		_id:'',
+// 		qnum: "21",
+//         text: "Find 3 things that you have in common with each other."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "22",
+//         text: "What are the 3 things that you think about the most every day?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "23",
+//         text: "What was the last nice thing you did to someone?"
+//     },
+//     {
+// 		_id:'',
+// 		qnum: "24",
+//         text: "What are the challenges that the next generation might face, in your opinion?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "25",
+//         text: "What do you feel most grateful for in your life?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "26",
+//         text: "Tell the other(s) what your 1st impression was & whether it changed!"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "27",
+//         text: "What new thing did you learn today? this week? this year?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "28",
+//         text: "Who are the people that truly care for you?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "29",
+//         text: "Find 3 differences that you see between each other."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "30",
+//         text: "Explain the meaning: “living the moment - with respect!”"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "31",
+//         text: "List 5 of your main values, & rank them in order of importance."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "32",
+//         text: "What prejudice would you like to be gone, & why?"
+//     },
+//     {
+// 		_id:'',
+// 		qnum: "33",
+//         text: "What is the importance of rest in your life?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "34",
+//         text: "What does it take to have the necessary self-discipline to achieve your goals?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "35",
+//         text: "What are you willing to fight for, & why?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "36",
+//         text: "If you were the Minister of Happiness, what 3 new laws would you enact?"
+//     },
+//     {
+// 		_id:'',
+//       	qnum: "37",
+//        	text: "What would you never compromise on?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "38",
+//       	text: "If you could change the world, what would you do 1st ?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "39",
+//         text: "Have you ever made a decision that changed your whole life?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "40",
+//         text: "Make a wish & share it with everyone."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "41",
+//         text: "If you had a crystal ball, what would you want to know about the other(s)?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "42",
+//         text: "Describe your dream home, provide 10 adjectives."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "43",
+//         text: "What makes you forget to eat?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "44",
+//         text: "True or False - Share a story!"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "45",
+//         text: "Describe 3 successes of yours, & identify what they have in common."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "46",
+//         text: "Reinvent the 10 commandments with the other(s)."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "47",
+//         text: "Name 5 people that you particularly admire & what do they represent for you?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "48",
+//         text: "How to improve your time management? Find solutions together."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "49",
+//         text: "Complete: “If I were King/Queen for a day, I would…”"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "50",
+//         text: "Time Machine: In what era would you like to live, and why?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "51",
+//         text: "How do you express love towards yourself?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "52",
+//         text: "What was your most vivid dream?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "53",
+//         text: "Complete the sentence: “I wish I had someone to share...”"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "54",
+//         text: "Let’s create a story together, one sentence each."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "55",
+//         text: "Choose 3 animals of your liking. What is special about them?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "56",
+//         text: "If you could be anyone for a day, who would you be?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "57",
+//         text: "tell a story beginning with, “Once upon a time…”"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "58",
+//         text: "What would be the title of your TED talk & book, and why?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "59",
+//         text: "True or False: one tells two stories, find the lie."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "60",
+//         text: "What trait of yours would you like to improve the most, & why?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "61",
+//         text: "Truth or Dare: ask anything 😊"
+//     },
+//     {
+// 		_id:'',
+// 		qnum: "62",
+//         text: "Name a new place that you would like to visit?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "63",
+//         text: "What is most important: the road, the destination or ...?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "64",
+//         text: "Ever planted a tree? What tree would you like to plant?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "65",
+//         text: "Choose an animal each, & talk about the climate."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "66",
+//         text: "If you were an elephant, what would you tell about humans?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "67",
+//         text: "What book or person inspired you the most & how were you affected?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "68",
+//         text: "What makes a strong community?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "69",
+//         text: "If you were rich, to what cause would you donate?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "70",
+//         text: "What would be the most surprising scientific discovery imaginable?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "71",
+//         text: "What's the world like in 10 years? Describe it in a magical way."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "72",
+//         text: "Can AI replace your friends?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "73",
+//         text: "What is the meaning of life?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "74",
+//         text: "Who are your favorite vloggers?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "75",
+//         text: "How to improve life on earth?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "76",
+//         text: "Complete together: “If only we were...then we could have…”"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "77",
+//         text: "What is the first thing you notice about people?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "78",
+//         text: "What is the most fun party you have ever been to?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "79",
+//         text: "What would you do if you won a hundred million $$$?"
+//     },
+//     {
+//         qnum: "80",
+//         text: "Name 3 things that you like the most about the other(s)."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "81",
+//         text: "Truth or Dare: ask anything 😊"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "82",
+//         text: "If there was a warning sign on you, what would it say?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "83",
+//         text: "Find 5 red things around you."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "84",
+//         text: "Who is the most special person in your life?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "85",
+//         text: "If you were rich, what would you do?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "86",
+//         text: "Who do you know best & who knows you best?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "87",
+//         text: "Chocolates or flowers? What would you rather get as a birthday present?"
+//     },
+//     {
+// 		_id:'',
+// 		qnum: "88",
+//         text: "Name 3 things that really make you happy, & why?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "89",
+//         text: "If you could change one thing in your life, what would it be?"
+//     },
+//     {
+// 		_id:'',
+// 		qnum: "90",
+//         text: "Share: “People who know me think I'm the best at…”"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "91",
+//         text: "Which were your happiest moments this year? Ever?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "92",
+//         text: "Say 3 nice things about each other."
+//     },
+//     {
+// 		_id:'',
+//         qnum: "93",
+//         text: "What is your favorite game? toy?"
+//     },
+//     {
+// 		_id:'',
+//         qnum: "94",
+//         text: "Choose a player & ask anything."
+//     }
+// ]
+// quest.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// QuestionModel.insertMany(quest)
 
-const ChallengeArray = db.model("group_challnge_array", ChallengeArraySchema, "group_challnge_array");
+
 
 
 // function start(client) { ///פונקציית ההתחלה שמקבלת את הקליינט
@@ -1758,114 +2279,50 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 
 			let creators = { current_user: user };
 
-			for (let template in templates) {
-				if (template.hasOwnProperty("creator") && template["creator"] != null) {
-					let creator;
-					let creatorId = template["creator"];
-					if (creators.hasOwnProperty(`${creatorId}`)) {
-						creator = creators[creatorID];
-					} else {
-						creator = UsersTest.findOne(
-							{ _id: creatorId },
-							{ phone: 1, username: 1 }
-						);
-						if (creator != null) {
-							creators[creatorId] = creator;
+					for (let template in templates) {
+						if (
+							template.hasOwnProperty("creator") &&
+							template["creator"] != null
+						) {
+							let creator;
+							let creatorId = template["creator"];
+							if (creators.hasOwnProperty(`${creatorId}`)) {
+								creator = creators[creatorID];
+							} else {
+								creator = UsersTest.findOne(
+									{ _id: creatorId },
+									{ phone: 1, username: 1 }
+								);
+								if (creator != null) {
+									creators[creatorId] = creator;
+								}
+							}
+							if (creator != null) {
+								template["creator"] = creator["username"] || creator["phone"];
+							}
 						}
+						final = templates;
 					}
-					if (creator != null) {
-						template["creator"] = creator["username"] || creator["phone"];
+				} else if (data.hasOwnProperty("getQuestion")){
+					const result = await QuestionModel.find()
+					let i = Math.floor(Math.random() * 94)
+					final = result[i].text
+				}
+				 else if (data.hasOwnProperty("getAnswer")){
+					let question = data["getAnswer"]["question"]
+					let answer = data["getAnswer"]["answer"]
+					const findAndUpAnswer = await QuestionModel.findOneAndUpdate(
+						{text:question},{$set:{answers:answer}})
+					if(!findAndUpAnswer){
+						return res.status(400).json({msg:'the question not found'})
+					}else{
+						res.json({msg:'the question updated'})
+						final = findAndUpAnswer
 					}
 				}
-				final = templates;
+				res.status(200).json(final);
 			}
-			//---------------------end of getAllTemplates-----------------------
-
-			//---------------------Start of saveDraft-----------------------
-		} else if (Object.hasOwn(data, "saveDraft")) {
-			console.log(`--saveDraft--: start`);
-			let draftData = data["saveDraft"]["draftData"];
-			let draftId = data["saveDraft"]["draftId"];
-			draftData["lastSave"] = Date.now();
-			// if draft is new there will be empty draftId,
-			// and here it will be created:
-			if (draftId === null) {
-				// console.log(`--saveDraft--: draftId is null: ${draftId}`);
-				draftId = "d_" + generateRandomString();
-				draftData["_id"] = draftId;
-				// create draft in DB UserDrafts collection:
-				await UsersDrafts.create(draftData);
-				// if there is no drafts in user variable:
-				if (!user["drafts"]) {
-					user["drafts"] = [];
-				}
-				// put a new draftID in user variable
-				user["drafts"].push(draftId);
-				// update DB - users collection:
-				await updateUserInDB(user);
-			} else {
-				// console.log(`--saveDraft--: draftId is exists: ${draftId}`);
-				// if draft is no in user virable (i dont know how it is possible?):
-				if (!user["drafts"].includes(draftId)) {
-					return res
-						.status(404)
-						.json({ msg: `No draft found with this ID: ${draftId} ` });
-				}
-				// update draft in DB UserDrafts collection:
-				await UsersDrafts.updateOne({ _id: draftId }, { $set: draftData });
-			}
-			// send back to front:
-			final = { logged_in_as: current_user, draftId: draftId };
-			//---------------------end of saveDraft-----------------------
-
-			//---------------------Start of getDraftData-----------------------
-		} else if (Object.hasOwn(data, "getDraftData")) {
-			console.log(`--getDraftData--: start`);
-			// "getDraftData" includes id only. there are no another data
-			let draftId = data["getDraftData"];
-			// get draft data from DB UserDrafts collection:
-			let draft = await UsersDrafts.findOne({ _id: draftId });
-			// if draft is no in user virable (i dont know how it is possible?)
-			// or there is no such draft data in DB:
-			if (!user["drafts"].includes(draftId) || !draft) {
-				return res
-					.status(404)
-					.json({ msg: `No draft found with this ID: ${draftId} ` });
-			}
-
-			// console.log(`--getDraftData--: ${draft}`);
-			// send back to front:
-			final = draft;
-			//---------------------end of getDraftData-----------------------
-
-			//---------------------Start of deleteDraft-----------------------
-		} else if (Object.hasOwn(data, "deleteDraft")) {
-			console.log(`--deleteDraft--: start`);
-			let draftId = data["deleteDraft"];
-			if (!user["drafts"].includes(draftId)) {
-				return res
-					.status(404)
-					.json({ msg: `No draft found with this ID: ${draftId} ` });
-			}
-
-			// delete draft in DB UserDrafts collection:
-			await UsersDrafts.deleteOne({ _id: draftId });
-
-			if (user["drafts"].includes(draftId)) {
-				user["drafts"].splice(user["drafts"].indexOf(draftId), 1);
-				// delete draft in DB Users collection:
-				await updateUserInDB(user);
-			}
-			// send back to front:
-			final = {
-				msg: "Successfully deleted draft",
-				draftId: draftId,
-			};
-
-			//---------------------end of deleteDraft-----------------------
 		}
-
-		res.status(200).json(final);
 	}
 });
 
