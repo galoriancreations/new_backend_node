@@ -405,42 +405,42 @@ const StarsSchema = new db.Schema(
 //   { versionKey: false }
 // );
  
-const StarsSchema = new db.Schema(
-  {
-    _id: String,
-    image: String,
-    title: String,
-    names: Array,
-    text: String,
-    link: String,
-    linkText: String,
-    totalRateing: Number,
-    users: Array,
-  },
-  { versionKey: false }
-);
-  const GroupSchema = new db.Schema(
-    {
-      _id: String,
-      challengeID: String,
-      invite: String,
-      telInvite: String,
-      telGroupId: String,
-      name: String,
-      users: [Object],
-      messages:[Object],
-      botMessage:[Object],
-      emoji:[Object],
-      scored:[Object],
-    },
-);
-  const ChallengeArraySchema = new db.Schema(
-  {
-    _id: String,
-    challengeID: String,
-  },
-  { versionKey: false }
-);
+// // const StarsSchema = new db.Schema(
+// //   {
+// //     _id: String,
+// //     image: String,
+// //     title: String,
+// //     names: Array,
+// //     text: String,
+// //     link: String,
+// //     linkText: String,
+// //     totalRateing: Number,
+// //     users: Array,
+// //   },
+// //   { versionKey: false }
+// );
+//   const GroupSchema = new db.Schema(
+//     {
+//       _id: String,
+//       challengeID: String,
+//       invite: String,
+//       telInvite: String,
+//       telGroupId: String,
+//       name: String,
+//       users: [Object],
+//       messages:[Object],
+//       botMessage:[Object],
+//       emoji:[Object],
+//       scored:[Object],
+//     },
+// );
+//   const ChallengeArraySchema = new db.Schema(
+//   {
+//     _id: String,
+//     challengeID: String,
+//   },
+//   { versionKey: false }
+// );
 
 const QuestionSchema = new db.Schema(
 	{
@@ -2392,8 +2392,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
         res.status(200).json(final);
       }
     }
-  }
-});
+  );
 
 app.listen(3000, () => {
   console.log("server works on port 3000!");
