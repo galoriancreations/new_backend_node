@@ -3,58 +3,6 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 
-//==== Its help to resolve  
-/*error 413 // payload too large, 
-for base64 string after adjusting size in express */
-
-app.use(bodyParser.json({limit: '50mb', extended: true}));
-app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
-app.use(bodyParser.text({ limit: '200mb' }));
-
-//=============================================
-
-//==== Its help to resolve  
-/*error 413 // payload too large, 
-for base64 string after adjusting size in express */
-
-app.use(bodyParser.json({limit: '50mb', extended: true}));
-app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
-app.use(bodyParser.text({ limit: '200mb' }));
-
-//=============================================
-
-//==== Its help to resolve
-/*error 413 // payload too large, 
-for base64 string after adjusting size in express */
-
-app.use(bodyParser.json({ limit: "50mb", extended: true }));
-app.use(
-	bodyParser.urlencoded({
-		limit: "50mb",
-		extended: true,
-		parameterLimit: 50000,
-	})
-);
-app.use(bodyParser.text({ limit: "200mb" }));
-
-//=============================================
-
-//==== Its help to resolve
-/*error 413 // payload too large, 
-for base64 string after adjusting size in express */
-
-app.use(bodyParser.json({ limit: "50mb", extended: true }));
-app.use(
-	bodyParser.urlencoded({
-		limit: "50mb",
-		extended: true,
-		parameterLimit: 50000,
-	})
-);
-app.use(bodyParser.text({ limit: "200mb" }));
-
-//=============================================
-
 
 const { Telegraf } = require('telegraf')
 
@@ -82,13 +30,12 @@ const upload = multer({ storage });
 
 let client;
 
-
-
 let lastSender;
 
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
+const { Z_UNKNOWN } = require("zlib");
 const { generateChallenge } = require('./GPT/ChallengeGenerator');
 // const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
 const fs = require("fs");
@@ -301,14 +248,13 @@ const UsersTestSchema = new db.Schema(
     groups: Array,
 		isAdmin: Boolean,
 		players: Array,
-		image: {
+		photo: {
 			name: String,
 			data: String,
 			contentType: String,
 		},
 		articleSubscribed: Boolean,
     telegramId: String,
-    totalScore: Number,
 	},
 	{ versionKey: false }
 );
@@ -383,6 +329,43 @@ const PlayerSchema = new db.Schema(
 		clubs: Array,
 	},
 	{ versionKey: false }
+);
+ 
+const StarsSchema = new db.Schema(
+  {
+    _id: String,
+    image: String,
+    title: String,
+    names: Array,
+    text: String,
+    link: String,
+    linkText: String,
+    totalRateing: Number,
+    users: Array,
+  },
+  { versionKey: false }
+);
+  const GroupSchema = new db.Schema(
+    {
+      _id: String,
+      challengeID: String,
+      invite: String,
+      telInvite: String,
+      telGroupId: String,
+      name: String,
+      users: [Object],
+      messages:[Object],
+      botMessage:[Object],
+      emoji:[Object],
+      scored:[Object],
+    },
+);
+  const ChallengeArraySchema = new db.Schema(
+  {
+    _id: String,
+    challengeID: String,
+  },
+  { versionKey: false }
 );
  
 // const StarsSchema = new db.Schema(
@@ -482,485 +465,11 @@ const TemplatesDB = db.model("templates", TemplateSchema, "templates");
 
 const PlayersDB = db.model("players", PlayerSchema, "players");
 
-const QuestionModel = db.model("questions", QuestionSchema, "questions")
+const StarsDB = db.model("stars", StarsSchema, "stars");
 
-// let quest=[
-//     {
-// 		_id:'',
-//         qnum: "1",
-//         text: "What is the greatest achievement in your life?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "2",
-//         text: "What do you value most in friendship, & why?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "3",
-//         text: "Share a personal challenge, & ask the other(s) how they would tackle it."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "4",
-//         text: "In a crisis situation, whom would you call first, & why?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "5",
-//         text: "What is your most cherished memory, & why?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "6",
-//         text: "Tell the other(s) what you like about them. Be honest!"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "7",
-//         text: "What does friendship mean to you?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "8",
-//         text: "What are the 3 things that make a relationship work?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "9",
-//         text: "What are you most curious to know about each other?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "10",
-//         text: "What do you enjoy doing the most with your family members?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "11",
-//         text: "Present your favorite 3 yoga positions"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "12",
-//         text: "Truth or Dare: ask each other anything 😊"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "13",
-//         text: "What is the most silly thing that you have ever done with a friend?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "14",
-//         text: "Invent a new TikTok challegne"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "15",
-//         text: "Are there people in your life with whom you want to reconnect?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "16",
-//         text: "What is freedom in a relationship?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "17",
-//         text: "List 3 personal boundaries."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "18",
-//         text: "Draft together 3 statements that begin with: “We are feeling...”"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "19",
-//         text: "What is the most important thing in your life?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "20",
-//         text: "If you were of a different gender, nationality or religion, what would be the difference?"
-//     },
-//     {
-// 		_id:'',
-// 		qnum: "21",
-//         text: "Find 3 things that you have in common with each other."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "22",
-//         text: "What are the 3 things that you think about the most every day?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "23",
-//         text: "What was the last nice thing you did to someone?"
-//     },
-//     {
-// 		_id:'',
-// 		qnum: "24",
-//         text: "What are the challenges that the next generation might face, in your opinion?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "25",
-//         text: "What do you feel most grateful for in your life?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "26",
-//         text: "Tell the other(s) what your 1st impression was & whether it changed!"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "27",
-//         text: "What new thing did you learn today? this week? this year?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "28",
-//         text: "Who are the people that truly care for you?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "29",
-//         text: "Find 3 differences that you see between each other."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "30",
-//         text: "Explain the meaning: “living the moment - with respect!”"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "31",
-//         text: "List 5 of your main values, & rank them in order of importance."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "32",
-//         text: "What prejudice would you like to be gone, & why?"
-//     },
-//     {
-// 		_id:'',
-// 		qnum: "33",
-//         text: "What is the importance of rest in your life?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "34",
-//         text: "What does it take to have the necessary self-discipline to achieve your goals?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "35",
-//         text: "What are you willing to fight for, & why?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "36",
-//         text: "If you were the Minister of Happiness, what 3 new laws would you enact?"
-//     },
-//     {
-// 		_id:'',
-//       	qnum: "37",
-//        	text: "What would you never compromise on?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "38",
-//       	text: "If you could change the world, what would you do 1st ?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "39",
-//         text: "Have you ever made a decision that changed your whole life?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "40",
-//         text: "Make a wish & share it with everyone."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "41",
-//         text: "If you had a crystal ball, what would you want to know about the other(s)?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "42",
-//         text: "Describe your dream home, provide 10 adjectives."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "43",
-//         text: "What makes you forget to eat?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "44",
-//         text: "True or False - Share a story!"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "45",
-//         text: "Describe 3 successes of yours, & identify what they have in common."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "46",
-//         text: "Reinvent the 10 commandments with the other(s)."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "47",
-//         text: "Name 5 people that you particularly admire & what do they represent for you?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "48",
-//         text: "How to improve your time management? Find solutions together."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "49",
-//         text: "Complete: “If I were King/Queen for a day, I would…”"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "50",
-//         text: "Time Machine: In what era would you like to live, and why?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "51",
-//         text: "How do you express love towards yourself?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "52",
-//         text: "What was your most vivid dream?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "53",
-//         text: "Complete the sentence: “I wish I had someone to share...”"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "54",
-//         text: "Let’s create a story together, one sentence each."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "55",
-//         text: "Choose 3 animals of your liking. What is special about them?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "56",
-//         text: "If you could be anyone for a day, who would you be?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "57",
-//         text: "tell a story beginning with, “Once upon a time…”"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "58",
-//         text: "What would be the title of your TED talk & book, and why?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "59",
-//         text: "True or False: one tells two stories, find the lie."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "60",
-//         text: "What trait of yours would you like to improve the most, & why?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "61",
-//         text: "Truth or Dare: ask anything 😊"
-//     },
-//     {
-// 		_id:'',
-// 		qnum: "62",
-//         text: "Name a new place that you would like to visit?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "63",
-//         text: "What is most important: the road, the destination or ...?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "64",
-//         text: "Ever planted a tree? What tree would you like to plant?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "65",
-//         text: "Choose an animal each, & talk about the climate."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "66",
-//         text: "If you were an elephant, what would you tell about humans?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "67",
-//         text: "What book or person inspired you the most & how were you affected?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "68",
-//         text: "What makes a strong community?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "69",
-//         text: "If you were rich, to what cause would you donate?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "70",
-//         text: "What would be the most surprising scientific discovery imaginable?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "71",
-//         text: "What's the world like in 10 years? Describe it in a magical way."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "72",
-//         text: "Can AI replace your friends?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "73",
-//         text: "What is the meaning of life?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "74",
-//         text: "Who are your favorite vloggers?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "75",
-//         text: "How to improve life on earth?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "76",
-//         text: "Complete together: “If only we were...then we could have…”"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "77",
-//         text: "What is the first thing you notice about people?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "78",
-//         text: "What is the most fun party you have ever been to?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "79",
-//         text: "What would you do if you won a hundred million $$$?"
-//     },
-//     {
-//         qnum: "80",
-//         text: "Name 3 things that you like the most about the other(s)."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "81",
-//         text: "Truth or Dare: ask anything 😊"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "82",
-//         text: "If there was a warning sign on you, what would it say?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "83",
-//         text: "Find 5 red things around you."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "84",
-//         text: "Who is the most special person in your life?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "85",
-//         text: "If you were rich, what would you do?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "86",
-//         text: "Who do you know best & who knows you best?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "87",
-//         text: "Chocolates or flowers? What would you rather get as a birthday present?"
-//     },
-//     {
-// 		_id:'',
-// 		qnum: "88",
-//         text: "Name 3 things that really make you happy, & why?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "89",
-//         text: "If you could change one thing in your life, what would it be?"
-//     },
-//     {
-// 		_id:'',
-// 		qnum: "90",
-//         text: "Share: “People who know me think I'm the best at…”"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "91",
-//         text: "Which were your happiest moments this year? Ever?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "92",
-//         text: "Say 3 nice things about each other."
-//     },
-//     {
-// 		_id:'',
-//         qnum: "93",
-//         text: "What is your favorite game? toy?"
-//     },
-//     {
-// 		_id:'',
-//         qnum: "94",
-//         text: "Choose a player & ask anything."
-//     }
-// ]
-// quest.forEach((val)=>{
-// 	val._id ='q_' + generateRandomString()
-// })
-// QuestionModel.insertMany(quest)
+const GroupsDB = db.model("tel_groups", GroupSchema, "tel_groups");
 
-
+const ChallengeArray = db.model("group_challnge_array", ChallengeArraySchema, "group_challnge_array");
 
 
 // function start(client) { ///פונקציית ההתחלה שמקבלת את הקליינט
@@ -1366,13 +875,12 @@ app.post("/api", upload.single("image"), (req, res) => {
 				image.data = base64Data;
 				image.contentType = req.file.mimetype;
 
-				console.log(`API: image uploaded`);
+				console.log("photo uploaded");
 			}
 			//parse body from JSON to object
 			let parseredRegister = JSON.parse(req.body.register);
 
 			//check all propertise of parseredRegister object:
-			console.log(`API: check all properties:`);
 			for (const keyTest in parseredRegister) {
 				console.log(`${keyTest}: ${parseredRegister[keyTest]}`);
 			}
@@ -1466,24 +974,24 @@ app.post("/api", upload.single("image"), (req, res) => {
 				res.status(200).json({ result: result, msg: message });
 			}
 
-      if (req.body.hasOwnProperty("checkPhone")) {
-        let phoneNum = req.body.checkPhone;
-        phoneNum = phoneNum.replace("+", "");
-        let check = await UsersTest.findOne({ phone: `${phoneNum}` });
-        let [result, message] = [false, ""];
-        if (check == null) {
-          [result, message] = [
-            true,
-            `Great! you can register with this phone: ${req.body.checkPhone}`,
-          ];
-        } else {
-          [result, message] = [
-            false,
-            "Oops! This phone is already taken,\nplease choose another :)",
-          ];
-        }
-        res.status(200).json({ result: result, msg: message });
-      }
+			if (req.body.hasOwnProperty("checkPhone")) {
+				let phoneNum = req.body.checkPhone;
+				phoneNum = phoneNum.replace("+", "");
+				let check = await UsersTest.findOne({ phone: `${phoneNum}` });
+				let [result, message] = [false, ""];
+				if (check == null) {
+					[result, message] = [
+						true,
+						`Great! you can register with this phone: ${req.body.checkPhone}`,
+					];
+				} else {
+					[result, message] = [
+						false,
+						"Oops! This phone is already taken,\nplease choose another :)",
+					];
+				}
+				res.status(200).json({ result: result, msg: message });
+			}
 
       if (req.body.hasOwnProperty("register")) {
         let _username = req.body.register.username;
@@ -1561,29 +1069,29 @@ app.post("/api", upload.single("image"), (req, res) => {
             .json({ msg: `template ${challengeData["template"]} was not found` });
         }
 
-        challengeData["name"] = templateId["name"];
+				challengeData["name"] = templateId["name"];
 
-        challengeData["image"] = templateId["image"];
+				challengeData["image"] = templateId["image"];
 
-        challengeData["language"] = templateData["language"];
+				challengeData["language"] = templateData["language"];
 
-        challengeData["isPublic"] = templateData["isPublic"];
+				challengeData["isPublic"] = templateData["isPublic"];
 
-        if (!templateData.hasOwnProperty("allowCopies")) {
-          templateData["allowCopies"] = false;
-        }
+				if (!templateData.hasOwnProperty("allowCopies")) {
+					templateData["allowCopies"] = false;
+				}
 
-        challengeData["allowCopies"] = templateData["allowCopies"];
+				challengeData["allowCopies"] = templateData["allowCopies"];
 
-        if (templateData.hasOwnProperty("dayMargin")) {
-          challengeData["dayMargin"] = templateData["dayMargin"];
-        }
+				if (templateData.hasOwnProperty("dayMargin")) {
+					challengeData["dayMargin"] = templateData["dayMargin"];
+				}
 
-        if (templateData.hasOwnProperty("preDays")) {
-          challengeData["preDays"] = templateData["preDays"];
-        }
+				if (templateData.hasOwnProperty("preDays")) {
+					challengeData["preDays"] = templateData["preDays"];
+				}
 
-        challengeData["days"] = templateData["days"];
+				challengeData["days"] = templateData["days"];
 
         if (challengeData.hasOwnProperty("selections")) {
           for (let day in challengeData["days"]) {
@@ -1896,27 +1404,16 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 				}
 			}
 
+        userData["createdChallenges"] = createdChallenges;
 			userData["createdChallenges"] = createdChallenges;
 
+        final["logged_in_as"] = current_user;
 			// send back to front:
 			final["logged_in_as"] = current_user;
 
-			final["user"] = userData;
-
-			//----------------end of editProfile-----------------------
-
-			//---------------------Start of getAvailableTemplates-----------------------
-		} else if (Object.hasOwn(data, "getAvailableTemplates")) {
-			console.log(`--getAvailableTemplates--: start`);
-
-			// ---
-			// if i want to erase all templates in user.
-			// for test and development only:
-			// user.templates = [];
-			// await UsersTest.updateOne({ _id: `${user["_id"]}` }, { $set: user });
-			// ---
-
-			let publicTemplates = await TemplatesDB.find({ isPublic: true });
+        final["user"] = userData;
+      } else if (data.hasOwnProperty("getAvailableTemplates")) {
+          let publicTemplates = await TemplatesDB.find({ isPublic: true });
 
 			//  in user collection storages only three parametors of template.
 			//  all details storages in templates collection
@@ -2442,6 +1939,10 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
           }else{
             return res.status(400).json({ msg: `No group found with this ID: ${inviteId}` });
           }
+  
+
+
+
 
         }else if (data.hasOwnProperty("loadGroup")) {
           const groupId = data["loadGroup"]["_id"]
@@ -2452,6 +1953,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
             return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
           }
         }else if (data.hasOwnProperty("sendMessage")) {
+          console.log('send message');
           const groupId = data["sendMessage"]["_id"]
           const group = await GroupsDB.findOne({_id:groupId})
           if (group) {
@@ -2466,59 +1968,31 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
             const time = new Date
             const hourmin = time.getHours()
             const username = user.username ? user.username : 'Jhon Doe'
-            const message = {msg:msg,time:hourmin,user:user._id,nickname:username}
-            let botMessage;
-            let globalActive = true 
-            if (msg == '😀') {
-              if (dailyTask[0][user._id]) {
-                botMessage =  {msg:'you already did the global task',time:hourmin,user:'Ting Global Bot'}
-                group.messages.push(message)
-                group.messages.push(botMessage)
-                globalActive = !globalActive  
-              }else{
-                if (user.totalScore) {
-                user.totalScore += 10
-                }else{
-                  user.totalScore = 10
-                }
-                botMessage =  {msg:'good job you got 10 points!',time:hourmin,user:'Ting Global Bot'}
-                dailyTask[0][user._id] = true
+            const message = {msg:msg,time:hourmin,user:user._id,nickname:username} 
 
-                group.messages.push(message)
-                group.messages.push(botMessage)
-                globalActive = !globalActive  
-                updateUserInDB(user)
-              } 
-            }
-            
+            let botMessage;
             let goodEmoji = false
-            let index;
             for (let i = 0; i < group.emoji.length; i++) {
               if (group.emoji[i][msg]) {
-                goodEmoji = !goodEmoji
-                index = i
+                goodEmoji = i
                 break
               }
             }
             if (goodEmoji) {
-              let userfound = false
-              group.scored.forEach((val)=>{
-                if (val.user == user._id && val.emoji == msg) {
-                  userfound = !userfound
-                }});
+              let userfound = group.scored.map((val)=>{if (val.user == user._id && val.emoji == msg) {
+                return val
+              }});
               if (userfound) {
                 botMessage = {msg:'you already did this task',time:hourmin,user:'Ting Global Bot'} 
               }else{
                 botMessage = {msg:'Task Finished!!!',time:hourmin,user:'Ting Global Bot'}
-                const points = group.emoji[index][msg] 
+                const points = group.emoji[goodEmoji][msg][points] 
                 group.scored.push({user:user._id,emoji:msg})
                 user.totalScore += points
                 updateUserInDB(user)
                 await GroupsDB.updateOne({_id:groupId},{scored:group.scored})
               }
-              if (globalActive) {
-                group.messages.push(message)
-              }
+              group.messages.push(message)
               group.messages.push(botMessage)
             }else if (msg == '/hello') {
               botMessage = {msg:'hi there!',time:hourmin,user:'Ting Global Bot'} 
@@ -2691,7 +2165,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
                 }
                 group.messages.push(message)
                 group.messages.push(botMessage)
-              }else if (msg != '/telegram') {
+              }else{
                 let admin = false
                 for (let i = 0; i < group.users.length; i++) {
                   if (group.users[i].userid == user._id ) {
@@ -2705,7 +2179,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
                   group.telInvite = shortmsg
                   await GroupsDB.updateOne({_id:groupId},{telInvite:group.telInvite})
                   botMessage = {
-                    msg:'telegram invite code registerd!!\n you can go to telegram and activate the group now!\n use the activate command with your invite link and your telegram link',
+                    msg:'telegram invite code registerd!!\n you can go to telegram and activate the group now!',
                     time:hourmin,
                     user:'Ting Global Bot'
                   }
@@ -2720,74 +2194,47 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
                   group.messages.push(message)
                   group.messages.push(botMessage)
                 }
-              }else{
-                botMessage = {
-                  msg:'when using the telegram command add your telegram group link after the command',
-                  time:hourmin,
-                  user:'Ting Global Bot'
-                }
-                group.messages.push(message)
-                group.messages.push(botMessage)
               }
               
             }else if (msg.startsWith('/connect_account')) {
-              if (user.telegramId.length > 6) {
+              if (msg == '/connect_account') {
                 botMessage = {
-                  msg:'this account is already connected to telegram if you need help to switch telegram account please go to the Ting global help center',
+                  msg:'please use a 6 digit code after the command',
                   time:hourmin,
                   user:'Ting Global Bot'
                 }
                 group.messages.push(message)
                 group.messages.push(botMessage)
               }else{
-                if (msg == '/connect_account') {
-                  botMessage = {
-                    msg:'please use a 6 digit code after the command',
-                    time:hourmin,
-                    user:'Ting Global Bot'
-                  }
-                  group.messages.push(message)
-                  group.messages.push(botMessage)
-                }else{
-                  let code = msg.slice(17,msg.length)
-                  try {
-                    code = parseInt(code)
-                  }catch(err){
-                    console.log(err);
-                    code = false
-                  }
-                  
-                  if (code) {
-                    if (code <= 999999 && code >= 100000) {
-                      user.telegramId = code.toString()
-                      updateUserInDB(user)
-                      botMessage = {
-                        msg:'code accepted if you forget it you can set it again\nbut after connecting your telegram account it cannot be changed',
-                        time:hourmin,
-                        user:'Ting Global Bot'
-                      }
-                    }else{
-                      botMessage = {
-                        msg:'please use a 6 digit code',
-                        time:hourmin,
-                        user:'Ting Global Bot'
-                      }
+                let code = msg.slice(17,msg.length)
+                code = parseInt(code)
+                if (code) {
+                  if (code <= 999999 && code >= 100000) {
+                    user.telegramId == code
+                    updateUserInDB(user)
+                    botMessage = {
+                      msg:'code accepted if you forget it you can set it again\nbut after connecting your telegram account it cannot be changed',
+                      time:hourmin,
+                      user:'Ting Global Bot'
                     }
                   }else{
                     botMessage = {
-                      msg:'please use only digits',
+                      msg:'please use a 6 digit code',
                       time:hourmin,
                       user:'Ting Global Bot'
                     }
                   }
-                  group.messages.push(botMessage)
+                }else{
+                  botMessage = {
+                    msg:'please use only digits',
+                    time:hourmin,
+                    user:'Ting Global Bot'
+                  }
                 }
+                group.messages.push(botMessage)
               }
-              
             }else{
-              if (globalActive) {
-                group.messages.push(message)
-              }
+              group.messages.push(message)
             }
 
 
@@ -2795,26 +2242,200 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 
             await GroupsDB.updateOne({_id:groupId},{messages:group.messages})
 
-
+            for (let template in templates) {
+              if (
+                template.hasOwnProperty("creator") &&
+                template["creator"] != null
+              ) {
+                let creator;
+                let creatorId = template["creator"];
+                if (creators.hasOwnProperty(`${creatorId}`)) {
+                  creator = creators[creatorID];
+                } else {
+                  creator = UsersTest.findOne(
+                    { _id: creatorId },
+                    { phone: 1, username: 1 }
+                  );
+                  if (creator != null) {
+                    creators[creatorId] = creator;
+                  }
+                }
+                if (creator != null) {
+                  template["creator"] = creator["username"] || creator["phone"];
+                }
+              }
+              final = templates;
+            }
+          } 
 
             final = group.messages
-          }else{
-            return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
-          }
         }else if (data.hasOwnProperty("deleteGroup")) {
-          const groupId = data["deleteGroup"]["_id"]
-          // const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1})
-          // if (group) {
-          //   final = group
-          // }else{
-          //   return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
-          // }
+            const groupId = data["deleteGroup"]["_id"]
+            // const group = await GroupsDB.findOne({_id:groupId},{name:1,messages:1,botMessage:1})
+            // if (group) {
+            //   final = group
+            // }else{
+            //   return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
+            // }
+        } else if (data.hasOwnProperty('createTemplateWithAi')) {
+            try {
+              // try 3 times to create template with ai
+              const maxAttempts = progressMaxAttempts;
+              // create array to store failed templates
+              const templates = [];
+              for (let i = 0; i < maxAttempts; i++) {
+                // update progress attempts
+                progressAttempts = i + 1;
+                progressEmitter.emit('progressAttemptsChanged');
+                // console.log('progressAttempts:', progressAttempts);
+  
+                // delay of 5 secs for testing
+                // await new Promise((resolve) => setTimeout(resolve, 5000));
+                // if (i + 1 == maxAttempts) {
+                //   progressAttempts = 0;
+                //   return;
+                //   // throw 'test';
+                // } else {
+                //   continue;
+                // }
+  
+                console.log(
+                  `Server attempt ${
+                    i + 1
+                  } of ${maxAttempts} to create template with AI`
+                );
+  
+                // cancel if user not in same page
+                if (current_user !== data.createTemplateWithAi.creator) {
+                  console.log('User not in same page, cancelling');
+                  throw 'User not in same page, cancelling';  
+                }
+                
+                // get data
+                const {
+                  topic,
+                  days,
+                  tasks,
+                  messages,
+                  preDays,
+                  preMessagesPerDay,
+                  language,
+                  targetAudience,
+                } = data.createTemplateWithAi;
+  
+                // create template
+                const templateId = 't_' + generateRandomString();
+                let template = await generateChallenge({
+                  creator: current_user,
+                  id: templateId,
+                  topic,
+                  days,
+                  tasks,
+                  messages,
+                  preDays,
+                  preMessagesPerDay,
+                  language: 'English', // only english supported for now
+                  targetAudience,
+                  numAttempts: 1,
+                });
+  
+                if (template?.error) {
+                  console.error('Failed to create template with AI');
+                  if (template.response) {
+                    templates.push(template.response);
+                  }
+                  if (i + 1 === maxAttempts) {
+                    // take the template with the most days
+                    template = templates.reduce((prev, current) =>
+                    prev.days.length > current.days.length ? prev : current
+                    );
+                    console.log(
+                      `No more attempts left, returning template with the most days (${template.days.length})`
+                    );
+                  } else {
+                    console.log('Trying again');
+                    continue;
+                  }
+                }
+  
+                progressAttempts = maxAttempts;
+                progressEmitter.emit('progressAttemptsChanged');
+                
+                // add template to db
+                await TemplatesDB.create(template);
+  
+                // add template to user
+                const temp = {
+                  _id: templateId,
+                  name: template.name,
+                  isPublic: template.isPublic,
+                };
+                user.templates = [...user.templates, temp];
+                updateUserInDB(user);
+  
+                fs.writeFileSync(
+                  'GPT/json/failed.json',
+                  JSON.stringify(templates)
+                );
+  
+                // return template
+                final = { template };
+                console.log('Template created successfully');
+                break;
+              }
+            } catch (error) {
+              progressAttempts = 0;
+              console.error(error);
+              return res.status(400).json({ msg: error });
+            }          
         }
         res.status(200).json(final);
       }
     }
-  );
+  }
+});
 
 app.listen(3000, () => {
-	console.log("server works on port 3000!");
-})
+  console.log("server works on port 3000!");
+});
+
+
+/*************************
+ *** Progress tracking ***
+ ************************/
+const progressEmitter = new EventEmitter();
+
+let progressAttempts = 0;
+let progressMaxAttempts = 3;
+
+app.get('/progress', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const progressListener = () => {
+    // calculate progress percentage
+    const progress = Math.floor(
+      (progressAttempts / progressMaxAttempts) * 100
+    );
+    const data = {
+      progress,
+      attempts: progressAttempts,
+      maxAttempts: progressMaxAttempts,
+    };
+    if (progress === 100) {
+      data.done = true;
+    }
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+  progressListener();
+
+  progressEmitter.on('progressAttemptsChanged', progressListener);
+  req.on('close', () => {
+    progressEmitter.removeListener('progressAttemptsChanged', progressListener);
+  });
+});
+
+
+// start article generator schedule to run every Monday at 9:00
+// scheduleArticleJob(1, 9, 0);
