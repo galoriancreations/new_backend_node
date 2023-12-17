@@ -2432,8 +2432,7 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
         res.status(200).json(final);
       }
     }
-  }
-});
+);
 
 app.listen(3000, () => {
   console.log("server works on port 3000!");
