@@ -3,9 +3,9 @@ require('dotenv').config();
 import fs from 'fs';
 import schedule from 'node-schedule';
 import { strict_output2 } from './strict_output';
-import { addChallengeToDb } from '../database';
-import { generateRandomString } from '../services/utils';
-import { type Challenge, type ChallengeOutput } from './types';
+import { addChallengeToDb } from '../../database';
+import { generateRandomString } from '../../services/utils';
+import { type Challenge, type ChallengeOutput } from '../types';
 
 export async function generateChallenge({
   topic = 'a topic of your choise',
@@ -77,8 +77,11 @@ Store the challenge in a JSON array.`,
           score: '<task score>',
         },
       ],
+    },
+    {
+      // verbose: true,
+      model: 'gpt-4',
     }
-    // { verbose: true }
   );
 
   if (!response) {

@@ -89,8 +89,10 @@ let lastSender;
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
-const { Z_UNKNOWN } = require("zlib");
-const { error } = require("console");
+const { generateChallenge } = require('./GPT/ChallengeGenerator');
+// const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
+const fs = require("fs");
+const EventEmitter = require('events');
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -200,9 +202,9 @@ const fetchUserFromID = async (id) => {
 };
 
 const updateUserInDB = async (user) => {
-	console.log("new user to update:", user.templates);
-
-	await UsersTest.updateOne({ _id: `${user["_id"]}` }, { $set: user });
+  // console.log("new user to update:", user);
+  await UsersTest.updateOne({ _id: `${user["_id"]}` }, { $set: user });
+  return;
 };
 
 // why in this three searches i exculde:
@@ -2069,21 +2071,20 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 				{ $set: playerToRemove }
 			);
 
-					final = {
-						msg: `sucessfully deleted user '${playerToRemove.username}`,
-						playerId: `${playerToRemove["_id"]}`,
-					};
-				} else if (Object.hasOwn(data, "getTemplateData")) {
-					let template = await TemplatesDB.findOne({
-						_id: `${data["getTemplateData"]}`,
-					});
-					final = template;
-					console.log("Template Ready!");
-///=======================templates // save challenge image //=============================
-				} else if (Object.hasOwn(data, "saveTemplate")) {
-					let templateId = data["saveTemplate"]["templateId"];
-					console.log("template id is : " + templateId);
-					let templateData = data["saveTemplate"]["templateData"];
+          final = {
+            msg: `sucessfully deleted user '${playerToRemove.username}`,
+            playerId: `${playerToRemove["_id"]}`,
+          };
+        } else if (data.hasOwnProperty("getTemplateData")) {
+          let template = await TemplatesDB.findOne({
+            _id: `${data["getTemplateData"]}`,
+          });
+          final = template;
+          // console.log("Template Ready!");
+        } else if (data.hasOwnProperty("saveTemplate")) {
+          let templateId = data["saveTemplate"]["templateId"];
+          console.log("template id is : " + templateId);
+          let templateData = data["saveTemplate"]["templateData"];
 
 			templateData["creator"] = current_user;
 			templateData["lastSave"] = new Date();
@@ -2137,89 +2138,106 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 							console.log("existingTemplateData :" + existingTemplateData);
 							let excludedKeys = ["lastSave", "creator", "challenges", "_id"];
 
-					existingTemplateData = Object.entries(existingTemplate).reduce(
-						(result, [key, value]) => {
-							if (key in templateData && !excludedKeys.includes(key)) {
-								result[key] = value;
-							}
-							return result;
-						},
-						{}
-					);
-					let filteredTemplateData = {};
-					for (let key in templateData) {
-						if (!excludedKeys.includes(key)) {
-							filteredTemplateData[key] = templateData[key];
-						}
-					}
-					if (String(existingTemplateData) !== String(filteredTemplateData)) {
-						let originId = templateId;
-						templateId = "t_" + generateRandomString();
-						templateData["_id"] = templateId;
-						templateData["isPublic"] = false;
-						templateData["origin"] = originId;
-						await TemplatesDB.create(templateData);
-						let temp = {
-							_id: templateId,
-							name: templateData.name,
-							isPublic: templateData.isPublic,
-						};
-						user["templates"] = [...user["templates"], temp];
-					}
-					await updateUserInDB(user);
-				}
-			}
-			// updateUserInDB(user);
-
-			// send back to front:
-			final = { logged_in_as: current_user, templateId: templateId };
-
-			//---------------------end of saveTemplate------------------------
-
-			//---------------------Start of deleteTemplate-----------------------
-		} else if (Object.hasOwn(data, "deleteTemplate")) {
-			console.log(`--deleteTemplate--: start`);
-			let templateId = data["deleteTemplate"]["templateId"];
-			if (
-				!isAdmin &&
-				!(user["templates"].find((val) => val._id == templateId) != undefined)
-			) {
-				return res
-					.status(404)
-					.json({ msg: `Template not found ${templateId}` });
-			}
-			// delete template from DB, collection templates:
-			await TemplatesDB.deleteOne({ _id: `${templateId}` });
-			// update user virable:
-			user.templates = user.templates.filter((val) => val._id !== templateId);
-			console.log(`--deleteTemplate--: user templates are: ${user.templates}`);
-			// delete template from DB, collection users:
-			await updateUserInDB(user);
-
-			// send back to front:
-			final = {
-				msg: `Successfully deleted template: ${templateId}`,
-				templateId: templateId,
-			};
-
-			//---------------------end of deleteTemplate-----------------------
-
-			//---------------------Start of cloneTemplate-----------------------
-		} else if (Object.hasOwn(data, "cloneTemplate")) {
-			console.log(`--cloneTemplate--: start`);
-			let originId = data["cloneTemplate"];
-			let originTemplate = await TemplatesDB.findOne({
-				_id: `${originId}`,
-			});
-			if (
-				originTemplate == null ||
-				(user["templates"].find((val) => val._id == originId) == undefined &&
-					!originTemplate["isPublic"])
-			) {
-				return res.status(404).json({ msg: `Template not found ${originId}` });
-			}
-			// create new object for the copy of a template:
-			let newTemplate = {};
+              existingTemplateData = Object.entries(existingTemplate).reduce(
+                (result, [key, value]) => {
+                  if (key in templateData && !excludedKeys.includes(key)) {
+                    result[key] = value;
+                  }
+                  return result;
+                },
+                {}
+              );
+              let filteredTemplateData = {};
+              for (let key in templateData) {
+                if (!excludedKeys.includes(key)) {
+                  filteredTemplateData[key] = templateData[key];
+                }
+              }
+              if (
+                String(existingTemplateData) !== String(filteredTemplateData)
+              ) {
+                let originId = templateId;
+                templateId = "t_" + generateRandomString();
+                templateData["_id"] = templateId;
+                templateData["isPublic"] = false;
+                templateData["origin"] = originId;
+                await TemplatesDB.create(templateData);
+                let temp = {
+                  _id: templateId,
+                  name: templateData.name,
+                  isPublic: templateData.isPublic,
+                };
+                user["templates"] = [...user["templates"], temp];
+              }
+            }
+          }
+          updateUserInDB(user);
+          final = { logged_in_as: current_user, templateId: templateId };
+        } else if (data.hasOwnProperty("deleteTemplate")) {
+          // delete multi templates at once with delete many
+          if (Array.isArray(data.deleteTemplate.templateIds)) {
+            const templateIds = data.deleteTemplate.templateIds;
+            if (
+              !isAdmin &&
+              !templateIds.every((val) =>
+                user.templates.find((val2) => val2._id == val)
+              )
+            ) {
+              return res
+                .status(404)
+                .json({ msg: `Template not found ${templateIds}` });
+            }
+            await TemplatesDB.deleteMany({ _id: { $in: templateIds } });
+            user.templates = user.templates.filter(
+              (val) => !templateIds.includes(val._id)
+            );
+            updateUserInDB(user);
+            final = {
+              msg: `Successfully deleted templates: ${templateIds}`,
+              templateIds: templateIds,
+            };
+          }
+          // delete single template
+          else {
+            const templateId = data.deleteTemplate.templateId;
+            if (
+              !isAdmin &&
+              !(
+                user.templates.find((val) => val._id == templateId) !=
+                undefined
+              )
+            ) {
+              return res
+                .status(404)
+                .json({ msg: `Template not found ${templateId}` });
+            }
+            await TemplatesDB.deleteOne({ _id: `${templateId}` });
+            user.templates = user.templates.filter(
+              (val) => val._id !== templateId
+            );
+            // console.log("user templates:", user.templates);
+            updateUserInDB(user);
+            final = {
+              msg: `Successfully deleted template: ${templateId}`,
+              templateId: templateId,
+            };
+          }
+        } else if (data.hasOwnProperty("cloneTemplate")) {
+          let originId = data["cloneTemplate"];
+          let originTemplate = await TemplatesDB.findOne({
+            _id: `${originId}`,
+          });
+          if (
+            originTemplate == null ||
+            (user["templates"].find((val) => val._id == originId) ==
+              undefined &&
+              !originTemplate["isPublic"])
+          ) {
+            return res
+              .status(404)
+              .json({ msg: `Template not found ${originId}` });
+          }
+          let newTemplate = {};
 
 			// toObject is not a native methos in JS. where it is gets from?:)
 			const originDoc = originTemplate.toObject();
@@ -2279,53 +2297,186 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 
 			let creators = { current_user: user };
 
-					for (let template in templates) {
-						if (
-							template.hasOwnProperty("creator") &&
-							template["creator"] != null
-						) {
-							let creator;
-							let creatorId = template["creator"];
-							if (creators.hasOwnProperty(`${creatorId}`)) {
-								creator = creators[creatorID];
-							} else {
-								creator = UsersTest.findOne(
-									{ _id: creatorId },
-									{ phone: 1, username: 1 }
-								);
-								if (creator != null) {
-									creators[creatorId] = creator;
-								}
-							}
-							if (creator != null) {
-								template["creator"] = creator["username"] || creator["phone"];
-							}
-						}
-						final = templates;
-					}
-				} else if (data.hasOwnProperty("getQuestion")){
-					const result = await QuestionModel.find()
-					let i = Math.floor(Math.random() * 94)
-					final = result[i].text
-				}
-				 else if (data.hasOwnProperty("getAnswer")){
-					let question = data["getAnswer"]["question"]
-					let answer = data["getAnswer"]["answer"]
-					const findAndUpAnswer = await QuestionModel.findOneAndUpdate(
-						{text:question},{$set:{answers:answer}})
-					if(!findAndUpAnswer){
-						return res.status(400).json({msg:'the question not found'})
-					}else{
-						res.json({msg:'the question updated'})
-						final = findAndUpAnswer
-					}
-				}
-				res.status(200).json(final);
-			}
-		}
-	
-);
+          for (let template in templates) {
+            if (
+              template.hasOwnProperty("creator") &&
+              template["creator"] != null
+            ) {
+              let creator;
+              let creatorId = template["creator"];
+              if (creators.hasOwnProperty(`${creatorId}`)) {
+                creator = creators[creatorID];
+              } else {
+                creator = UsersTest.findOne(
+                  { _id: creatorId },
+                  { phone: 1, username: 1 }
+                );
+                if (creator != null) {
+                  creators[creatorId] = creator;
+                }
+              }
+              if (creator != null) {
+                template["creator"] = creator["username"] || creator["phone"];
+              }
+            }
+            final = templates;
+          }
+        } else if (data.hasOwnProperty('createTemplateWithAi')) {
+          try {
+            // try 3 times to create template with ai
+            const maxAttempts = maxTemplateAttempts;
+            // create array to store failed templates
+            const templates = [];
+            for (let i = 0; i < maxAttempts; i++) {
+              // update progress attempts
+              progressAttempts = i + 1;
+              progressEmitter.emit('progressAttemptsChanged');
+              // console.log('progressAttempts:', progressAttempts);
+
+              // delay of 2 secs
+              // await new Promise((resolve) => setTimeout(resolve, 2000));
+              // if (i+1==maxAttempts)
+              //   throw 'test';
+              // else continue;
+
+              console.log(
+                `Server attempt ${
+                  i + 1
+                } of ${maxAttempts} to create template with AI`
+              );
+
+              // cancel if user not in same page
+              if (current_user !== data.createTemplateWithAi.creator) {
+                console.log('User not in same page, cancelling');
+                throw 'User not in same page, cancelling';  
+              }
+              
+              // get data
+              const {
+                topic,
+                days,
+                tasks,
+                messages,
+                preDays,
+                preMessagesPerDay,
+                language,
+                targetAudience,
+              } = data.createTemplateWithAi;
+
+              // create template
+              const templateId = 't_' + generateRandomString();
+              let template = await generateChallenge({
+                creator: current_user,
+                id: templateId,
+                topic,
+                days,
+                tasks,
+                messages,
+                preDays,
+                preMessagesPerDay,
+                language: 'English', // only english supported for now
+                targetAudience,
+                numAttempts: 1,
+              });
+
+              if (template?.error) {
+                console.error('Failed to create template with AI');
+                if (template.response) {
+                  templates.push(template.response);
+                }
+                if (i + 1 === maxAttempts) {
+                  // take the template with the most days
+                  template = templates.reduce((prev, current) =>
+                  prev.days.length > current.days.length ? prev : current
+                  );
+                  console.log(
+                    `No more attempts left, returning template with the most days (${template.days.length})`
+                  );
+                } else {
+                  console.log('Trying again');
+                  continue;
+                }
+              }
+
+              progressAttempts = maxAttempts;
+              progressEmitter.emit('progressAttemptsChanged');
+              
+              // add template to db
+              await TemplatesDB.create(template);
+
+              // add template to user
+              const temp = {
+                _id: templateId,
+                name: template.name,
+                isPublic: template.isPublic,
+              };
+              user.templates = [...user.templates, temp];
+              updateUserInDB(user);
+
+              fs.writeFileSync(
+                'GPT/json/failed.json',
+                JSON.stringify(templates)
+              );
+
+              // return template
+              final = { template };
+              console.log('Template created successfully');
+              break;
+            }
+          } catch (error) {
+            progressAttempts = 0;
+            console.error(error);
+            return res.status(400).json({ msg: error });
+          }
+        }
+        res.status(200).json(final);
+      }
+    }
+  }
+});
 
 app.listen(3000, () => {
-	console.log("server works on port 3000!");
-})
+  console.log("server works on port 3000!");
+});
+
+
+/*************************
+ *** Progress tracking ***
+ ************************/
+const progressEmitter = new EventEmitter();
+
+let progressAttempts = 0;
+let maxTemplateAttempts = 3;
+
+app.get('/progress', (req, res) => {
+  console.log('/progress');
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const progressListener = () => {
+    // calculate progress percentage
+    const progress = Math.floor((progressAttempts / maxTemplateAttempts) * 100);
+
+    const data = {
+      progress,
+      attempts: progressAttempts,
+      maxAttempts: maxTemplateAttempts,
+    };
+
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  progressListener();
+  progressEmitter.on('progressAttemptsChanged', progressListener);
+  console.log('progressEmitter started');
+  req.on('close', () => {
+    progressEmitter.removeListener('progressAttemptsChanged', progressListener);
+    console.log('progressEmitter closed');
+  });
+});
+
+
+// start article generator schedule to run every Monday at 9:00
+// scheduleArticleJob(1, 9, 0);
