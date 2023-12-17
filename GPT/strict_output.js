@@ -1,19 +1,11 @@
-require('dotenv').config();
 /**
  * This file contain functions that generate output from the OpenAI API
- * The output is strictly checked to ensure that it adheres to the output format
+ * The output is strictly checked to ensure that it adutilsheres to the output format
  */
+require('dotenv').config();
 const fs = require('fs');
 const OpenAI = require('openai');
 const { jsonrepair } = require('jsonrepair');
-const axios = require('axios');
-const stream = require('stream');
-const util = require('util');
-const mime = require('mime-types');
-const path = require('path');
-
-const pipeline = stream.pipeline;
-const promisify = util.promisify;
 
 const openai = new OpenAI({
   // organization: process.env.OPENAI_ORGANIZATION_ID,
@@ -135,40 +127,19 @@ async function strict_output2(
 }
 
 // Function to generate image from the OpenAI DALL-E API
-async function strict_image(prompt, n = 1, size = '1024x1024') {
+async function strict_image(prompt, n = 1, size = '1024x1024', model = 'dall-e-3') {
   const response = await openai.images.generate({
+    model,
     prompt,
     n,
     size,
   });
-  const imageUrl = response.data;
 
-  return imageUrl;
+  // save response to file for debugging
+  fs.writeFileSync('GPT/json/strict_image.json', JSON.stringify(response));
+
+  return response.data;
 }
-
-const downloadImage = async (imageUrl, downloadPath) => {
-  try {
-    const response = await axios({
-      url: imageUrl,
-      method: 'GET',
-      responseType: 'stream',
-    });
-
-    const writer = fs.createWriteStream(downloadPath);
-
-    const pipelineAsync = promisify(pipeline);
-    await pipelineAsync(response.data, writer);
-
-    console.log(`Image downloaded as ${downloadPath}`);
-    return downloadPath;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(`Error downloading image: ${error.message}`);
-    }
-    fs.unlink(downloadPath, () => {});
-    return null;
-  }
-};
 
 // // Function to generate audio from the OpenAI API
 // async function strict_audio(prompt: string) {
@@ -180,16 +151,4 @@ const downloadImage = async (imageUrl, downloadPath) => {
 //   console.log(transcription.text);
 // }
 
-function convertFile(filePath) {
-  const buffer = fs.readFileSync(filePath);
-  const originalname = path.basename(filePath);
-  const mimetype = mime.lookup(filePath) || 'application/octet-stream';
-
-  return {
-    buffer,
-    originalname,
-    mimetype,
-  };
-}
-
-module.exports = { strict_output2, strict_image, downloadImage, convertFile };
+module.exports = { strict_output2, strict_image };

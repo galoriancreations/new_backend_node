@@ -1,11 +1,8 @@
 const fs = require('fs');
-const {
-  strict_output2,
-  strict_image,
-  downloadImage,
-  convertFile,
-} = require('./strict_output');
+const { strict_output2, strict_image } = require('./strict_output');
 const { uploadFileToDB } = require('../database');
+const { downloadImage, convertFile } = require('../services/utils');
+// const { progressEmitter } = require('../server');
 
 async function generateChallenge({
   creator,
@@ -82,7 +79,7 @@ async function generateChallenge({
     {
       num_tries: numAttempts,
       // verbose: true,
-      model: 'ft:gpt-3.5-turbo-1106:liminal-village::8UwQb8WJ', // fine-tuned model
+      model: 'ft:gpt-3.5-turbo-1106:liminal-village::8VmPuhFf', // fine-tuned model
       temperature: 0.8,
     }
   );
@@ -156,37 +153,6 @@ async function generateChallenge({
     });
   }
 
-  // for each image field in challenge replace with strict_image
-  async function replaceImage(obj) {
-    for (const prop in obj) {
-      if (prop === 'image') {
-        console.log('Replacing image:', obj[prop]);
-        const image = await strict_image(obj[prop]);
-        const { url } = image[0];
-
-        const imagePath = await downloadImage(
-          url,
-          `./GPT/images/challenge.jpg`
-        );
-        if (!imagePath) {
-          console.log('Error downloading image, no image path');
-          continue;
-        }
-        // convert image to meme
-        const meme = convertFile(imagePath);
-
-        // upload image to database
-        const fileDB = await uploadFileToDB(meme);
-
-        // replace image desc to a real image
-        obj[prop] = `/uploads/${fileDB._id}`;
-      } else if (typeof obj[prop] === 'object') {
-        await replaceImage(obj[prop]);
-      }
-    }
-  }
-  await replaceImage(challenge);
-
   return challenge;
 }
 
@@ -229,10 +195,15 @@ async function generateDay({
     ];
   }
 
-  // delete 'id', 'type', 'fileUrl' property from lastDay object, check inner objects too
+  // delete 'id', 'type', 'fileUrl', image property from lastDay object, check inner objects too
   function removeId(obj) {
     for (const prop in obj) {
-      if (prop === 'id' || prop === 'type' || prop === 'fileUrl') {
+      if (
+        prop === 'id' ||
+        prop === 'type' ||
+        prop === 'fileUrl' ||
+        prop === 'image'
+      ) {
         delete obj[prop];
       } else if (typeof obj[prop] === 'object') {
         removeId(obj[prop]);
@@ -243,7 +214,7 @@ async function generateDay({
 
   // generate day introduction
   const generatedDay = await strict_output2(
-    `You are an helpful assistant that is able to generate a day in a challenge.
+    `You are a helpful assistant that is able to generate a day in a challenge.
 Stay relevant to the challenge name and introduction.
 The point of the first task is 1 and increase by 1 for each task in the day.`,
     // user prompt
@@ -258,15 +229,68 @@ Generated day index is ${dayIndex + 1}`,
     {
       num_tries: 3,
       // verbose: true,
-      model: 'ft:gpt-3.5-turbo-1106:liminal-village::8UwQb8WJ', // fine-tuned model
+      model: 'ft:gpt-3.5-turbo-1106:liminal-village::8VmPuhFf', // fine-tuned model
       temperature: 0.8,
     }
   );
 
+  if (!generatedDay) {
+    console.log('Error generating day');
+    return false;
+  }
+
   // console.log(generatedDay);
   // save to file also
   fs.writeFileSync('GPT/json/generatedDay.json', JSON.stringify(generatedDay));
+
   return generatedDay;
 }
 
-module.exports = { generateChallenge, generateDay };
+async function replaceImages(challenge, callback) {
+  // for each image field in challenge replace with strict_image
+  // get number of images in challenge and insert to array
+  const images = [];
+  function countImages(obj) {
+    for (const prop in obj) {
+      if (prop === 'image') {
+        images.push(obj);
+      } else if (typeof obj[prop] === 'object') {
+        countImages(obj[prop]);
+      }
+    }
+  }
+  countImages(challenge);
+  console.log('Number of images in challenge:', images.length);
+
+  for (let i = 0; i < images.length; i++) {
+    const obj = images[i];
+    const prop = 'image';
+    if (callback) {
+      callback(i + 1, images.length);
+    }
+
+    if (!obj[prop]) {
+      console.log('No image to replace');
+      continue;
+    }
+
+    console.log('Replacing image:', obj[prop]);
+    const image = await strict_image(obj[prop]);
+    const { url } = image[0];
+    // use uniq id as filename to avoid overwriting
+    const filename = `${Date.now()}-${i + 1}image`;
+    const imagePath = await downloadImage(url, `./temp/${filename}.jpeg`);
+    if (!imagePath) {
+      console.log('Error downloading image, no image path');
+      continue;
+    }
+    // convert image to meme
+    const meme = convertFile(imagePath);
+    // upload image to database
+    const fileDB = await uploadFileToDB(meme);
+    // replace image description with image path
+    obj[prop] = `/uploads/${fileDB._id}`;
+  }
+}
+
+module.exports = { generateChallenge, generateDay, replaceImages };

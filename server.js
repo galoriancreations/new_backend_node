@@ -38,10 +38,11 @@ const crypto = require("crypto");
 const { Z_UNKNOWN } = require("zlib");
 
 const fs = require("fs");
-const EventEmitter = require('events');
-const { generateChallenge, generateDay } = require('./GPT/ChallengeGenerator');
+const { generateChallenge, generateDay, replaceImages } = require('./GPT/ChallengeGenerator');
 // const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
 const { uploadFileToDB, FilesDB } = require('./database');
+const EventEmitter = require('events');
+const path = require('path');
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -2170,122 +2171,132 @@ app.post("/xapi", async (req, res) => {
             //   return res.status(400).json({ msg: `No group found with this ID: ${groupId}` });
             // }
         } else if (data.hasOwnProperty('createTemplateWithAi')) {
-            try {
-              // try 3 times to create template with ai
-              // progressMaxAttempts = 1;
-              const maxAttempts = progressMaxAttempts;
-              // create array to store failed templates
-              const templates = [];
-              for (let i = 0; i < maxAttempts; i++) {
-                // update progress attempts
-                progressAttempts = i + 1;
-                progressEmitter.emit('progressAttemptsChanged');
-                // console.log('progressAttempts:', progressAttempts);
-  
-                // delay of 5 secs for testing
-                // await new Promise((resolve) => setTimeout(resolve, 5000));
-                // if (i + 1 == maxAttempts) {
-                //   progressAttempts = 0;
-                //   return;
-                //   // throw 'test';
-                // } else {
-                //   continue;
-                // }
-  
-                console.log(
-                  `Server attempt ${
-                    i + 1
-                  } of ${maxAttempts} to create template with AI`
-                );
-  
-                // cancel if user not in same page
-                if (current_user !== data.createTemplateWithAi.creator) {
-                  console.log('User not in same page, cancelling');
-                  throw 'User not in same page, cancelling';  
-                }
-                
-                // get data
-                const {
-                  topic,
-                  days,
-                  tasks,
-                  messages,
-                  preDays,
-                  preMessagesPerDay,
-                  language,
-                  targetAudience,
-                } = data.createTemplateWithAi;
-  
-                // create template
-                const templateId = 't_' + generateRandomString();
-                let template = await generateChallenge({
-                  creator: current_user,
-                  id: templateId,
-                  topic,
-                  days,
-                  tasks,
-                  messages,
-                  preDays,
-                  preMessages: preMessagesPerDay,
-                  language: 'English', // only english supported for now
-                  targetAudience,
-                  numAttempts: 3,
-                });
-  
-                if (template?.error) {
-                  console.error('Failed to create template with AI');
-                  if (template.response) {
-                    templates.push(template.response);
-                  }
-                  if (i + 1 === maxAttempts) {
-                    // take the template with the most days
-                    template =
-                      templates.length > 1
-                        ? templates.reduce((prev, current) =>
-                            prev.days.length > current.days.length
-                              ? prev
-                              : current
-                          )
-                        : templates[0];
-                    console.log(
-                      `No more attempts left, returning template with the most days (${template.days.length})`
-                    );
-                  } else {
-                    console.log('Trying again');
-                    continue;
-                  }
-                }
-  
-                progressAttempts = maxAttempts;
-                progressEmitter.emit('progressAttemptsChanged');
-                
-                // add template to db
-                await TemplatesDB.create(template);
-  
-                // add template to user
-                const temp = {
-                  _id: templateId,
-                  name: template.name,
-                  isPublic: template.isPublic,
-                };
-                user.templates = [...user.templates, temp];
-                updateUserInDB(user);
-  
-                fs.writeFileSync(
-                  'GPT/json/failed.json',
-                  JSON.stringify(templates)
-                );
-  
-                // return template
-                final = { template };
-                console.log('Template created successfully');
-                break;
+        // delay of 1 sec for letting the client render the progress bar
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+          try {
+            // try 3 times to create template with ai
+            const maxAttempts = 3;
+            progressEmitter.emit('progressAttemptsChanged', 0, maxAttempts);
+            // create array to store failed templates
+            const templates = [];
+            for (let i = 0; i < maxAttempts; i++) {
+              // update progress attempts
+              progressEmitter.emit(
+                'progressAttemptsChanged',
+                i + 1,
+                maxAttempts
+              );
+
+              // delay of 5 secs for testing
+              // await new Promise((resolve) => setTimeout(resolve, 5000));
+              // if (i + 1 == maxAttempts) {
+              //   return;
+              //   // throw 'test';
+              // } else {
+              //   continue;
+              // }
+
+              console.log(
+                `Server attempt ${
+                  i + 1
+                } of ${maxAttempts} to create template with AI`
+              );
+
+              // cancel if user not in same page
+              if (current_user !== data.createTemplateWithAi.creator) {
+                console.log('User not in same page, cancelling');
+                throw 'User not in same page, cancelling';
               }
-            } catch (error) {
-              progressAttempts = 0;
-              console.error(error);
-              return res.status(400).json({ msg: error });
-            }          
+
+              // get data
+              const {
+                topic,
+                days,
+                tasks,
+                messages,
+                preDays,
+                preMessagesPerDay,
+                language,
+                targetAudience,
+              } = data.createTemplateWithAi;
+
+              // create template
+              const templateId = 't_' + generateRandomString();
+              let template = await generateChallenge({
+                creator: current_user,
+                id: templateId,
+                topic,
+                days,
+                tasks,
+                messages,
+                preDays,
+                preMessages: preMessagesPerDay,
+                language: 'English', // only english supported for now
+                targetAudience,
+                numAttempts: 3,
+              });
+
+              if (template?.error) {
+                console.error('Failed to create template with AI');
+                if (template.response) {
+                  templates.push(template.response);
+                }
+                if (i + 1 === maxAttempts) {
+                  // take the template with the most days
+                  template =
+                    templates.length > 1
+                      ? templates.reduce((prev, current) =>
+                          prev.days.length > current.days.length
+                            ? prev
+                            : current
+                        )
+                      : templates[0];
+                  console.log(
+                    `No more attempts left, returning template with the most days (${template.days.length})`
+                  );
+                } else {
+                  console.log('Trying again');
+                  continue;
+                }
+              }
+
+              // generate images
+              await replaceImages(template, (numReplaced, total) => {
+                progressEmitter.emit('progressAttemptsChanged', numReplaced, total, 'images');
+              });
+
+              // progressEmitter.emit(
+              //   'progressAttemptsChanged',
+              //   maxAttempts,
+              //   maxAttempts
+              // );
+
+              // add template to db
+              await TemplatesDB.create(template);
+
+              // add template to user
+              const temp = {
+                _id: templateId,
+                name: template.name,
+                isPublic: template.isPublic,
+              };
+              user.templates = [...user.templates, temp];
+              updateUserInDB(user);
+
+              fs.writeFileSync(
+                'GPT/json/failed.json',
+                JSON.stringify(templates)
+              );
+
+              // return template
+              final = { template };
+              console.log('Template created successfully');
+              break;
+            }
+          } catch (error) {
+            console.error(error);
+            return res.status(400).json({ msg: error });
+          }          
         } else if (data.hasOwnProperty('generateDayWithAi')) {
           // create challenge day with AI
           const { templateId } = data.generateDayWithAi;
@@ -2304,6 +2315,10 @@ app.post("/xapi", async (req, res) => {
             lastDay,
             dayIndex,
           });
+
+          // generate image
+          await replaceImages(day);
+
           // send day data
           final = { day };
         }
@@ -2315,43 +2330,6 @@ app.post("/xapi", async (req, res) => {
 
 app.listen(3000, () => {
   console.log("server works on port 3000!");
-});
-
-
-/*************************
- *** Progress tracking ***
- ************************/
-const progressEmitter = new EventEmitter();
-
-let progressAttempts = 0;
-let progressMaxAttempts = 3;
-
-app.get('/progress', (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  const progressListener = () => {
-    // calculate progress percentage
-    const progress = Math.floor(
-      (progressAttempts / progressMaxAttempts) * 100
-    );
-    const data = {
-      progress,
-      attempts: progressAttempts,
-      maxAttempts: progressMaxAttempts,
-    };
-    if (progress === 100) {
-      data.done = true;
-    }
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-  };
-  progressListener();
-
-  progressEmitter.on('progressAttemptsChanged', progressListener);
-  req.on('close', () => {
-    progressEmitter.removeListener('progressAttemptsChanged', progressListener);
-  });
 });
 
 /**************************
@@ -2376,10 +2354,80 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
 // /uploads/:id to get image from db
 app.get('/uploads/:id', async (req, res) => {
-  const file = await FilesDB.findById(req.params.id);
-  if (!file || !file.contentType) {
-    return res.status(404).json({ msg: 'File not found' });
+  // check if file exists in temp if not check in db and save in temp
+  const tempDir = path.join(__dirname, 'temp');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir);
   }
-  res.setHeader('Content-Type', file.contentType);
-  res.send(file.data);
+
+  let file;
+  const tempFilePath = path.join(__dirname, 'temp', req.params.id);
+  if (!fs.existsSync(tempFilePath)) {
+    file = await FilesDB.findById(req.params.id);
+    if (!file || !file.contentType) {
+      return res.status(404).json({ msg: 'File not found' });
+    }
+    fs.writeFileSync(tempFilePath, file.data);
+  } else {
+    // read the file from the temp directory
+    file = {
+      data: fs.readFileSync(tempFilePath),
+      contentType: 'image/jpeg'
+    };
+  }
+
+  if (file) {
+    res.setHeader('Content-Type', file.contentType);
+    res.send(file.data);
+  } else {
+    res.status(404).json({ msg: 'File not found' });
+  }
 });
+
+// Function to clean up the temp directory
+function cleanupTempDir(dirPath) {
+  if (fs.existsSync(dirPath)) {
+    fs.readdirSync(dirPath).forEach((file) => {
+      const filePath = path.join(dirPath, file);
+      fs.unlinkSync(filePath);
+    });
+  }
+}
+
+// Clean up the temp directory when the application starts
+const tempDir = path.join(__dirname, 'temp');
+cleanupTempDir(tempDir);
+
+/*************************
+ *** Progress tracking ***
+************************/
+const progressEmitter = new EventEmitter();
+
+app.get('/progress', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const progressListener = (attempt, maxAttempts, type) => {
+    // calculate progress percentage
+    const progress = Math.floor((attempt / maxAttempts) * 100);
+    const data = {
+      progress,
+      attempts: attempt,
+      maxAttempts: maxAttempts,
+      type: type || 'template',
+    };
+    if (progress === 100) {
+      data.done = true;
+    }
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+  progressListener();
+
+  progressEmitter.on('progressAttemptsChanged', progressListener);
+  req.on('close', () => {
+    progressEmitter.removeListener('progressAttemptsChanged', progressListener);
+  });
+});
+
+module.exports = { app };
