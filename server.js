@@ -1725,18 +1725,39 @@ app.post("/xapi", async (req, res) => {
 				} else if (data.hasOwnProperty("getQuestion")){
 					const result = await QuestionModel.find()
 					let i = Math.floor(Math.random() * 94)
-					final = result[i].text
+					final = result[i]
 				}
 				 else if (data.hasOwnProperty("getAnswer")){
 					let question = data["getAnswer"]["question"]
-					let answer = data["getAnswer"]["answer"]
+					const answer = {
+						id: 'a_' + generateRandomString(),
+						user: user.fullName,
+						text: data["getAnswer"]["answer"],
+						likes: 0
+					}
 					const findAndUpAnswer = await QuestionModel.findOneAndUpdate(
-						{text:question},{$set:{answers:answer}})
+						{qnum:question},{$push:{answers:answer}})
 					if(!findAndUpAnswer){
 						return res.status(400).json({msg:'the question not found'})
 					}else{
-						res.json({msg:'the question updated'})
-						final = findAndUpAnswer
+						const result = await QuestionModel.find()
+						final = result[parseInt(question)-1]
+					}
+				}
+				else if(data.hasOwnProperty("updateLikes")){
+					let qnum = data["updateLikes"]["qnum"]
+					let id =  data["updateLikes"]["id"]
+					let likes = data["updateLikes"]["likes"]
+					findAndUpLikes = await QuestionModel.updateOne(
+						{ qnum: qnum, "answers.id": id },
+						{ $set: { "answers.$.likes": likes } }
+					)
+					if(!findAndUpLikes){
+						return res.status(400).json({msg:'the question not found'})
+					}else{
+						qnum = "";
+						id = "";
+						likes = 0;
 					}
 				}
 				res.status(200).json(final);
