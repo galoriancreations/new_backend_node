@@ -31,15 +31,16 @@ const downloadImage = async (imageUrl, downloadPath) => {
 };
 
 function convertFile(filePath) {
-  const buffer = fs.readFileSync(filePath);
-  const originalname = path.basename(filePath);
-  const mimetype = mime.lookup(filePath) || 'application/octet-stream';
+  try {
+    const buffer = fs.readFileSync(filePath);
+    const originalname = path.basename(filePath);
+    const mimetype = mime.lookup(filePath) || 'application/octet-stream';
 
-  return {
-    buffer,
-    originalname,
-    mimetype,
-  };
+    return { buffer, originalname, mimetype };
+  } catch (error) {
+    console.error(`Failed to convert file at ${filePath}:`, error);
+    return null;
+  }
 }
 
 module.exports = { downloadImage, convertFile };

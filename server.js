@@ -43,6 +43,7 @@ const { generateChallenge, generateDay, replaceImages } = require('./GPT/Challen
 const { uploadFileToDB, FilesDB } = require('./database');
 const EventEmitter = require('events');
 const path = require('path');
+const mime = require('mime');
 
 const secretKey = "GYRESETDRYTXXXXXFUGYIUHOt7";
 
@@ -2187,11 +2188,20 @@ app.post("/xapi", async (req, res) => {
                 maxAttempts
               );
 
-              // delay of 5 secs for testing
-              // await new Promise((resolve) => setTimeout(resolve, 5000));
+              //! simulate attempts for testing
+              await new Promise((resolve) => setTimeout(resolve, 5000));
               // if (i + 1 == maxAttempts) {
+              //   // loop 4 times to simulate images progress
+              //   for (let j = 0; j < 4; j++) {
+              //     progressEmitter.emit(
+              //       'progressAttemptsChanged',
+              //       j + 1,
+              //       4,
+              //       'images'
+              //     );
+              //     await new Promise((resolve) => setTimeout(resolve, 5000));
+              //   }
               //   return;
-              //   // throw 'test';
               // } else {
               //   continue;
               // }
@@ -2352,7 +2362,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   res.status(200).send(`/uploads/${uploadedFile._id}`);
 });
 
-// /uploads/:id to get image from db
+// /uploads/:id to get file from db
 app.get('/uploads/:id', async (req, res) => {
   // check if file exists in temp if not check in db and save in temp
   const tempDir = path.join(__dirname, 'temp');
@@ -2370,9 +2380,10 @@ app.get('/uploads/:id', async (req, res) => {
     fs.writeFileSync(tempFilePath, file.data);
   } else {
     // read the file from the temp directory
+    const contentType = mime.getType(tempFilePath) || 'application/octet-stream';
     file = {
       data: fs.readFileSync(tempFilePath),
-      contentType: 'image/jpeg'
+      contentType
     };
   }
 

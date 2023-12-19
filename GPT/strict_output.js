@@ -127,7 +127,12 @@ async function strict_output2(
 }
 
 // Function to generate image from the OpenAI DALL-E API
-async function strict_image(prompt, n = 1, size = '1024x1024', model = 'dall-e-3') {
+async function strict_image(
+  prompt,
+  n = 1,
+  size = '1024x1024',
+  model = 'dall-e-3'
+) {
   const response = await openai.images.generate({
     model,
     prompt,
@@ -141,14 +146,16 @@ async function strict_image(prompt, n = 1, size = '1024x1024', model = 'dall-e-3
   return response.data;
 }
 
-// // Function to generate audio from the OpenAI API
-// async function strict_audio(prompt: string) {
-//   const transcription = await openai.audio.transcriptions.create({
-//     file: fs.createReadStream('audio.mp3'),
-//     model: 'whisper-1',
-//   });
+// Function to generate audio from the OpenAI API
+async function strict_audio(input, model = 'tts-1', voice = 'alloy') {
+  const mp3 = await openai.audio.speech.create({
+    model,
+    voice,
+    input, // text to synthesize
+  });
+  console.log(speechFile);
+  const buffer = Buffer.from(await mp3.arrayBuffer());
+  await fs.promises.writeFile(speechFile, buffer);
+}
 
-//   console.log(transcription.text);
-// }
-
-module.exports = { strict_output2, strict_image };
+module.exports = { strict_output2, strict_image, strict_audio };
