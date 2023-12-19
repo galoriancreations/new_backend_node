@@ -4,7 +4,7 @@ const mime = require('mime-types');
 const path = require('path');
 const fs = require('fs');
 
-const downloadImage = async (imageUrl, downloadPath) => {
+const downloadImage = async (imageUrl, downloadPath, quality = 50) => {
   // download image and compress with sharp
   try {
     const response = await axios({
@@ -17,7 +17,7 @@ const downloadImage = async (imageUrl, downloadPath) => {
     const buffer = Buffer.from(response.data, 'binary');
 
     // compress image
-    await sharp(buffer).jpeg({ quality: 50 }).toFile(downloadPath);
+    await sharp(buffer).jpeg({ quality }).toFile(downloadPath);
 
     // console.log(`Image downloaded as ${downloadPath}`);
     return downloadPath;

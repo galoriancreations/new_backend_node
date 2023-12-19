@@ -2,9 +2,9 @@ require('dotenv').config();
 
 const schedule = require('node-schedule');
 const { UsersTest } = require('../database/indexJS');
-const { sendMessageViaEmail } = require('../services/nodemailer.js');
+const { sendMessageViaEmail } = require('../services/nodemailer');
 // const { sendMessageViaWhatsApp } = require('../services/twilio');
-const { strict_image, strict_output2, downloadImage } = require('./strict_output');
+const { strict_image, strict_output2, downloadImage } = require('../services/utils');
 
 // Function to generate an article using the OpenAI CHATGPT-3 API
 async function generateArticle({
@@ -45,8 +45,8 @@ async function generateAndSaveImage(prompt) {
   }
 
   // download image to local storage
-  const imagePath = `GPT/images/${prompt}.jpg`;
-  const downloadPath = await downloadImage(imageUrl, imagePath);
+  const imagePath = `GPT/images/${prompt}.jpeg`;
+  const downloadPath = await downloadImage(imageUrl, imagePath, 100);
   return downloadPath;
 }
 
