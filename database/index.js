@@ -34,11 +34,18 @@ const FilesDB = db.model('uploads', FilesDBSchema);
 // }
 
 async function uploadFileToDB(file) {
+  // ceck if file is valid, check for file
+  if (!file || !file.originalname || !file.buffer || !file.mimetype) {
+    console.log('Invalid file object');
+    return null;
+  }
+
   const fileInDB = await FilesDB.create({
     name: file.originalname,
     data: file.buffer,
     contentType: file.mimetype,
   });
+
   return fileInDB;
 }
 

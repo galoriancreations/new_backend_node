@@ -147,15 +147,18 @@ async function strict_image(
 }
 
 // Function to generate audio from the OpenAI API
-async function strict_audio(input, model = 'tts-1', voice = 'alloy') {
+async function strict_audio({ input, path, model = 'tts-1', voice = 'alloy' }) {
+  console.log('Generating audio');
   const mp3 = await openai.audio.speech.create({
     model,
     voice,
-    input, // text to synthesize
+    input,
   });
-  console.log(speechFile);
+  console.log('Finished generating audio.');
   const buffer = Buffer.from(await mp3.arrayBuffer());
-  await fs.promises.writeFile(speechFile, buffer);
+  await fs.promises.writeFile(path, buffer);
+
+  return path;
 }
 
 module.exports = { strict_output2, strict_image, strict_audio };

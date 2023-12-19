@@ -1,5 +1,9 @@
 const fs = require('fs');
-const { strict_output2, strict_image } = require('./strict_output');
+const {
+  strict_output2,
+  strict_image,
+  strict_audio,
+} = require('./strict_output');
 const { uploadFileToDB } = require('../database');
 const { downloadImage, convertFile } = require('../services/utils');
 // const { progressEmitter } = require('../server');
@@ -246,7 +250,7 @@ Generated day index is ${dayIndex + 1}`,
   return generatedDay;
 }
 
-async function replaceImages(challenge, callback) {
+async function replaceImages(challenge, callback = null) {
   // for each image field in challenge replace with strict_image
   // get number of images in challenge and insert to array
   const images = [];
@@ -293,4 +297,66 @@ async function replaceImages(challenge, callback) {
   }
 }
 
-module.exports = { generateChallenge, generateDay, replaceImages };
+async function generateAudio(challenge, callback = null) {
+  // for each introduction field in challenge message with strict_audio
+  // get number of introductions in challenge and insert to array
+  const introductions = [];
+  function countIntroductions(obj) {
+    for (const prop in obj) {
+      if (prop === 'introduction') {
+        introductions.push(obj);
+      }
+      // maybe need to delete this. no recursive needed here (?)
+      else if (typeof obj[prop] === 'object') {
+        countIntroductions(obj[prop]);
+      }
+    }
+  }
+
+  countIntroductions(challenge);
+
+  console.log('Number of introductions in challenge:', introductions.length);
+
+  for (let i = 0; i < introductions.length; i++) {
+    const obj = introductions[i];
+    if (callback) {
+      callback(i + 1, introductions.length);
+    }
+
+    if (!obj.introduction) {
+      console.log(`No introduction to generate audio (#${i + 1})`);
+      continue;
+    }
+
+    const filename = `${Date.now()}-${i + 1}audio`;
+    // generate audio
+    const path = await strict_audio({
+      input: obj.introduction,
+      path: `./temp/${filename}.mp3`,
+    });
+
+    // convert audio
+    console.log('Converting audio:', path);
+    const meme = convertFile(path);
+
+    // upload audio to database
+    const fileDB = await uploadFileToDB(meme);
+
+    // save audio to challenge as message
+    obj.messages.unshift({
+      type: 'audio',
+      time: obj.time || '00:00:00',
+      content: '',
+      fileUrl: `/uploads/${fileDB._id}`,
+    });
+
+    console.log('Added introduction audio successfully:', obj.introduction);
+  }
+}
+
+module.exports = {
+  generateChallenge,
+  generateDay,
+  replaceImages,
+  generateAudio,
+};

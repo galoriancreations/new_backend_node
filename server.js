@@ -38,7 +38,7 @@ const crypto = require("crypto");
 const { Z_UNKNOWN } = require("zlib");
 
 const fs = require("fs");
-const { generateChallenge, generateDay, replaceImages } = require('./GPT/ChallengeGenerator');
+const { generateChallenge, generateDay, replaceImages, generateAudio } = require('./GPT/ChallengeGenerator');
 // const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
 const { uploadFileToDB, FilesDB } = require('./database');
 const EventEmitter = require('events');
@@ -2275,12 +2275,11 @@ app.post("/xapi", async (req, res) => {
                 progressEmitter.emit('progressAttemptsChanged', numReplaced, total, 'images');
               });
 
-              // progressEmitter.emit(
-              //   'progressAttemptsChanged',
-              //   maxAttempts,
-              //   maxAttempts
-              // );
-
+              // generate audio for introdction
+              await generateAudio(template, (numReplaced, total) => {
+                progressEmitter.emit('progressAttemptsChanged', numReplaced, total, 'audios');
+              });
+              
               // add template to db
               await TemplatesDB.create(template);
 
@@ -2329,6 +2328,9 @@ app.post("/xapi", async (req, res) => {
           // generate image
           await replaceImages(day);
 
+          // generate audio
+          await generateAudio(day);
+          
           // send day data
           final = { day };
         }
