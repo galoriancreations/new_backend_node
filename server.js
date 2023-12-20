@@ -1013,9 +1013,9 @@ app.post("/api", upload.single("photo"), (req, res) => {
             .json({ msg: `template ${challengeData["template"]} was not found` });
         }
 
-				challengeData["name"] = templateId["name"];
+				challengeData["name"] = templateData["name"];
 
-				challengeData["image"] = templateId["image"];
+				challengeData["image"] = templateData["image"];
 
 				challengeData["language"] = templateData["language"];
 
@@ -2189,17 +2189,16 @@ app.post("/xapi", async (req, res) => {
               );
 
               //! simulate attempts for testing
-              await new Promise((resolve) => setTimeout(resolve, 5000));
+              // await new Promise((resolve) => setTimeout(resolve, 2000));
               // if (i + 1 == maxAttempts) {
-              //   // loop 4 times to simulate images progress
+              //   //! loop 4 times to simulate images progress
               //   for (let j = 0; j < 4; j++) {
-              //     progressEmitter.emit(
-              //       'progressAttemptsChanged',
-              //       j + 1,
-              //       4,
-              //       'images'
-              //     );
-              //     await new Promise((resolve) => setTimeout(resolve, 5000));
+              //     progressEmitter.emit('progressAttemptsChanged', j + 1, 4, 'images');
+              //     await new Promise((resolve) => setTimeout(resolve, 2000));
+              //   }
+              //   for (let j = 0; j < 4; j++) {
+              //     progressEmitter.emit('progressAttemptsChanged', j + 1, 4, 'audios');
+              //     await new Promise((resolve) => setTimeout(resolve, 2000));
               //   }
               //   return;
               // } else {
@@ -2355,17 +2354,21 @@ app.listen(3000, () => {
  ***********************/
 // /upload to upload files to db and return the path from the db
 app.post('/upload', upload.single('file'), async (req, res) => {
+  console.log('uploading file');
   const file = req.file;
   if (!file) {
+    console.log('No file uploaded');
     return res.status(400).json({ msg: 'No file uploaded' });
   }
   const uploadedFile = await uploadFileToDB(file);
   // create path to file in server and send it
+  console.log('File uploaded successfully:', uploadedFile._id);
   res.status(200).send(`/uploads/${uploadedFile._id}`);
 });
 
 // /uploads/:id to get file from db
 app.get('/uploads/:id', async (req, res) => {
+  console.log('getting file:', req.params.id);
   // check if file exists in temp if not check in db and save in temp
   const tempDir = path.join(__dirname, 'temp');
   if (!fs.existsSync(tempDir)) {
@@ -2377,6 +2380,7 @@ app.get('/uploads/:id', async (req, res) => {
   if (!fs.existsSync(tempFilePath)) {
     file = await FilesDB.findById(req.params.id);
     if (!file || !file.contentType) {
+      console.log('File not found:', req.params.id);
       return res.status(404).json({ msg: 'File not found' });
     }
     fs.writeFileSync(tempFilePath, file.data);
@@ -2390,9 +2394,11 @@ app.get('/uploads/:id', async (req, res) => {
   }
 
   if (file) {
+    console.log('File found:', req.params.id);
     res.setHeader('Content-Type', file.contentType);
     res.send(file.data);
   } else {
+    console.log('File not found:', req.params.id);
     res.status(404).json({ msg: 'File not found' });
   }
 });
