@@ -242,11 +242,12 @@ const UsersTestSchema = new db.Schema(
     groups: Array,
 		isAdmin: Boolean,
 		players: Array,
-		photo: {
-			name: String,
-			data: String,
-			contentType: String,
-		},
+		// photo: {
+		// 	name: String,
+		// 	data: String,
+		// 	contentType: String,
+		// },
+    image: String,
 		articleSubscribed: Boolean,
     telegramId: String,
 	},
@@ -1257,7 +1258,6 @@ app.post("/xapi", async (req, res) => {
             "city",
             "country",
           ];
-
           for (let key in allowedChanges) {
             if (newData.hasOwnProperty(allowedChanges[key])) {
               user[allowedChanges[key]] = newData[allowedChanges[key]];
