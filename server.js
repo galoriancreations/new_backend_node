@@ -2360,6 +2360,15 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     console.log('No file uploaded');
     return res.status(400).json({ msg: 'No file uploaded' });
   }
+
+  // check if file is already in db
+  console.log(file.originalname);
+  const fileInDB = await FilesDB.findOne({ data: file.buffer });
+  if (fileInDB) {
+    console.log('File already exists in db:', fileInDB._id);
+    return res.status(200).send(`/uploads/${fileInDB._id}`);
+  }
+  
   const uploadedFile = await uploadFileToDB(file);
   // create path to file in server and send it
   console.log('File uploaded successfully:', uploadedFile._id);
