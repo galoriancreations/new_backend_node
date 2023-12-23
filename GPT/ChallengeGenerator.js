@@ -83,7 +83,7 @@ async function generateChallenge({
     {
       num_tries: numAttempts,
       // verbose: true,
-      model: 'ft:gpt-3.5-turbo-1106:liminal-village::8VmPuhFf', // fine-tuned model
+      model: process.env.OPENAI_API_FINE_TUNE_MODEL_ID, // fine-tuned model
       temperature: 0.8,
     }
   );
@@ -233,7 +233,7 @@ Generated day index is ${dayIndex + 1}`,
     {
       num_tries: 3,
       // verbose: true,
-      model: 'ft:gpt-3.5-turbo-1106:liminal-village::8VmPuhFf', // fine-tuned model
+      model: process.env.OPENAI_API_FINE_TUNE_MODEL_ID, // fine-tuned model
       temperature: 0.8,
     }
   );

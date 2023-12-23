@@ -52,7 +52,6 @@ async function strict_output2(
 
     const response = await openai.chat.completions.create(data);
     fs.writeFileSync('GPT/json/strict_output2.json', JSON.stringify(response));
-    // call openai api with fine-tuned model
 
     if (response.choices[0].finish_reason === 'length') {
       console.error('Error: response length is too long');
