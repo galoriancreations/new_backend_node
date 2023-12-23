@@ -35,7 +35,6 @@ let lastSender;
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
-const { Z_UNKNOWN } = require("zlib");
 const { generateChallenge } = require('./GPT/ChallengeGenerator');
 // const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
 const fs = require("fs");
@@ -181,10 +180,10 @@ const findTemplateInDB = async (template) => {
 app.set("js", "text/javascript");
 
 //אני לא יודע למה, אבל השרת לא מוכן לטעון את הסקריפט בלי השורה הזו
-app.get("/script.js", (req, res) => {
-  res.type("js");
-  res.sendFile(__dirname + "/script.js");
-});
+// app.get("/script.js", (req, res) => {
+//   res.type("js");
+//   res.sendFile(__dirname + "/script.js");
+// });
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -198,14 +197,14 @@ app.use(
   })
 );
 
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
-});
+// app.get("/", (req, res) => {
+//   res.sendFile(__dirname + "/index.html");
+// });
 
-app.get("/addUser", (req, res) => {
-  res.sendFile(__dirname + "/testing.html");
-  res.sendFile(__dirname + "/testing.html");
-});
+// app.get("/addUser", (req, res) => {
+//   res.sendFile(__dirname + "/testing.html");
+//   res.sendFile(__dirname + "/testing.html");
+// });
 
 db.connect(
   "mongodb+srv://Yinon:Challenge18@challenge18.hclji.mongodb.net/challenge"
