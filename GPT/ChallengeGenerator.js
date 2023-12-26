@@ -8,6 +8,23 @@ const { uploadFileToDB } = require('../database');
 const { downloadImage, convertFile } = require('../services/utils');
 // const { progressEmitter } = require('../server');
 
+/**
+ * Generates a challenge with the given parameters.
+ *
+ * @param {Object} options - The options for generating the challenge.
+ * @param {string} options.creator - The creator of the challenge.
+ * @param {string} options.id - The ID of the challenge.
+ * @param {string} [options.topic='a topic of your choice'] - The topic of the challenge.
+ * @param {number} [options.days=2] - The number of days for the challenge.
+ * @param {number} [options.tasks=5] - The number of tasks per day.
+ * @param {number} [options.messages=0] - The number of messages per day.
+ * @param {number} [options.preDays=0] - The number of pre-days for the challenge.
+ * @param {number} [options.preMessages=0] - The number of messages per pre-day.
+ * @param {string} [options.language='English'] - The language of the challenge.
+ * @param {string} [options.targetAudience='Everyone'] - The target audience of the challenge.
+ * @param {number} [options.numAttempts=3] - The number of attempts to generate the challenge.
+ * @returns {Object} - The generated challenge.
+ */
 async function generateChallenge({
   creator,
   id,
@@ -160,6 +177,16 @@ async function generateChallenge({
   return challenge;
 }
 
+/**
+ * Generates a day for a challenge.
+ * 
+ * @param {Object} options - The options for generating the day.
+ * @param {string} options.challengeName - The name of the challenge.
+ * @param {string} options.challengeIntroduction - The introduction of the first day of the challenge.
+ * @param {Object} options.lastDay - The data of the last day in the challenge.
+ * @param {number} options.dayIndex - The index of the generated day.
+ * @returns {Promise<Object|boolean>} - A promise that resolves to the generated day object or false if there was an error.
+ */
 async function generateDay({
   challengeName,
   challengeIntroduction,

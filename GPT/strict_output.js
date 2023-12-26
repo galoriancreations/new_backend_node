@@ -12,8 +12,20 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Function to generate output from the OpenAI CHATGPT-3 API with a strict output format checking
-// Version 2 of the function, which is more robust, accept any type of output_format, but less output checking
+/**
+ * Executes a strict output generation using OpenAI's chat completions API.
+ * 
+ * @param {string} system_prompt - The system prompt for the chat conversation.
+ * @param {string} user_prompt - The user prompt for the chat conversation.
+ * @param {object} output_format - The desired output format.
+ * @param {object} options - Optional parameters for the strict output generation.
+ * @param {number} options.num_tries - The number of attempts to generate the output (default: 3).
+ * @param {number} options.temperature - The temperature parameter for controlling randomness (default: 0.8).
+ * @param {string} options.model - The model to use for generating the output (default: 'gpt-3.5-turbo-1106').
+ * @param {boolean} options.verbose - Whether to log verbose output (default: false).
+ * 
+ * @returns {object|null} The generated output in the specified format, or null if generation fails.
+ */
 async function strict_output2(
   system_prompt,
   user_prompt,
@@ -125,7 +137,14 @@ async function strict_output2(
   return null;
 }
 
-// Function to generate image from the OpenAI DALL-E API
+/**
+ * Generates strict images using OpenAI's image generation model.
+ * @param {string} prompt - The prompt for generating the image.
+ * @param {number} [n=1] - The number of images to generate.
+ * @param {string} [size='1024x1024'] - The size of the generated image.
+ * @param {string} [model='dall-e-3'] - The model to use for image generation.
+ * @returns {Promise<Array>} - A promise that resolves to an array of generated images.
+ */
 async function strict_image(
   prompt,
   n = 1,
@@ -145,7 +164,15 @@ async function strict_image(
   return response.data;
 }
 
-// Function to generate audio from the OpenAI API
+/**
+ * Generates audio using OpenAI's text-to-speech model.
+ * @param {Object} options - The options for generating audio.
+ * @param {string} options.input - The input text to convert to audio.
+ * @param {string} options.path - The path where the generated audio file will be saved.
+ * @param {string} [options.model='tts-1'] - The model to use for generating audio.
+ * @param {string} [options.voice='alloy'] - The voice to use for generating audio.
+ * @returns {Promise<string>} - A promise that resolves with the path of the generated audio file.
+ */
 async function strict_audio({ input, path, model = 'tts-1', voice = 'alloy' }) {
   console.log('Generating audio');
   const mp3 = await openai.audio.speech.create({
