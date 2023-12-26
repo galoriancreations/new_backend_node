@@ -340,6 +340,8 @@ const PlayersDB = db.model("players", PlayerSchema, "players");
 
 const QuestionModel = db.model("questions", QuestionSchema, "questions")
 
+const SingularityMagicGame = db.model("singularity", QuestionSchema, "singularity")
+
 // let quest=[
 //     {
 // 		_id:'',
@@ -816,6 +818,112 @@ const QuestionModel = db.model("questions", QuestionSchema, "questions")
 // })
 // QuestionModel.insertMany(quest)
 
+// let questSingularity=[
+// 	{
+// 	_id:'',
+//     qnum: "1",
+//     text: "What roles can AI play in advancing global healthcare solutions?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "2",
+//     text: "How can AI foster collaboration in international scientific research?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "3",
+//     text: "In what ways can AI contribute to sustainable environmental practices?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "4",
+//     text: "How does AI enhance personalized learning in educational systems?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "5",
+//     text: "What strategies ensure AI-driven automation benefits all economic sectors?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "6",
+//     text: "How can AI improve emotional intelligence in virtual assistants?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "7",
+//     text: "In what ways can AI support artistic creativity and innovation?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "8",
+//     text: "How can AI aid in maintaining global peace and security?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "9",
+//     text: "What role does AI have in promoting inclusive social policies?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "10",
+//     text: "How can AI-driven analytics optimize renewable energy resource management?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "11",
+//     text: "What are the ethical considerations in AI love and companionship?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "12",
+//     text: "How can AI contribute to unbiased news and information dissemination?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "13",
+//     text: "What potential does AI have in advancing space exploration missions?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "14",
+//     text: "How can AI enhance disaster response and crisis management efficiency?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "15",
+//     text: "In what ways can AI support mental health and well-being?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "16",
+//     text: "How can AI assist in preserving and learning from historical data?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "17",
+//     text: "What role can AI play in developing smarter, safer transportation systems?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "18",
+//     text: "How does AI facilitate cross-cultural understanding and communication?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "19",
+//     text: "What are innovative ways AI can combat global food shortages?"
+// 	},
+// 	{
+// 	_id:'',
+//     qnum: "20",
+//     text: "How can AI contribute to fair and impartial legal judgments?"
+// 	},
+// ]
+// questSingularity.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// SingularityMagicGame.insertMany(questSingularity)
 
 
 
@@ -1726,6 +1834,10 @@ app.post("/xapi", async (req, res) => {
 					const result = await QuestionModel.find()
 					let i = Math.floor(Math.random() * 94)
 					final = result[i]
+				}else if (data.hasOwnProperty("getSingularity")){
+					const result = await SingularityMagicGame.find()
+					let i = Math.floor(Math.random() * 20)
+					final = result[i]
 				}
 				 else if (data.hasOwnProperty("getAnswer")){
 					let question = data["getAnswer"]["question"]
@@ -1737,24 +1849,43 @@ app.post("/xapi", async (req, res) => {
 					}
 					const findAndUpAnswer = await QuestionModel.findOneAndUpdate(
 						{qnum:question},{$push:{answers:answer}})
-					if(!findAndUpAnswer){
+					const findAndUpSingularity = await SingularityMagicGame.findOneAndUpdate(
+						{qnum:question},{$push:{answers:answer}})
+					if(!findAndUpAnswer || !findAndUpSingularity ){
 						return res.status(400).json({msg:'the question not found'})
-					}else{
+					}
+					if(findAndUpSingularity){
+						const result = await SingularityMagicGame.find()
+						final = result[parseInt(question)-1]
+						// res.json({msg:'the answer singularity added'})
+					}
+					if(findAndUpAnswer){
 						const result = await QuestionModel.find()
 						final = result[parseInt(question)-1]
+						// res.json({msg:'the answer added'})
 					}
 				}
 				else if(data.hasOwnProperty("updateLikes")){
 					let qnum = data["updateLikes"]["qnum"]
 					let id =  data["updateLikes"]["id"]
 					let likes = data["updateLikes"]["likes"]
-					findAndUpLikes = await QuestionModel.updateOne(
+					const findAndUpLikes = await QuestionModel.updateOne(
 						{ qnum: qnum, "answers.id": id },
 						{ $set: { "answers.$.likes": likes } }
 					)
-					if(!findAndUpLikes){
+					const findAndUpSingularityLike = await SingularityMagicGame.updateOne(
+						{ qnum: qnum, "answers.id": id },
+						{ $set: { "answers.$.likes": likes } }
+					)
+					if(!findAndUpLikes || !findAndUpSingularityLike){
 						return res.status(400).json({msg:'the question not found'})
-					}else{
+					}
+					if(findAndUpLikes){
+						qnum = "";
+						id = "";
+						likes = 0;
+					}
+					if(findAndUpSingularityLike){
 						qnum = "";
 						id = "";
 						likes = 0;
