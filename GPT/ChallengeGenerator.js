@@ -35,7 +35,7 @@ async function generateChallenge({
   preDays = 0,
   preMessages = 0,
   language = 'English',
-  targetAudience = 'Everyone',
+  targetAudience = 'General',
   numAttempts = 3,
 }) {
   console.log(`Generating challenge about: ${topic}... this may take a few minutes, depending on the parameters.
@@ -179,13 +179,13 @@ async function generateChallenge({
 
 /**
  * Generates a day for a challenge.
- * 
+ *
  * @param {Object} options - The options for generating the day.
  * @param {string} options.challengeName - The name of the challenge.
  * @param {string} options.challengeIntroduction - The introduction of the first day of the challenge.
  * @param {Object} options.lastDay - The data of the last day in the challenge.
  * @param {number} options.dayIndex - The index of the generated day.
- * @returns {Promise<Object|boolean>} - A promise that resolves to the generated day object or false if there was an error.
+ * @returns {Promise<Object|null>} - A promise that resolves to the generated day object or null if there was an error.
  */
 async function generateDay({
   challengeName,
@@ -267,7 +267,7 @@ Generated day index is ${dayIndex + 1}`,
 
   if (!generatedDay) {
     console.log('Error generating day');
-    return false;
+    return null;
   }
 
   // console.log(generatedDay);
@@ -374,6 +374,8 @@ async function generateAudio(challenge, callback = null) {
       type: 'audio',
       time: obj.time || '00:00:00',
       content: '',
+      isAudio: true,
+      file: `/uploads/${fileDB._id}`,
       fileUrl: `/uploads/${fileDB._id}`,
     });
 

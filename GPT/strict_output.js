@@ -62,7 +62,13 @@ async function strict_output2(
     };
     fs.writeFileSync('GPT/json/strict_output2_data.json', JSON.stringify(data));
 
-    const response = await openai.chat.completions.create(data);
+    let response;
+    try {
+      response = await openai.chat.completions.create(data);
+    } catch (e) {
+      console.log('An exception occurred:', e);
+      return null;
+    }
     fs.writeFileSync('GPT/json/strict_output2.json', JSON.stringify(response));
 
     if (response.choices[0].finish_reason === 'length') {

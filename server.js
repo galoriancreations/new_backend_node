@@ -2324,6 +2324,12 @@ app.post("/xapi", async (req, res) => {
             dayIndex,
           });
 
+          if (!day) {
+            return res
+              .status(400)
+              .json({ msg: day?.error || 'Failed to generate day' });
+          }
+          
           // generate image
           await replaceImages(day);
 
