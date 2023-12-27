@@ -277,6 +277,12 @@ Generated day index is ${dayIndex + 1}`,
   return generatedDay;
 }
 
+/**
+ * Replaces images in the challenge object with strict_image and performs additional operations.
+ * @param {Object} challenge - The challenge object.
+ * @param {Function} [callback=null] - Optional callback function to track progress.
+ * @returns {Promise<void>} - A promise that resolves when all images have been replaced.
+ */
 async function replaceImages(challenge, callback = null) {
   // for each image field in challenge replace with strict_image
   // get number of images in challenge and insert to array
@@ -324,6 +330,12 @@ async function replaceImages(challenge, callback = null) {
   }
 }
 
+/**
+ * Generates audio for each introduction field in the challenge object.
+ * @param {Object} challenge - The challenge object.
+ * @param {Function} [callback=null] - Optional callback function to track progress.
+ * @returns {Promise<void>} - A promise that resolves when all audio generations are complete.
+ */
 async function generateAudio(challenge, callback = null) {
   // for each introduction field in challenge message with strict_audio
   // get number of introductions in challenge and insert to array
