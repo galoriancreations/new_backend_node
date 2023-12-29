@@ -66,10 +66,12 @@ async function generateChallenge({
         ],
         time: '<HH:MM:SS>',
         title: '<title>',
-        image: '<description of a relative logo, use 4 to 6 words>',
+        image:
+          '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">',
       },
     ],
-    image: '<description of a relative logo, use 4 to 6 words>',
+    image:
+      '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">',
   };
   if (messages) {
     outputFormat.days[0].messages = [
@@ -93,7 +95,7 @@ async function generateChallenge({
   }
 
   const response = await strict_output(
-    `You are an helpful assistant that is able to generate a multi-day challenge. image is a description of a relative logo.`,
+    `You are an helpful assistant that is able to generate a multi-day challenge. image is a description of a relative icon.`,
     // user prompt
     `Generate a challenge with the following parameters: topic: ${topic}, days: ${days}, tasks: ${tasks}, messages: ${messages}, preDays: ${preDays}, preMessages: ${preMessages}, targetAudience: ${targetAudience}`,
     outputFormat,
@@ -215,7 +217,8 @@ async function generateDay({
     ],
     time: '<HH:MM:SS>',
     title: '<title>',
-    image: '<description of a relative logo, use 4 to 6 words, use "logo" in the description>',
+    image:
+      '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">',
   };
   if (lastDay.messages) {
     outputFormat.messages = [
@@ -290,25 +293,11 @@ Generated day index is ${dayIndex + 1}`,
  */
 async function replaceImages({ challenge, callback = null, imageTheme }) {
   // for each image field in challenge replace with strict_image
-
-  //   if (!imageTheme) {
-  //     console.log('No image theme in challenge, generating one...');
-  //     // generate theme for images
-  //     theme = await strict_output(
-  //   `To ensure a uniform and visually cohesive series of images from an AI image generator, detailed and consistent instructions are key. Each directive should encompass precise elements like color codes, artistic style, object types, and backgrounds. This level of specificity aids in maintaining a uniform theme across all generated images.
-  // For instance, consider this detailed instruction for an logo design:
-  // "Create an logo featuring a background in red wine berry color (#8B0000) complemented by a crisp white border. The design should employ simple geometric shapes, and highlight a single accent color of sunny yellow (#FFD700). The primary shape of the logo is a circle, encompassing a central square. Overlay the logo with a singular pop of dark blue color (#00008B), ensuring the color is applied in a brushed texture. Maintain a minimalist aesthetic throughout."
-  // This approach ensures each image adheres to a specific aesthetic, color palette, and design principle, resulting in a harmonious set of images.
-  // The instruction is for all logos in the set, but each logo should be unique.
-  // Instruction should not exceed 300 characters.`,
-  //       // user prompt
-  //       `Give me instruction of random theme for a clean logo.`,
-  //       { instruction: '<instruction with maximum of 300 caracters>' }
-  //     );
-  //     // save theme to challenge
-  //     imageTheme = theme.instruction;
-  //     callback(0, 0, imageTheme);
-  //   }
+  // if (!imageTheme) {
+  //   console.log('No image theme in challenge, generating one...');
+  //   imageTheme = await generateImageTheme();
+  //   callback(0, 0, imageTheme);
+  // }
 
   // get number of images in challenge and insert to array
   const images = [];
@@ -324,7 +313,6 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
   countImages(challenge);
   console.log('Number of images in challenge:', images.length);
 
-  let firstImagePath;
   for (let i = 0; i < images.length; i++) {
     const obj = images[i];
     const prop = 'image';
@@ -341,8 +329,8 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
     // if first image, generate with dall-e-3 model, and use the generated image to edit the rest with dall-e-2 model
     // currenlty not working, so just use dall-e-2 model for all images
     // need to find a way to mask the image to be edited automatically
-    let image;
 
+    // let image;
     // if (!firstImagePath) {
     //   image = await strict_image({ prompt: obj[prop] + theme.instruction });
     //   // save first image path
@@ -363,22 +351,28 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
     //   });
     // }
     const useDallE3 = false;
-    // if image description already contains 'logo', don't add it again, if image include image remove it
-    const prompt = (
-      obj[prop].includes('logo') ? obj[prop] : 'logo of ' + obj[prop]
-    ).replace(' image', '');
-    image = await strict_image({
-      prompt,
-      imagePath: './GPT/images/new-logo.png',
-      maskPath: './GPT/images/new-logo-mask.png',
+    // if image has 'icon', 'logo', 'symbol' or 'illustration', 'image' in the prompt, remove it
+    let prompt = obj[prop];
+    const promptWords = prompt.split(' ');
+    const promptWordsFiltered = promptWords.filter((word) => {
+      const excludedWords = ['icon', 'logo', 'symbol', 'illustration', 'image'];
+      return !excludedWords.includes(word);
+    });
+    prompt = promptWordsFiltered.join(' ');
+
+    const image = await strict_image({
+      prompt: `minimal art line icon of ${prompt}. in a circle with a yellow background.`,
+      imagePath: './GPT/images/mask_yellow.png',
+      // maskPath: './GPT/images/new-logo-mask2.png',
       model: 'dall-e-' + (useDallE3 ? 3 : 2),
       size: useDallE3 ? '1024x1024' : '256x256',
     });
-    const { url } = image[0];
+
     // use uniq id as filename to avoid overwriting
     const filename = `${Date.now()}-${i + 1}image`;
+
     const imagePath = await downloadImage({
-      imageUrl: url,
+      imageUrl: image[0].url,
       downloadPath: `./temp/${filename}.jpeg`,
       quality: 50,
       type: 'jpeg',
@@ -394,6 +388,31 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
     // replace image description with image path
     obj[prop] = `/uploads/${fileDB._id}`;
   }
+
+  // /**
+  //  * Generates a theme for images.
+  //  *
+  //  * @returns {Promise<string>} The generated theme instruction.
+  //  */
+  //   async function generateImageTheme() {
+  //     // generate theme for images
+  //     const theme = await strict_output(
+  //       `To ensure a uniform and visually cohesive series of images from an AI image generator, detailed and consistent instructions are key. Each directive should encompass precise elements like color codes, artistic style, object types, and backgrounds. This level of specificity aids in maintaining a uniform theme across all generated images.
+  // For instance, consider this detailed instruction for an icon design:
+  // "Create an icon featuring a background in red wine berry color (#8B0000) complemented by a crisp white border. The design should employ simple geometric shapes, and highlight a single accent color of sunny yellow (#FFD700). The primary shape of the icon is a circle, encompassing a central square. Overlay the icon with a singular pop of dark blue color (#00008B), ensuring the color is applied in a brushed texture. Maintain a minimalist aesthetic throughout."
+  // This approach ensures each image adheres to a specific aesthetic, color palette, and design principle, resulting in a harmonious set of images.
+  // The instruction is for all icons in the set, but each icon should be unique.
+  // Instruction should not exceed 300 characters.`,
+  //       // user prompt
+  //       `Give me instruction of a random theme for a simple and clean icon.`,
+  //       { instruction: '<instruction with maximum of 300 caracters>' },
+  //       {
+  //         model: 'gpt-4',
+  //       }
+  //     );
+
+  //     return theme.instruction;
+  //   }
 }
 
 /**

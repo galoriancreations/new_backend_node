@@ -188,6 +188,11 @@ app.get("/script.js", (req, res) => {
   res.sendFile(__dirname + "/script.js");
 });
 
+// Increase the limit for parsing JSON bodies due to large file sizes aka big templates with more than 30 days
+app.use(bodyParser.json({ limit: '10mb' }));
+// Increase the limit for parsing URL-encoded bodies
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(bodyParser.json());
@@ -2418,7 +2423,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
 // /uploads/:id to get file from db
 app.get('/uploads/:id', async (req, res) => {
-  console.log('getting file:', req.params.id);
   // check if file exists in temp if not check in db and save in temp
   const tempDir = path.join(__dirname, 'temp');
   if (!fs.existsSync(tempDir)) {
@@ -2444,7 +2448,6 @@ app.get('/uploads/:id', async (req, res) => {
   }
 
   if (file) {
-    console.log('File found:', req.params.id);
     res.setHeader('Content-Type', file.contentType);
     res.send(file.data);
   } else {

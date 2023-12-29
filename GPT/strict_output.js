@@ -170,7 +170,7 @@ async function strict_image({
     if (imagePath) {
       response = await openai.images.edit({
         image: fs.createReadStream(imagePath),
-        mask: maskPath ? fs.createReadStream(maskPath) : null,
+        mask: maskPath ? fs.createReadStream(maskPath) : 'null',
         model,
         prompt,
         n,
