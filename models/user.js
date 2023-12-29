@@ -39,10 +39,7 @@ const userSchema = new Schema(
     email: String,
     language: {
       type: String,
-      trim: true,
-      minlength: 2,
-      maxlength: 2,
-      default: "EN"
+      trim: true
     },
     templates: [
       {
