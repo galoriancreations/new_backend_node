@@ -4,7 +4,7 @@ const schedule = require('node-schedule');
 const { UsersTest } = require('../database/indexJS');
 const { sendMessageViaEmail } = require('../services/nodemailer');
 // const { sendMessageViaWhatsApp } = require('../services/twilio');
-const { strict_image, strict_output2 } = require('./strict_output');
+const { strict_image, strict_output } = require('./strict_output');
 const { downloadImage } = require('../services/utils');
 
 /**
@@ -20,7 +20,7 @@ async function generateArticle({
 }) {
   console.log('Generating article...');
 
-  const response = await strict_output2(
+  const response = await strict_output(
     `You are a helpful AI that is able to generate articles with title, imagePrompt and text.
 The length of the text should not be more than ${wordsCount} words.
 The imagePrompt should be a prompt for the AI to generate an image that is related to the article.
@@ -54,9 +54,9 @@ async function generateAndSaveImage(prompt) {
   }
 
   // download image to local storage
-  const imagePath = `GPT/images/${prompt}.jpeg`;
-  const downloadPath = await downloadImage(imageUrl, imagePath, 100);
-  return downloadPath;
+  const downloadPath = `./temp/${prompt}.jpeg`;
+  const downloadPathRes = await downloadImage({ imageUrl, downloadPath });
+  return downloadPathRes;
 }
 
 /**

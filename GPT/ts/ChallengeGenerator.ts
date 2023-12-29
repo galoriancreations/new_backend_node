@@ -2,7 +2,7 @@ require('dotenv').config();
 
 import fs from 'fs';
 import schedule from 'node-schedule';
-import { strict_output2 } from './strict_output';
+import { strict_output } from './strict_output';
 import { addChallengeToDb } from '../../database';
 import { generateRandomString } from '../../services/utils';
 import { type Challenge, type ChallengeOutput } from '../types';
@@ -16,7 +16,7 @@ export async function generateChallenge({
     `Generating challenge (between ${minSelections} to ${MaxSelections} selections)... This may take a while`
   );
 
-  const response: ChallengeOutput = await strict_output2(
+  const response: ChallengeOutput = await strict_output(
     `You are a helpful AI that is able to generate a challenge with ${minSelections} to ${MaxSelections} selections,
 Selection is a task that the user should do in the challenge.
 ${/*Each selection contain between 3 to 5 tasks.*/ ''}

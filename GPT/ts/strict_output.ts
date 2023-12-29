@@ -16,7 +16,7 @@ export type OutputFormat = {
 
 // Function to generate output from the OpenAI CHATGPT-3 API with a strict output format checking
 // Version 2 of the function, which is more robust, accept any type of output_format, but less output checking
-export async function strict_output2(
+export async function strict_output(
   system_prompt: string,
   user_prompt: string | string[],
   output_format: any,

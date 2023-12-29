@@ -1,6 +1,6 @@
-/**
- * This file contain functions that generate output from the OpenAI API
- * The output is strictly checked to ensure that it adutilsheres to the output format
+/* This file contains functions that generate output from the OpenAI API.
+ * The output is strictly checked to ensure that it adheres to the output format.
+ * @module strict_output
  */
 require('dotenv').config();
 const fs = require('fs');
@@ -14,19 +14,21 @@ const openai = new OpenAI({
 
 /**
  * Executes a strict output generation using OpenAI's chat completions API.
- * 
- * @param {string} system_prompt - The system prompt for the chat conversation.
- * @param {string} user_prompt - The user prompt for the chat conversation.
+ *
+ * @param {string} system_prompt - The system prompt to be used in the conversation.
+ * @param {string} user_prompt - The user prompt to be used in the conversation.
  * @param {object} output_format - The desired output format.
- * @param {object} options - Optional parameters for the strict output generation.
- * @param {number} options.num_tries - The number of attempts to generate the output (default: 3).
- * @param {number} options.temperature - The temperature parameter for controlling randomness (default: 0.8).
- * @param {string} options.model - The model to use for generating the output (default: 'gpt-3.5-turbo-1106').
- * @param {boolean} options.verbose - Whether to log verbose output (default: false).
- * 
- * @returns {object|null} The generated output in the specified format, or null if generation fails.
+ * @param {object} options - Optional parameters for the output generation.
+ * @param {number} options.num_tries - The number of attempts to generate a valid output. Default is 3.
+ * @param {number} options.temperature - The temperature parameter for output randomness. Default is 0.8.
+ * @param {string} options.model - The model to be used for output generation. Default is 'gpt-3.5-turbo-1106'.
+ * @param {boolean} options.verbose - Whether to log verbose output. Default is false.
+ *
+ * @returns {object} - The generated output in the specified format.
+ * @throws {string} - If the output format is invalid or missing keys.
+ * @throws {string} - If an exception occurs during the output generation process.
  */
-async function strict_output2(
+async function strict_output(
   system_prompt,
   user_prompt,
   output_format,
@@ -60,16 +62,16 @@ async function strict_output2(
       response_format: { type: 'json_object' },
       max_tokens: 4096,
     };
-    fs.writeFileSync('GPT/json/strict_output2_data.json', JSON.stringify(data));
+    fs.writeFileSync('GPT/json/strict_output_data.json', JSON.stringify(data));
 
     let response;
     try {
       response = await openai.chat.completions.create(data);
     } catch (e) {
       console.log('An exception occurred:', e);
-      return null;
+      return { error: true, msg: e };
     }
-    fs.writeFileSync('GPT/json/strict_output2.json', JSON.stringify(response));
+    fs.writeFileSync('GPT/json/strict_output.json', JSON.stringify(response));
 
     if (response.choices[0].finish_reason === 'length') {
       console.error('Error: response length is too long');
@@ -140,29 +142,52 @@ async function strict_output2(
     }
   }
 
-  return null;
+  return { error: true, msg: 'No valid output generated' };
 }
 
 /**
- * Generates strict images using OpenAI's image generation model.
- * @param {string} prompt - The prompt for generating the image.
- * @param {number} [n=1] - The number of images to generate.
- * @param {string} [size='1024x1024'] - The size of the generated image.
- * @param {string} [model='dall-e-3'] - The model to use for image generation.
- * @returns {Promise<Array>} - A promise that resolves to an array of generated images.
+ * Generates or edits images using OpenAI's GPT model.
+ * @async
+ * @function strict_image
+ * @param {Object} options - The options for generating or editing images.
+ * @param {string} options.prompt - The prompt for generating or editing the image.
+ * @param {number} [options.n=1] - The number of images to generate.
+ * @param {string} [options.size='1024x1024'] - The size of the generated image.
+ * @param {string} [options.model='dall-e-3'] - The model to use for generating or editing the image.
+ * @param {string} [options.imagePath=null] - The path to the image file to be edited.
+ * @returns {Promise<Object>} - The generated or edited image data.
  */
-async function strict_image(
+async function strict_image({
   prompt,
   n = 1,
   size = '1024x1024',
-  model = 'dall-e-3'
-) {
-  const response = await openai.images.generate({
-    model,
-    prompt,
-    n,
-    size,
-  });
+  model = 'dall-e-3',
+  imagePath = null,
+  maskPath = null,
+}) {
+  let response;
+  try {
+    if (imagePath) {
+      response = await openai.images.edit({
+        image: fs.createReadStream(imagePath),
+        mask: maskPath ? fs.createReadStream(maskPath) : null,
+        model,
+        prompt,
+        n,
+        size,
+      });
+    } else {
+      response = await openai.images.generate({
+        model,
+        prompt,
+        n,
+        size,
+      });
+    }
+  } catch (e) {
+    console.log('An exception occurred:', e);
+    return { error: true, msg: e };
+  }
 
   // save response to file for debugging
   fs.writeFileSync('GPT/json/strict_image.json', JSON.stringify(response));
@@ -193,4 +218,4 @@ async function strict_audio({ input, path, model = 'tts-1', voice = 'alloy' }) {
   return path;
 }
 
-module.exports = { strict_output2, strict_image, strict_audio };
+module.exports = { strict_output, strict_image, strict_audio };

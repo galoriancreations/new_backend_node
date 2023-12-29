@@ -311,6 +311,7 @@ const TemplateSchema = new db.Schema(
     preDays: Array,
     challenges: Array,
     preMessages: Array,
+    imageTheme: String,
   },
   { versionKey: false }
 );
@@ -2261,7 +2262,7 @@ app.post("/xapi", async (req, res) => {
                         )
                       : templates[0];
                   console.log(
-                    `No more attempts left, returning template with the most days (${template.days.length})`
+                    `No more attempts left, returning template with the most days (${template?.days?.length})`
                   );
                 } else {
                   console.log('Trying again');
@@ -2269,9 +2270,27 @@ app.post("/xapi", async (req, res) => {
                 }
               }
 
+              if (!template || !template.days || !template.days.length) {
+                throw template.msg || 'Failed to create template with AI';
+              }
+
+
               // generate images
-              await replaceImages(template, (numReplaced, total) => {
-                progressEmitter.emit('progressAttemptsChanged', numReplaced, total, 'images');
+              await replaceImages({
+                challenge: template,
+                imageTheme: template.imageTheme,
+                callback: (numReplaced, total, theme) => {
+                  if (theme) {
+                    console.log('Added imageTheme:', theme);
+                    return template.imageTheme = theme;
+                  }
+                  progressEmitter.emit(
+                    'progressAttemptsChanged',
+                    numReplaced,
+                    total,
+                    'images'
+                  );
+                },
               });
 
               // generate audio for introdction
@@ -2324,17 +2343,33 @@ app.post("/xapi", async (req, res) => {
             dayIndex,
           });
 
-          if (!day) {
+          if (!day || day.error) {
             return res
               .status(400)
-              .json({ msg: day?.error || 'Failed to generate day' });
+              .json({ msg: day.msg || 'Failed to generate day' });
           }
           
           // generate image
-          await replaceImages(day);
+          let imageTheme = template.imageTheme;
+          await replaceImages({
+            challenge: day,
+            imageTheme: imageTheme,
+            callback: (i, j, theme) => {
+              if (theme) {
+                console.log('Added imageTheme:', theme);
+               imageTheme = theme;
+              }
+            },
+          });
 
           // generate audio
           await generateAudio(day);
+
+          // update template
+          await TemplatesDB.updateOne(
+            { _id: templateId },
+            { $set: { imageTheme, [`days.${dayIndex}`]: day } }
+          );
           
           // send day data
           final = { day };

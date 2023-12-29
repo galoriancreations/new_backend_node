@@ -1,6 +1,6 @@
 const fs = require('fs');
 const {
-  strict_output2,
+  strict_output,
   strict_image,
   strict_audio,
 } = require('./strict_output');
@@ -66,10 +66,10 @@ async function generateChallenge({
         ],
         time: '<HH:MM:SS>',
         title: '<title>',
-        image: '<description of a relative image>',
+        image: '<description of a relative logo, use 4 to 6 words>',
       },
     ],
-    image: '<description of a relative image>',
+    image: '<description of a relative logo, use 4 to 6 words>',
   };
   if (messages) {
     outputFormat.days[0].messages = [
@@ -92,8 +92,8 @@ async function generateChallenge({
     ];
   }
 
-  const response = await strict_output2(
-    `You are an helpful assistant that is able to generate a multi-day challenge.`,
+  const response = await strict_output(
+    `You are an helpful assistant that is able to generate a multi-day challenge. image is a description of a relative logo.`,
     // user prompt
     `Generate a challenge with the following parameters: topic: ${topic}, days: ${days}, tasks: ${tasks}, messages: ${messages}, preDays: ${preDays}, preMessages: ${preMessages}, targetAudience: ${targetAudience}`,
     outputFormat,
@@ -108,9 +108,9 @@ async function generateChallenge({
   // for testing
   // const response = JSON.parse(fs.readFileSync('GPT/json/challenge_output.json', 'utf8'));
 
-  if (!response) {
+  if (!response || response.error) {
     console.log('Error generating challenge');
-    return { error: true, response: null };
+    return { error: true, msg: response.error || 'Error generating challenge' };
   }
 
   fs.writeFileSync('GPT/json/challenge_output.json', JSON.stringify(response));
@@ -215,7 +215,7 @@ async function generateDay({
     ],
     time: '<HH:MM:SS>',
     title: '<title>',
-    image: '<description of a relative image>',
+    image: '<description of a relative logo, use 4 to 6 words, use "logo" in the description>',
   };
   if (lastDay.messages) {
     outputFormat.messages = [
@@ -244,7 +244,7 @@ async function generateDay({
   removeId(lastDay);
 
   // generate day introduction
-  const generatedDay = await strict_output2(
+  const generatedDay = await strict_output(
     `You are a helpful assistant that is able to generate a day in a challenge.
 Stay relevant to the challenge name and introduction.
 The point of the first task is 1 and increase by 1 for each task in the day.`,
@@ -278,13 +278,38 @@ Generated day index is ${dayIndex + 1}`,
 }
 
 /**
- * Replaces images in the challenge object with strict_image and performs additional operations.
- * @param {Object} challenge - The challenge object.
- * @param {Function} [callback=null] - Optional callback function to track progress.
+ * Replaces images in the challenge object with generated images and updates the image paths.
+ * If no image theme is provided, it generates a theme for the images.
+ *
+ * @param {Object} options - The options for replacing images.
+ * @param {Object} options.challenge - The challenge object containing image fields to be replaced.
+ * @param {Function} [options.callback=null] - Optional callback function to track progress.
+ * @param {string} [options.imageTheme] - The theme for the images.
+ *
  * @returns {Promise<void>} - A promise that resolves when all images have been replaced.
  */
-async function replaceImages(challenge, callback = null) {
+async function replaceImages({ challenge, callback = null, imageTheme }) {
   // for each image field in challenge replace with strict_image
+
+  //   if (!imageTheme) {
+  //     console.log('No image theme in challenge, generating one...');
+  //     // generate theme for images
+  //     theme = await strict_output(
+  //   `To ensure a uniform and visually cohesive series of images from an AI image generator, detailed and consistent instructions are key. Each directive should encompass precise elements like color codes, artistic style, object types, and backgrounds. This level of specificity aids in maintaining a uniform theme across all generated images.
+  // For instance, consider this detailed instruction for an logo design:
+  // "Create an logo featuring a background in red wine berry color (#8B0000) complemented by a crisp white border. The design should employ simple geometric shapes, and highlight a single accent color of sunny yellow (#FFD700). The primary shape of the logo is a circle, encompassing a central square. Overlay the logo with a singular pop of dark blue color (#00008B), ensuring the color is applied in a brushed texture. Maintain a minimalist aesthetic throughout."
+  // This approach ensures each image adheres to a specific aesthetic, color palette, and design principle, resulting in a harmonious set of images.
+  // The instruction is for all logos in the set, but each logo should be unique.
+  // Instruction should not exceed 300 characters.`,
+  //       // user prompt
+  //       `Give me instruction of random theme for a clean logo.`,
+  //       { instruction: '<instruction with maximum of 300 caracters>' }
+  //     );
+  //     // save theme to challenge
+  //     imageTheme = theme.instruction;
+  //     callback(0, 0, imageTheme);
+  //   }
+
   // get number of images in challenge and insert to array
   const images = [];
   function countImages(obj) {
@@ -299,6 +324,7 @@ async function replaceImages(challenge, callback = null) {
   countImages(challenge);
   console.log('Number of images in challenge:', images.length);
 
+  let firstImagePath;
   for (let i = 0; i < images.length; i++) {
     const obj = images[i];
     const prop = 'image';
@@ -312,11 +338,51 @@ async function replaceImages(challenge, callback = null) {
     }
 
     console.log('Replacing image:', obj[prop]);
-    const image = await strict_image(obj[prop]);
+    // if first image, generate with dall-e-3 model, and use the generated image to edit the rest with dall-e-2 model
+    // currenlty not working, so just use dall-e-2 model for all images
+    // need to find a way to mask the image to be edited automatically
+    let image;
+
+    // if (!firstImagePath) {
+    //   image = await strict_image({ prompt: obj[prop] + theme.instruction });
+    //   // save first image path
+    //   firstImagePath = await downloadImage({
+    //     imageUrl: image[0].url,
+    //     downloadPath: `./temp/${Date.now()}-${i + 1}image.png`,
+    //     quality: 50,
+    //     type: 'png',
+    //     tranparency: 0.5,
+    //   });
+    // } else {
+    //   const useDallE3 = false;
+    //   image = await strict_image({
+    //     prompt: obj[prop] + '\n' + theme.instruction,
+    //     model: 'dall-e-' + (useDallE3 ? 3 : 2),
+    //     size: useDallE3 ? '1024x1024' : '256x256',
+    //     imagePath: firstImagePath,
+    //   });
+    // }
+    const useDallE3 = false;
+    // if image description already contains 'logo', don't add it again, if image include image remove it
+    const prompt = (
+      obj[prop].includes('logo') ? obj[prop] : 'logo of ' + obj[prop]
+    ).replace(' image', '');
+    image = await strict_image({
+      prompt,
+      imagePath: './GPT/images/new-logo.png',
+      maskPath: './GPT/images/new-logo-mask.png',
+      model: 'dall-e-' + (useDallE3 ? 3 : 2),
+      size: useDallE3 ? '1024x1024' : '256x256',
+    });
     const { url } = image[0];
     // use uniq id as filename to avoid overwriting
     const filename = `${Date.now()}-${i + 1}image`;
-    const imagePath = await downloadImage(url, `./temp/${filename}.jpeg`);
+    const imagePath = await downloadImage({
+      imageUrl: url,
+      downloadPath: `./temp/${filename}.jpeg`,
+      quality: 50,
+      type: 'jpeg',
+    });
     if (!imagePath) {
       console.log('Error downloading image, no image path');
       continue;
@@ -381,7 +447,7 @@ async function generateAudio(challenge, callback = null) {
     // upload audio to database
     const fileDB = await uploadFileToDB(meme);
 
-    // save audio to challenge as message
+    // save audio to challenge as a message
     obj.messages.unshift({
       type: 'audio',
       time: obj.time || '00:00:00',
@@ -391,7 +457,10 @@ async function generateAudio(challenge, callback = null) {
       fileUrl: `/uploads/${fileDB._id}`,
     });
 
-    console.log('Added introduction audio successfully:', obj.introduction);
+    console.log(
+      'Added introduction audio successfully:',
+      obj.introduction.slice(0, 50) + '...'
+    );
   }
 }
 
