@@ -67,11 +67,13 @@ exports.loginUser = async (req, res) => {
         .status(401)
         .json({ msg: "Phone number or password are incorrect" });
     }
-    const isPasswordMatching = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatching) {
-      return res
-        .status(401)
-        .json({ message: "Phone number or password are incorrect" });
+    if (user.password) {
+      const isPasswordMatching = await bcrypt.compare(password, user.password);
+      if (!isPasswordMatching) {
+        return res
+          .status(401)
+          .json({ message: "Phone number or password are incorrect" });
+      }
     }
     const clonedUser = cloneDeep(user._doc);
     delete clonedUser.password;
