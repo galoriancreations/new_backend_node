@@ -21,16 +21,8 @@ const userSchema = new Schema(
       enum: ["player", "organization"],
       default: "player"
     },
-    fullName: {
-      type: String,
-      required: true
-    },
-    organization: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User"
-      }
-    ],
+    fullName: String,
+    organization: String,
     country: {
       type: String,
       required: true,
