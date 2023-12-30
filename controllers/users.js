@@ -61,12 +61,14 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
   try {
     const { phone, password } = req.body;
+    console.log("login req.body", req.body);
     const user = await User.findOne({ phone });
     if (!user) {
       return res
         .status(401)
         .json({ msg: "Phone number or password are incorrect" });
     }
+    console.log("user phone", user.phone);
     if (user.password) {
       const isPasswordMatching = await bcrypt.compare(password, user.password);
       if (!isPasswordMatching) {
