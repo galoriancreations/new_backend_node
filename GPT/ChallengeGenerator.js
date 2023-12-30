@@ -37,6 +37,7 @@ async function generateChallenge({
   language = 'English',
   targetAudience = 'General',
   numAttempts = 3,
+  voice = 'alloy',
 }) {
   console.log(`Generating challenge about: ${topic}... this may take a few minutes, depending on the parameters.
 (${days} days, ${tasks} tasks per day, ${messages} messages per day, ${preDays} preDays, ${preMessages} messages per preDay, lang: ${language}, target: ${targetAudience})`);
@@ -130,6 +131,7 @@ async function generateChallenge({
     scores: [],
     verified: false,
     language: 'English', // TODO: add language selection
+    voice,
     ...response,
   };
 
@@ -415,13 +417,16 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
   //   }
 }
 
+
 /**
  * Generates audio for each introduction field in the challenge object.
+ * 
  * @param {Object} challenge - The challenge object.
- * @param {Function} [callback=null] - Optional callback function to track progress.
- * @returns {Promise<void>} - A promise that resolves when all audio generations are complete.
+ * @param {string} [voice='alloy'] - The voice to use for generating audio.
+ * @param {Function} [callback=null] - The callback function to be called after generating each audio.
+ * @returns {Promise<void>} - A promise that resolves when all audio generation is complete.
  */
-async function generateAudio(challenge, callback = null) {
+async function generateAudio(challenge, voice = 'alloy', callback = null) {
   // for each introduction field in challenge message with strict_audio
   // get number of introductions in challenge and insert to array
   const introductions = [];
@@ -431,6 +436,7 @@ async function generateAudio(challenge, callback = null) {
         introductions.push(obj);
       }
       // maybe need to delete this. no recursive needed here (?)
+      // because introduction is always a property in the first level of the object?
       else if (typeof obj[prop] === 'object') {
         countIntroductions(obj[prop]);
       }
@@ -456,6 +462,7 @@ async function generateAudio(challenge, callback = null) {
     // generate audio
     const path = await strict_audio({
       input: obj.introduction,
+      voice,
       path: `./temp/${filename}.mp3`,
     });
 

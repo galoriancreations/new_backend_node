@@ -2233,6 +2233,7 @@ app.post("/xapi", async (req, res) => {
                 preMessagesPerDay,
                 language,
                 targetAudience,
+                voice,
               } = data.createTemplateWithAi;
 
               // create template
@@ -2249,6 +2250,7 @@ app.post("/xapi", async (req, res) => {
                 language: 'English', // only english supported for now
                 targetAudience,
                 numAttempts: 3,
+                voice,
               });
 
               if (template?.error) {
@@ -2299,7 +2301,7 @@ app.post("/xapi", async (req, res) => {
               });
 
               // generate audio for introdction
-              await generateAudio(template, (numReplaced, total) => {
+              await generateAudio(template, voice, (numReplaced, total) => {
                 progressEmitter.emit('progressAttemptsChanged', numReplaced, total, 'audios');
               });
               
@@ -2362,13 +2364,13 @@ app.post("/xapi", async (req, res) => {
             callback: (i, j, theme) => {
               if (theme) {
                 console.log('Added imageTheme:', theme);
-               imageTheme = theme;
+                imageTheme = theme;
               }
             },
           });
 
           // generate audio
-          await generateAudio(day);
+          await generateAudio(day, template.voice || 'alloy');
 
           // update template
           await TemplatesDB.updateOne(
