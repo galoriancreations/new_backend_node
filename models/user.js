@@ -18,8 +18,8 @@ const userSchema = new Schema(
     },
     accountType: {
       type: String,
-      enum: ["player", "organization"],
-      default: "player"
+      enum: ["individual", "organization"],
+      default: "individual"
     },
     fullName: String,
     organization: String,
