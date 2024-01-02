@@ -6,11 +6,12 @@ node_modules
 **_IGNORE_**
 # end managed
 
-# local env files
+# env files
 .env
 .env.local
 .env.development.local
 
-# Log files
+# logs
 GPT/json/*
-temp/*
+
+temp.js

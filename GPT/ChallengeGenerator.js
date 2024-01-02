@@ -4,7 +4,7 @@ const {
   strict_image,
   strict_audio,
 } = require('./strict_output');
-const { uploadFileToDB } = require('../database');
+const { uploadFileToDB } = require('../util/functions');
 const { downloadImage, convertFile } = require('../services/utils');
 // const { progressEmitter } = require('../server');
 
