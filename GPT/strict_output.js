@@ -233,22 +233,36 @@ exports.strict_audio = async ({
  * @returns {Promise<Object>} - A promise that resolves to the created run object.
  */
 exports.strict_assistant = async (thread, content) => {
+  console.log("Creating thread run");
+  console.log({ thread });
+
   const message = await openai.beta.threads.messages.create(thread.id, {
     role: "user",
     content
   });
+  console.log({ message });
 
   const run = await openai.beta.threads.runs.create(thread.id, {
     assistant_id: process.env.OPENAI_API_ASSISTANT_MODEL_ID,
     instructions:
       "Please address the user as Sharon Gal-Or. The user has a premium account."
   });
+  console.log({ run });
 
   const retrieve = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+  console.log({ retrieve });
 
   const messagesResult = await openai.beta.threads.messages.list(thread.id);
+  console.log({ messagesResult });
 
-  console.log({ messages: messagesResult.data });
+  // save response to file for debugging
+  fs.writeFileSync(
+    "GPT/json/strict_assistant_messages.json",
+    JSON.stringify(messagesResult)
+  );
+  console.log(
+    'Finished creating thread run. save to file "GPT/json/strict_assistant_messages.json"'
+  );
 
   return messagesResult.data;
 };
@@ -262,9 +276,8 @@ exports.createChatBotUser = async userId => {
   // create thread
   console.log("Creating ChatBot user with id", userId);
   const thread = await openai.beta.threads.create();
-  console.log({ thread });
   // create new user with thread in ChatBot collection
-  const newUser = new ChatBot({ _id: userId, thread: thread.id });
+  const newUser = new ChatBot({ _id: userId, thread });
   await newUser.save();
   return newUser;
 };

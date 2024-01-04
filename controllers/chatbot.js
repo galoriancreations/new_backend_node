@@ -35,17 +35,18 @@ exports.sendMessage = async (req, res) => {
   }
 
   // get user from db chatbot collection
-  const user = await ChatBot.findById(userId);
+  let user = await ChatBot.findById(userId);
   if (!user) {
-    await createChatBotUser(userId);
+    user = await createChatBotUser(userId);
+    console.log({user});
     return res.status(200).json({ messages: [] });
   }
   if (!user.thread) {
     return res.status(400).json({ msg: "No thread found" });
   }
-
+  
   // send message to openai
-  const messages = await strict_assistant(user, clientMessage);
+  const messages = await strict_assistant(user.thread, clientMessage);
 
   // send messages to client
   res.status(200).json({ messages });
