@@ -14,4 +14,5 @@ node_modules
 # logs
 GPT/json/*
 
-temp.js
+# build output
+/temp/*

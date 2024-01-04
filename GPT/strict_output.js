@@ -2,14 +2,15 @@
  * The output is strictly checked to ensure that it adheres to the output format.
  * @module strict_output
  */
-require('dotenv').config();
-const fs = require('fs');
-const OpenAI = require('openai');
-const { jsonrepair } = require('jsonrepair');
+require("dotenv").config();
+const fs = require("fs");
+const OpenAI = require("openai");
+const { jsonrepair } = require("jsonrepair");
+const { ChatBot } = require("../models/chatbot");
 
 const openai = new OpenAI({
   // organization: process.env.OPENAI_ORGANIZATION_ID,
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 /**
@@ -28,17 +29,17 @@ const openai = new OpenAI({
  * @throws {string} - If the output format is invalid or missing keys.
  * @throws {string} - If an exception occurs during the output generation process.
  */
-async function strict_output(
+exports.strict_output = async (
   system_prompt,
   user_prompt,
   output_format,
   {
     num_tries = 3,
     temperature = 0.8,
-    model = 'gpt-3.5-turbo-1106',
-    verbose = false,
+    model = "gpt-3.5-turbo-1106",
+    verbose = false
   } = {}
-) {
+) => {
   for (let i = 0; i < num_tries; i++) {
     let output_format_prompt = `\nYou are a helpful assistant designed to output the following in json format: ${JSON.stringify(
       output_format
@@ -46,7 +47,7 @@ async function strict_output(
 
     output_format_prompt += `\nAny text enclosed by < and > indicates you must generate content to replace it. Example input: Go to <location>, Example output: Go to the garden\nAny output key containing < and > indicates you must generate the key name to replace it. Example input: {'<location>': 'description of location'}, Example output: {school: a place for education}`;
 
-    let error_msg = '';
+    let error_msg = "";
 
     // Use OpenAI to get a response
     const data = {
@@ -54,34 +55,34 @@ async function strict_output(
       model,
       messages: [
         {
-          role: 'system',
-          content: system_prompt + output_format_prompt + error_msg,
+          role: "system",
+          content: system_prompt + output_format_prompt + error_msg
         },
-        { role: 'user', content: user_prompt.toString() },
+        { role: "user", content: user_prompt.toString() }
       ],
-      response_format: { type: 'json_object' },
-      max_tokens: 4096,
+      response_format: { type: "json_object" },
+      max_tokens: 4096
     };
-    fs.writeFileSync('GPT/json/strict_output_data.json', JSON.stringify(data));
+    fs.writeFileSync("GPT/json/strict_output_data.json", JSON.stringify(data));
 
     let response;
     try {
       response = await openai.chat.completions.create(data);
     } catch (e) {
-      console.log('An exception occurred:', e);
+      console.log("An exception occurred:", e);
       return { error: true, msg: e };
     }
-    fs.writeFileSync('GPT/json/strict_output.json', JSON.stringify(response));
+    fs.writeFileSync("GPT/json/strict_output.json", JSON.stringify(response));
 
-    if (response.choices[0].finish_reason === 'length') {
-      console.error('Error: response length is too long');
+    if (response.choices[0].finish_reason === "length") {
+      console.error("Error: response length is too long");
     }
 
     let res = response.choices[0].message?.content?.replace(/'/g, "'");
-    res = res.replace(/\/&/g, '&');
+    res = res.replace(/\/&/g, "&");
 
     if (!res) {
-      console.log('Invalid json format, trying to fetch again');
+      console.log("Invalid json format, trying to fetch again");
       continue;
     }
 
@@ -90,18 +91,18 @@ async function strict_output(
 
     if (verbose) {
       console.log(
-        'System prompt:',
+        "System prompt:",
         system_prompt + output_format_prompt + error_msg
       );
-      console.log('\nUser prompt:', user_prompt);
-      console.log('\nGPT response:', res);
+      console.log("\nUser prompt:", user_prompt);
+      console.log("\nGPT response:", res);
     }
 
     // try-catch block to ensure output format is adhered to
     try {
-      if (res[0] !== '{') {
-        console.log('Invalid json format, trying to find first {');
-        while (res[0] !== '{') {
+      if (res[0] !== "{") {
+        console.log("Invalid json format, trying to find first {");
+        while (res[0] !== "{") {
           res = res.slice(1);
         }
       }
@@ -110,13 +111,13 @@ async function strict_output(
 
       // check for all keys and nested keys in output is according to output_format structure and log the key that is missing
       const check_keys = (output, output_format) => {
-        if (typeof output !== 'object') {
+        if (typeof output !== "object") {
           return;
         }
         for (const key in output_format) {
           if (!(key in output)) {
             // save output to file for debugging
-            fs.writeFileSync('GPT/json/failed_format.json', repaired);
+            fs.writeFileSync("GPT/json/failed_format.json", repaired);
             throw `Key ${key} is missing in output`;
           } else {
             check_keys(output[key], output_format[key]);
@@ -128,22 +129,22 @@ async function strict_output(
       return output;
     } catch (e) {
       error_msg = `\n\nResult: ${res}\n\nError message: ${e}`;
-      console.log('An exception occurred:', e);
+      console.log("An exception occurred:", e);
       if (verbose) {
-        console.log('Current invalid json format:', res);
+        console.log("Current invalid json format:", res);
       }
       if (i < num_tries - 1) {
         console.log(
           `Trying again\nstrict_output attempt ${i + 2} of ${num_tries}`
         );
       } else if (num_tries !== 1) {
-        console.log('No more tries left');
+        console.log("No more tries left");
       }
     }
   }
 
-  return { error: true, msg: 'No valid output generated' };
-}
+  return { error: true, msg: "No valid output generated" };
+};
 
 /**
  * Generates or edits images using OpenAI's GPT model.
@@ -157,43 +158,43 @@ async function strict_output(
  * @param {string} [options.imagePath=null] - The path to the image file to be edited.
  * @returns {Promise<Object>} - The generated or edited image data.
  */
-async function strict_image({
+exports.strict_image = async ({
   prompt,
   n = 1,
-  size = '1024x1024',
-  model = 'dall-e-3',
+  size = "1024x1024",
+  model = "dall-e-3",
   imagePath = null,
-  maskPath = null,
-}) {
+  maskPath = null
+}) => {
   let response;
   try {
     if (imagePath) {
       response = await openai.images.edit({
         image: fs.createReadStream(imagePath),
-        mask: maskPath ? fs.createReadStream(maskPath) : 'null',
+        mask: maskPath ? fs.createReadStream(maskPath) : "null",
         model,
         prompt,
         n,
-        size,
+        size
       });
     } else {
       response = await openai.images.generate({
         model,
         prompt,
         n,
-        size,
+        size
       });
     }
   } catch (e) {
-    console.log('An exception occurred:', e);
+    console.log("An exception occurred:", e);
     return { error: true, msg: e };
   }
 
   // save response to file for debugging
-  fs.writeFileSync('GPT/json/strict_image.json', JSON.stringify(response));
+  fs.writeFileSync("GPT/json/strict_image.json", JSON.stringify(response));
 
   return response.data;
-}
+};
 
 /**
  * Generates audio using OpenAI's text-to-speech model.
@@ -204,18 +205,66 @@ async function strict_image({
  * @param {string} [options.voice='alloy'] - The voice to use for generating audio.
  * @returns {Promise<string>} - A promise that resolves with the path of the generated audio file.
  */
-async function strict_audio({ input, path, model = 'tts-1', voice = 'alloy' }) {
-  console.log('Generating audio');
+exports.strict_audio = async ({
+  input,
+  path,
+  model = "tts-1",
+  voice = "alloy"
+}) => {
+  console.log("Generating audio");
   const mp3 = await openai.audio.speech.create({
     model,
     voice,
-    input,
+    input
   });
-  console.log('Finished generating audio.');
+  console.log("Finished generating audio.");
   const buffer = Buffer.from(await mp3.arrayBuffer());
   await fs.promises.writeFile(path, buffer);
 
   return path;
-}
+};
 
-module.exports = { strict_output, strict_image, strict_audio };
+/**
+ * Creates a new thread run with the specified parameters.
+ *
+ * @param {string} threadId - The ID of the thread.
+ * @param {string} assistantId - The ID of the assistant model.
+ * @param {string} instructions - The instructions for the run.
+ * @returns {Promise<Object>} - A promise that resolves to the created run object.
+ */
+exports.strict_assistant = async (thread, content) => {
+  const message = await openai.beta.threads.messages.create(thread.id, {
+    role: "user",
+    content
+  });
+
+  const run = await openai.beta.threads.runs.create(thread.id, {
+    assistant_id: process.env.OPENAI_API_ASSISTANT_MODEL_ID,
+    instructions:
+      "Please address the user as Sharon Gal-Or. The user has a premium account."
+  });
+
+  const retrieve = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+
+  const messagesResult = await openai.beta.threads.messages.list(thread.id);
+
+  console.log({ messages: messagesResult.data });
+
+  return messagesResult.data;
+};
+
+/**
+ * Creates a chatbot user with a new thread.
+ * @param {string} userId - The ID of the user.
+ * @returns {Promise<ChatBot>} The newly created chatbot user.
+ */
+exports.createChatBotUser = async userId => {
+  // create thread
+  console.log("Creating ChatBot user with id", userId);
+  const thread = await openai.beta.threads.create();
+  console.log({ thread });
+  // create new user with thread in ChatBot collection
+  const newUser = new ChatBot({ _id: userId, thread: thread.id });
+  await newUser.save();
+  return newUser;
+};

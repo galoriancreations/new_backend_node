@@ -10,7 +10,7 @@ router.post("/", upload.single("image"), async (req, res) => {
   try {
     //i cant use hasOwnProperty method like i use in below
     // instead i using Object.hasOwn
-    if (Object.hasOwn(req.body, "register")) {
+    if (Object.hasOwnProperty(req.body, "register")) {
       const image = {
         name: "",
         data: "",

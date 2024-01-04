@@ -3,6 +3,6 @@ const { progressEmit } = require('../controllers/progress');
 
 const router = Router();
 
-router.get("/progress", progressEmit);
+router.get("/", progressEmit);
 
 module.exports = router;

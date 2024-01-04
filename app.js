@@ -442,6 +442,9 @@ function isUserLoggedIn(req) {
 app.use("/users", userRoutes);
 
 app.use("/api", require("./routes/api"));
+app.use("/progress", require("./routes/progress"));
+app.use("/uploads", require("./routes/uploads"));
+app.use("/chatbot", require("./routes/chatbot"));
 
 // ==============================================================================================
 // ----------------------------------------------------------------------------------------------
