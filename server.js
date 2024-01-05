@@ -534,7 +534,7 @@ const ChallengeArray = db.model("group_challnge_array", ChallengeArraySchema, "g
 const token = '6510559827:AAGKzetnLXsASIqILp2Iw11tb-qFZAqxw9Q';
 
 const bot = new Telegraf(token)
-let hourmin = false;
+let hourmin = true;
 const task = []
 const dailyTask = [{}]
 const checkIf = () => {
@@ -555,104 +555,177 @@ const checkIf = () => {
       checkIf()
     }
   }else{
-    setInterval(()=>{
+    console.log('starting giving missions');
+    // setInterval(()=>{
       const dailyChallnges = async() =>{
         task[0] = {}
         dailyTask[0] = {}
         const Challengearray = await ChallengeArray.find()
+        // console.log(Challengearray);
         const _d = new Date()
         const day = _d.getDate()
         const month = _d.getMonth() + 1
         const year = _d.getFullYear()
         Challengearray.forEach(async (val) => {
           const ID = val.challengeID
-          const Challenge = await Challenges.findone({_id:ID})
-          const Group = await GroupsDB.findone({challengeID:ID})
+          const Challenge = await Challenges.findOne({_id:ID})
+          const Group = await GroupsDB.findOne({challengeID:ID})
           if (Challenge) {
-            const objectFound = Challenge.selection[0][day+'/'+month+'/'+year]
+            // console.log(Challenge);
+            const objectFound = Challenge.selections[0][month+'/'+day+'/'+year]
+            Group.botMessage = [{text:'welcome to the group',ind:0}]
+            Group.emoji = []
+            Group.scored = []
             if (objectFound) {
-              objectFound.ids = ID
-              objectFound.forEach(val => {
+              
+              // objectFound.ids = ID
+              // console.log(objectFound);
+              Object.keys(objectFound).forEach(key => {
+                const val = objectFound[key]
+                
+                val.ids = ID
+                // console.log(val);
+                // console.log(val);
                 const time = val.time
                 if (task[0][time]) {
-                  task[0][time].push(objectFound)
+                  task[0][time].push(val)
                 }else{
-                  task[0][time] = [objectFound]
+                  task[0][time] = [val]
                 }
               });
-              Group.scored = []
+              // console.log(task[0]);
             }else{
-              Group.botMessage = [{text:'welcome to the group',ind:0}]
-              Group.emoji = []
-              if (Group.telGroupId) {
+              // Create a new Date object for the given date
+              const dateArray = Object.keys(Challenge.selections[0])
+              const givenDate = new Date(dateArray[dateArray.length-1]);
+
+
+              // Compare the two dates using getTime() method and check if the given date is in the past
+              if (givenDate.getTime() < _d.getTime()) {
+                console.log('The last missions date has been passed deleting challnge from array');
+                Group.botMessage = [{text:'challnge is over thank you for participating',ind:0}]
+                console.log(Group);
+                if (Group.telGroupId) {
+                  bot.telegram.sendMessage(Group.telGroupId,'challnge is over thank you for participating')  
+                }
+                await ChallengeArray.deleteOne({_id:val._id})
+              }else if (Group.telGroupId) {
                 bot.telegram.sendMessage(Group.telGroupId,'good morning there is no challnge for today')  
               }
             }
-            await GroupsDB.updateOne({_id:ID},{ $set: Group });
+            await GroupsDB.updateOne({challengeID:ID},{ $set: Group });
           }else{
+            await ChallengeArray.deleteOne({_id:val._id})
             console.error('Challenge not found');
           }
         });
       }
       dailyChallnges()
-    },86400000)
+    // },86400000)
   }
 }
 setInterval(()=>{
+  // console.log(task);
+  // console.log(task[0]);
   if (task[0]) {
     const d = new Date
-    const timeOfDay = d.getHours() + ':' + d.getMinutes()
-    
-      if (task[0][timeOfDay]) {
-        const missions = task[0][timeOfDay]
-        missions.forEach(async (val,ind) => {
-          const ID = val.ids
-              const Group = await GroupsDB.findone({challengeID:ID})
-              
-              if (Group) {
-                  Group.botMessage.push({text:val.message,ind})
-                  Group.emoji.push({[val.emoji]:val.points})
-                  if (Group.telGroupId) {
-                    bot.telegram.sendMessage(Group.telGroupId,objectFound.message)
-                    bot.telegram.sendMessage(Group.telGroupId,`To complete this challnge send this emoji ${objectFound.emoji}`)
-                  }
+    const timeOfDay = '18:00'//d.getHours() + ':' + d.getMinutes()
+    if (task[0][timeOfDay]) {
+      // console.log(task[0][timeOfDay]);
+      const missions = task[0][timeOfDay]
+      const idArray = [{}]
+      missions.forEach(obj=>{
+        const id = obj.ids
+                if (idArray[0][id]) {
+                  idArray[0][id].push(obj)
+                }else{
+                  idArray[0][id] = [obj]
                 }
-                await GroupsDB.updateOne({_id:ID},{ $set: Group });
-        });
-      }
+      })
+      // console.log(idArray);
+      const objArray = Object.keys(idArray[0])
+      // console.log(objArray);
+      objArray.forEach( async (challngeID) => {
+        const tasksOfDay = idArray[0][challngeID]
+        // console.log(tasksOfDay);
+        // console.log(obj);
+        const ID = challngeID
+        const Group = await GroupsDB.findOne({challengeID:ID})
+        if (Group) {
+          
+        
+        tasksOfDay.forEach(async (obj,ind) => {
+        console.log(obj);
+        console.log(ID);
+        
+        // if (Group) {
+          if (Group.botMessage[0].text == 'welcome to the group') {
+            Group.botMessage = []
+          }
+          // console.log(objArray);
+          // objArray.forEach(async (key,ind)=>{
+            // if (key != 'ids') {
+              // const val = obj
+              // console.log(val);
+              Group.botMessage.push({text:obj.message,ind:Group.botMessage.length})
+              Group.emoji.push({[obj.emoji]:obj.points})
+              if (Group.telGroupId) {
+                bot.telegram.sendMessage(Group.telGroupId,`${obj.message}\nTo complete this challnge send this emoji ${obj.emoji}`)
+                // bot.telegram.sendMessage(Group.telGroupId,`To complete this challnge send this emoji ${val.emoji}`)
+              }
+            // }
+          // })
+          
+        // }
+      });
+      await GroupsDB.updateOne({challengeID:ID},{ $set: Group });
+    }
+    });
+    }
     
     if (timeOfDay == '16:00') {
       const daytimes = task[0]
-      const idsSent = {}
-      if (daytimes.length > 0) {
-        daytimes.forEach(mission => {
-          mission.forEach(async val => {
-            const ID = val.ids
-            if (!idsSent.ID) {
-              const Group = await GroupsDB.findone({challengeID:ID})
-              if (Group) {
-              idsSent[ID] = true
+      // console.log(daytimes);
+      const idArray = {}
+      Object.keys(daytimes).forEach(key => {
+        // console.log(daytimes);
+        const mission = daytimes[key]
+        // console.log(mission);
+        mission.forEach(val => {
+          //add counting groups to make sure every group gets only one 
+          // console.log(val);
+          // console.log(Object.keys(val));
+          // console.log(val);
+          const ID = val.ids
+          if (!idArray[ID]) {
+            idArray[ID] = true
+          }
+          });
+        })
+        Object.keys(idArray).forEach(async (ID) => {
+            const Group = await GroupsDB.findOne({challengeID:ID})
+            if (Group) {
               Group.botMessage.push({
-                text:'2 Hour warning until challnge ends',
-                ind:botMessage.length
+                text:'2 Hour warning until challnges end',
+                ind:Group.botMessage.length
               })
               Group.messages.push({msg:'2 Hour warning until challnge ends',time:timeOfDay,user:'Ting Global Bot'})
               if (Group.telGroupId) {
                 bot.telegram.sendMessage(Group.telGroupId,'2 Hour warning until challnge ends')
               }
-              await GroupsDB.updateOne({_id:ID},{ $set: Group });
-              }
+              await GroupsDB.updateOne({challengeID:ID},{ $set: Group });
             }
-          })
+          
         })
-      }
+      
+      console.log(idArray);
     };
         
                 
   }          
-},60000)
+},10000)
 
-// checkIf()
+checkIf()
 
 
 
@@ -812,16 +885,21 @@ bot.command('activate',(ctx)=>{
       const group = await GroupsDB.findOne({invite:Tinglink})
       if (group) {
         if (group.telInvite == telLink) {
-          group.telGroupId = ctx.chat.id
+          const chatId = ctx.chat.id
+          const telid = await GroupsDB.findOne({telGroupId:chatId})
+          if (!telid) {
+            group.telGroupId = chatId
         
-          const botMessage = {
-            msg:`Telegram Group connected!!!\n the link is ${telLink}`,
-            user:'telegram Ting Global Bot'
-          }
+            const botMessage = {
+              msg:`Telegram Group connected!!!\n the link is ${telLink}`,
+              user:'telegram Ting Global Bot'
+            }
       
-          group.messages.push(botMessage)
-          await GroupsDB.updateOne({invite:Tinglink}, { $set: group })
-          ctx.reply(`your Ting Global group has been connected from here on all commands are available`)
+            group.messages.push(botMessage)
+            await GroupsDB.updateOne({invite:Tinglink}, { $set: group })
+            ctx.reply(`your Ting Global group has been connected from here on all commands are available`)
+          }
+          ctx.reply('this group is already conncted to connect to a new Ting Global group create a new Telegram Group')
         }else{
           ctx.reply('please connect the link to the group in the Ting Global website')
         }
@@ -1385,13 +1463,18 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 			createdChallenges = {};
 
 			if (userData.hasOwnProperty("createdChallenges")) {
-				for (let challengeId in userData["createdChallenges"]) {
+				// for (let challengeId in userData["createdChallenges"]) {
+          for (let i = 0; i < userData["createdChallenges"].length; i++) {
+            const challengeId = userData["createdChallenges"][i];
+            
+          
 					// console.log("Fetching draft from DB:", draftID);
-					challenge = await findChallengeInDB(challengeId);
+					let challenge = await findChallengeInDB(challengeId);
+          console.log(challengeId);
 					// console.log("Receiving draft from DB:", draftID);
 					if (challenge != null) {
-						templateId = challenge["template"];
-						template = await findTemplateInDB(templateId);
+						let templateId = challenge["template"];
+						let template = await findTemplateInDB(templateId);
 						if (template != null) {
 							challenge["name"] = template["name"];
 							challenge["language"] = template["language"];
@@ -1404,13 +1487,10 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 				}
 			}
 
-        userData["createdChallenges"] = createdChallenges;
 			userData["createdChallenges"] = createdChallenges;
 
         final["logged_in_as"] = current_user;
 			// send back to front:
-			final["logged_in_as"] = current_user;
-
         final["user"] = userData;
       } else if (data.hasOwnProperty("getAvailableTemplates")) {
           let publicTemplates = await TemplatesDB.find({ isPublic: true });
@@ -1972,12 +2052,15 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 
             let botMessage;
             let goodEmoji = false
-            for (let i = 0; i < group.emoji.length; i++) {
+            if (group.emoji) {
+              for (let i = 0; i < group.emoji.length; i++) {
               if (group.emoji[i][msg]) {
                 goodEmoji = i
                 break
               }
             }
+            }
+            
             if (goodEmoji) {
               let userfound = group.scored.map((val)=>{if (val.user == user._id && val.emoji == msg) {
                 return val
@@ -2241,31 +2324,6 @@ app.post("/xapi", upload.single("image"), async (req, res) => {
 
 
             await GroupsDB.updateOne({_id:groupId},{messages:group.messages})
-
-            for (let template in templates) {
-              if (
-                template.hasOwnProperty("creator") &&
-                template["creator"] != null
-              ) {
-                let creator;
-                let creatorId = template["creator"];
-                if (creators.hasOwnProperty(`${creatorId}`)) {
-                  creator = creators[creatorID];
-                } else {
-                  creator = UsersTest.findOne(
-                    { _id: creatorId },
-                    { phone: 1, username: 1 }
-                  );
-                  if (creator != null) {
-                    creators[creatorId] = creator;
-                  }
-                }
-                if (creator != null) {
-                  template["creator"] = creator["username"] || creator["phone"];
-                }
-              }
-              final = templates;
-            }
           } 
 
             final = group.messages
