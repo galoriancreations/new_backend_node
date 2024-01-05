@@ -1,4 +1,5 @@
-/* This file contains functions that generate output from the OpenAI API.
+/**
+ * @file This file contains functions that generate output from the OpenAI API.
  * The output is strictly checked to ensure that it adheres to the output format.
  * @module strict_output
  */
@@ -212,67 +213,91 @@ exports.strict_audio = async ({
   voice = "alloy"
 }) => {
   console.log("Generating audio");
-  const mp3 = await openai.audio.speech.create({
-    model,
-    voice,
-    input
-  });
-  console.log("Finished generating audio.");
-  const buffer = Buffer.from(await mp3.arrayBuffer());
-  await fs.promises.writeFile(path, buffer);
+  try {
+    const mp3 = await openai.audio.speech.create({
+      model,
+      voice,
+      input
+    });
+    console.log("Finished generating audio.");
+    const buffer = Buffer.from(await mp3.arrayBuffer());
+    await fs.promises.writeFile(path, buffer);
 
-  return path;
+    return path;
+  } catch (e) {
+    console.log("An exception occurred:", e);
+    return { error: true, msg: e };
+  }
 };
 
 /**
- * Creates a new thread run with the specified parameters.
+ * Creates a new run using the given thread ID and assistant ID.
  *
- * @param {string} threadId - The ID of the thread.
- * @param {string} assistantId - The ID of the assistant model.
- * @param {string} instructions - The instructions for the run.
- * @returns {Promise<Object>} - A promise that resolves to the created run object.
+ * @param {object} thread - Thread object.
+ * @param {string} content - The content of the message.
+ * @returns {Promise<Object>} - A promise that resolves with the message object.
  */
-exports.strict_assistant = async (thread, content) => {
-  console.log("Creating thread run");
-  console.log({ thread });
+exports.strict_assistant_send = async (thread, content) => {
+  try {
+    const message = await openai.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content
+    });
 
-  const message = await openai.beta.threads.messages.create(thread.id, {
-    role: "user",
-    content
-  });
-  console.log({ message });
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: process.env.OPENAI_API_ASSISTANT_MODEL_ID,
+      instructions:
+        "Please address the user as a Ting Global website user. The user has a premium account."
+    });
+    let retrieve = { status: "queued" };
+    const failedArray = ["expired", "cancelling", "cancelled", "failed"];
+    while (retrieve.status === "queued" || retrieve.status === "in_progress") {
+      // wait for run to finish
+      if (failedArray.includes(retrieve.status)) {
+        throw new Error("Run failed");
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("Waiting for run to finish");
+      retrieve = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    }
+    const messagesResult = await openai.beta.threads.messages.list(thread.id);
 
-  const run = await openai.beta.threads.runs.create(thread.id, {
-    assistant_id: process.env.OPENAI_API_ASSISTANT_MODEL_ID,
-    instructions:
-      "Please address the user as Sharon Gal-Or. The user has a premium account."
-  });
-  console.log({ run });
+    // save response to file for debugging
+    fs.writeFileSync(
+      "GPT/json/strict_assistant_messages.json",
+      JSON.stringify(messagesResult)
+    );
 
-  const retrieve = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-  console.log({ retrieve });
+    // save message to file for debugging
+    fs.writeFileSync(
+      "GPT/json/strict_assistant_message.json",
+      JSON.stringify(message)
+    );
 
-  const messagesResult = await openai.beta.threads.messages.list(thread.id);
-  console.log({ messagesResult });
+    console.log(
+      'Finished creating thread run. save to file "GPT/json/strict_assistant_messages.json"'
+    );
 
-  // save response to file for debugging
-  fs.writeFileSync(
-    "GPT/json/strict_assistant_messages.json",
-    JSON.stringify(messagesResult)
-  );
-  console.log(
-    'Finished creating thread run. save to file "GPT/json/strict_assistant_messages.json"'
-  );
+    const messages = messagesResult.data.map(message => {
+      return {
+        role: message.role,
+        text: message.content[0].text.value
+      };
+    });
 
-  return messagesResult.data;
+    return messages[0];
+  } catch (e) {
+    console.log("An exception occurred:", e);
+    return { error: true, msg: e };
+  }
 };
 
 /**
  * Creates a chatbot user with a new thread.
  * @param {string} userId - The ID of the user.
- * @returns {Promise<ChatBot>} The newly created chatbot user.
+ * @returns {Promise<ChatBotUser>} The newly created chatbot user object.
  */
-exports.createChatBotUser = async userId => {
+exports.strict_assistant_create_user = async userId => {
   // create thread
   console.log("Creating ChatBot user with id", userId);
   const thread = await openai.beta.threads.create();
@@ -280,4 +305,30 @@ exports.createChatBotUser = async userId => {
   const newUser = new ChatBot({ _id: userId, thread });
   await newUser.save();
   return newUser;
+};
+
+/**
+ * Get all messages from a thread.
+ * @param {object} thread - Thread object.
+ * @returns {Promise<object>} object of messages.
+ */
+exports.strict_assistant_messages = async thread => {
+  if (!thread || !thread?.id) {
+    return res.status(400).json({ msg: "No thread found" });
+  }
+
+  try {
+    const threadMessages = await openai.beta.threads.messages.list(thread.id);
+    const messages = threadMessages.data.map(message => {
+      return {
+        role: message.role,
+        text: message.content[0].text.value
+      };
+    });
+
+    return messages;
+  } catch (e) {
+    console.log("An exception occurred:", e);
+    return { error: true, msg: e };
+  }
 };
