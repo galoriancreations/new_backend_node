@@ -1831,13 +1831,33 @@ app.post("/xapi", async (req, res) => {
 						final = templates;
 					}
 				} else if (data.hasOwnProperty("getQuestion")){
-					const result = await QuestionModel.find()
-					let i = Math.floor(Math.random() * 94)
-					final = result[i]
+					// console.log(data);
+					const qId = data["qId"]
+					// console.log(qId);
+					let i;
+					if (qId) {
+						i = qId;
+					}
+					else{
+						i = Math.floor(Math.random() * 94+1)
+					}
+					// console.log(i);
+					const result = await QuestionModel.findOne({qnum:i})
+					final = result
 				}else if (data.hasOwnProperty("getSingularity")){
-					const result = await SingularityMagicGame.find()
-					let i = Math.floor(Math.random() * 20)
-					final = result[i]
+					// console.log(data);
+					const qId = data["qId"]
+					// console.log(qId);
+					let i;
+					if (qId) {
+						i = qId;
+					}
+					else{
+						i = Math.floor(Math.random() * 20+1)
+					}
+					// console.log(i);
+					const result = await SingularityMagicGame.findOne({qnum:i})
+					final = result
 				}
 				 else if (data.hasOwnProperty("getAnswer")){
 					let question = data["getAnswer"]["question"]
