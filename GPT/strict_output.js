@@ -235,9 +235,10 @@ exports.strict_audio = async ({
  *
  * @param {object} thread - Thread object.
  * @param {string} content - The content of the message.
+ * @param {string} instructions - The instructions for the assistant.
  * @returns {Promise<Object>} - A promise that resolves with the message object.
  */
-exports.strict_assistant_send = async (thread, content) => {
+exports.strict_assistant_send = async (thread, content, instructions) => {
   try {
     const message = await openai.beta.threads.messages.create(thread.id, {
       role: "user",
@@ -246,17 +247,16 @@ exports.strict_assistant_send = async (thread, content) => {
 
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: process.env.OPENAI_API_ASSISTANT_MODEL_ID,
-      instructions:
-        "Please address the user as a Ting Global website user. The user has a premium account."
+      instructions
     });
     let retrieve = { status: "queued" };
-    const failedArray = ["expired", "cancelling", "cancelled", "failed"];
+    const failStatus = ["expired", "cancelling", "cancelled", "failed"];
     while (retrieve.status === "queued" || retrieve.status === "in_progress") {
       // wait for run to finish
-      if (failedArray.includes(retrieve.status)) {
+      if (failStatus.includes(retrieve.status)) {
         throw new Error("Run failed");
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       console.log("Waiting for run to finish");
       retrieve = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }

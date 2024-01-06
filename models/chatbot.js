@@ -2,7 +2,7 @@ const { Schema, model } = require("mongoose");
 
 const chatBotSchema = new Schema(
   {
-    username: {
+    _id: {
       type: Schema.Types.ObjectId,
       ref: "User"
     },

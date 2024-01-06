@@ -4,15 +4,9 @@ const {
   strict_assistant_send,
   strict_assistant_messages
 } = require("../GPT/strict_output");
-const { get } = require("http");
-
-// for now we will use a dummy user id
-const userId = "5e8e4c1e6c2a2d1c2c7a1b7c";
 
 exports.getMessages = async (req, res) => {
-  // check if user is logged in
-  // for now we will use a dummy user id
-
+  const userId = req.user._id;
   try {
     const user = await ChatBot.findById(userId);
     if (!user) {
@@ -34,15 +28,13 @@ exports.getMessages = async (req, res) => {
 };
 
 exports.sendMessage = async (req, res) => {
-  // check if user is logged in
-  // for now we will use a dummy user id
-
-  // get message from client
+  // check if message is provided
   const { message: clientMessage } = req.body;
   if (!clientMessage) {
     return res.status(400).json({ msg: "No message provided" });
   }
-  // get user from db chatbot collection
+  // check if user exists
+  const userId = req.user._id;
   let user = await ChatBot.findById(userId);
   if (!user) {
     user = await strict_assistant_create_user(userId);
@@ -52,8 +44,18 @@ exports.sendMessage = async (req, res) => {
     return res.status(400).json({ msg: "No thread found" });
   }
 
+  // get user details
+  const { name, language, accountType, organization } = req.user;
+
+  const instructions = `Please address the user as a Ting Global website user.
+User details: Name: ${name}, Language: ${language}, Account Type: ${accountType}, Organization: ${organization}`;
+
   // send message to openai
-  const message = await strict_assistant_send(user.thread, clientMessage);
+  const message = await strict_assistant_send(
+    user.thread,
+    clientMessage,
+    instructions
+  );
 
   // send messages to client
   return res.status(200).json({ message });
