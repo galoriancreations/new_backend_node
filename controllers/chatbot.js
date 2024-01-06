@@ -45,10 +45,14 @@ exports.sendMessage = async (req, res) => {
   }
 
   // get user details
-  const { name, language, accountType, organization } = req.user;
+  const { fullName, language, accountType, organization, country, isAdmin } =
+    req.user;
 
-  const instructions = `Please address the user as a Ting Global website user.
-User details: Name: ${name}, Language: ${language}, Account Type: ${accountType}, Organization: ${organization}`;
+  const instructions = `Please address the user as a Ting Global website ${
+    isAdmin ? "admin" : "user"
+  }. User details: Name: ${fullName}, Language: ${language}, Account Type: ${accountType}, ${
+    organization.length ? `Organization: ${organization}, ` : ""
+  }Country: ${country}`;
 
   // send message to openai
   const message = await strict_assistant_send(
