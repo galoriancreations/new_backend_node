@@ -277,11 +277,12 @@ exports.strict_assistant_send = async (thread, content, instructions) => {
     console.log(
       'Finished creating thread run. save to file "GPT/json/strict_assistant_messages.json"'
     );
-
     const messages = messagesResult.data.map(message => {
       return {
         role: message.role,
-        text: message.content[0].text.value
+        text: message.content[0].text.value,
+        id: message.id,
+        createdAt: message.created_at
       };
     });
 
@@ -322,7 +323,9 @@ exports.strict_assistant_messages = async thread => {
     const messages = threadMessages.data.map(message => {
       return {
         role: message.role,
-        text: message.content[0].text.value
+        text: message.content[0].text.value,
+        id: message.id,
+        createdAt: message.created_at
       };
     });
 
