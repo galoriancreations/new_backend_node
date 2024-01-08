@@ -6,7 +6,7 @@ const chatBotSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User"
     },
-    thread: Object
+    threads: Array
   },
   { timestamps: true }
 );

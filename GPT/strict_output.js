@@ -233,13 +233,19 @@ exports.strict_audio = async ({
 /**
  * Creates a new run using the given thread ID and assistant ID.
  *
- * @param {object} thread - Thread object.
+ * @param {string} threadId - Thread ID.
  * @param {string} content - The content of the message.
  * @param {string} instructions - The instructions for the assistant.
  * @returns {Promise<Object>} - A promise that resolves with the message object.
  */
-exports.strict_assistant_send = async (thread, content, instructions) => {
+exports.strict_assistant_send = async (threadId, content, instructions) => {
   try {
+    // find thread by id
+    const thread = await openai.beta.threads.retrieve(threadId);
+    if (!thread) {
+      return { error: true, msg: "No thread found" };
+    }
+
     const message = await openai.beta.threads.messages.create(thread.id, {
       role: "user",
       content
@@ -300,12 +306,21 @@ exports.strict_assistant_send = async (thread, content, instructions) => {
  */
 exports.strict_assistant_create_user = async userId => {
   // create thread
-  console.log("Creating ChatBot user with id", userId);
-  const thread = await openai.beta.threads.create();
+  const thread = await this.strict_assistant_create_thread();
   // create new user with thread in ChatBot collection
-  const newUser = new ChatBot({ _id: userId, thread });
+  const newUser = new ChatBot({ _id: userId, threads: [thread] });
   await newUser.save();
+  console.log("create thread", thread.id);
   return newUser;
+};
+
+/**
+ * Creates a new thread.
+ * @returns {Promise<object>} object of thread.
+ */
+exports.strict_assistant_create_thread = async () => {
+  const thread = await openai.beta.threads.create();
+  return thread;
 };
 
 /**
@@ -315,7 +330,7 @@ exports.strict_assistant_create_user = async userId => {
  */
 exports.strict_assistant_messages = async thread => {
   if (!thread || !thread?.id) {
-    return res.status(400).json({ msg: "No thread found" });
+    return { error: true, msg: "No thread found" };
   }
 
   try {
@@ -330,6 +345,21 @@ exports.strict_assistant_messages = async thread => {
     });
 
     return messages;
+  } catch (e) {
+    console.log("An exception occurred:", e);
+    return { error: true, msg: e };
+  }
+};
+
+/**
+ * Delete a thread.
+ * @param {string} threadId - Thread ID.
+ * @returns {Promise<object>} object of thread delete.
+ */
+exports.strict_assistant_delete_thread = async threadId => {
+  try {
+    const threadDelete = await openai.beta.threads.del(threadId);
+    return threadDelete;
   } catch (e) {
     console.log("An exception occurred:", e);
     return { error: true, msg: e };
