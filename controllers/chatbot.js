@@ -9,8 +9,6 @@ const {
 
 exports.getMessages = async (req, res) => {
   try {
-    console.log("get messages", req.params);
-
     const userId = req.user._id;
     const user = await ChatBot.findById(userId);
     if (!user) {
@@ -31,7 +29,6 @@ exports.getMessages = async (req, res) => {
     const thread = user.threads.find(thread => thread.id === threadId);
     // send messages to client
     const messages = await strict_assistant_messages(thread);
-    console.log("messages", messages);
     return res.status(200).json({ messages });
   } catch (err) {
     console.log(err);
@@ -138,7 +135,6 @@ exports.deleteThread = async (req, res) => {
     if (!threadId) {
       return res.status(400).json({ msg: "No thread id provided" });
     }
-    console.log("threadId", threadId);
     if (!user.threads.find(thread => thread.id === threadId)) {
       return res.status(400).json({ msg: "Invalid thread id" });
     }
@@ -147,12 +143,45 @@ exports.deleteThread = async (req, res) => {
     await user.save();
 
     const response = await strict_assistant_delete_thread(threadId);
-    console.log("response", response);
     if (!response.deleted) {
       return res.status(400).json({ msg: "Error deleting thread" });
     }
 
     return res.status(200).json({ msg: "Thread deleted" });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ msg: "Server error" });
+  }
+};
+
+exports.editThread = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await ChatBot.findById(userId);
+    if (!user) {
+      return res.status(400).json({ msg: "User not found" });
+    }
+    if (!user.threads.length) {
+      return res.status(400).json({ msg: "No thread found" });
+    }
+    const { threadId } = req.params;
+    if (!threadId) {
+      return res.status(400).json({ msg: "No thread id provided" });
+    }
+    if (!user.threads.find(thread => thread.id === threadId)) {
+      return res.status(400).json({ msg: "Invalid thread id" });
+    }
+    const thread = user.threads.find(thread => thread.id === threadId);
+    if (!thread) {
+      return res.status(400).json({ msg: "Thread not found" });
+    }
+    const { title } = req.body;
+    if (!title) {
+      return res.status(400).json({ msg: "No title provided" });
+    }
+    thread.title = title;
+    await user.save();
+    return res.status(200).json({ thread });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ msg: "Server error" });
