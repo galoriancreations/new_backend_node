@@ -5,6 +5,8 @@ const path = require("path");
 const fs = require("fs");
 const uniqid = require("uniqid");
 const { Uploads } = require("../models/uploads");
+const { User } = require("../models/user");
+const crypto = require("crypto");
 
 /**
  * Uploads a file to the server.
@@ -136,3 +138,21 @@ function cleanupTempDir(dirPath) {
 // Clean up the temp directory when the application starts
 const tempDir = path.join(__dirname, "temp");
 cleanupTempDir(tempDir);
+
+exports.updateUserInDB = async user => {
+  await User.updateOne({ _id: `${user["_id"]}` }, { $set: user });
+};
+
+exports.generateRandomString = () => {
+  const length = 22;
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let randomString = "";
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = crypto.randomInt(0, characters.length);
+    randomString += characters.charAt(randomIndex);
+  }
+
+  return randomString;
+};
