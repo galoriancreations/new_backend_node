@@ -39,7 +39,8 @@ const userSchema = new Schema(
     },
     templates: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Template"
       }
     ],

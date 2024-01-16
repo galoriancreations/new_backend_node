@@ -29,8 +29,6 @@ const EventEmitter = require("events");
 const dotenv = require("dotenv");
 const fileUpload = require("express-fileupload");
 
-const userRoutes = require("./routes/users");
-
 const { User } = require("./models/user");
 const { Draft } = require("./models/draft");
 const { Challenge } = require("./models/challenge");
@@ -439,13 +437,13 @@ function isUserLoggedIn(req) {
   return { mesg: null, loggedIn: true };
 }
 
-app.use("/users", userRoutes);
-
-app.use("/api", require("./routes/api"));
-app.use("/xapi", require("./routes/xapi"));
+app.use("/users", require("./routes/users"));
+// app.use("/api", require("./routes/api"));
+// app.use("/xapi", require("./routes/xapi"));
 app.use("/progress", require("./routes/progress"));
 app.use("/uploads", require("./routes/uploads"));
 app.use("/chatbot", require("./routes/chatbot"));
+app.use("/editor", require("./routes/editor"));
 
 // ==============================================================================================
 // ----------------------------------------------------------------------------------------------

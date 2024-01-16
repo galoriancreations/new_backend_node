@@ -156,3 +156,7 @@ exports.generateRandomString = () => {
 
   return randomString;
 };
+
+exports.updateUserInDB = user => {
+  User.updateOne({ _id: user._id }, { $set: user }).exec();
+};
