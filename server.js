@@ -1864,6 +1864,7 @@ app.post("/xapi", async (req, res) => {
 					const answer = {
 						id: 'a_' + generateRandomString(),
 						user: user.fullName,
+						userId: user._id,
 						text: data["getAnswer"]["answer"],
 						likes: 0
 					}
