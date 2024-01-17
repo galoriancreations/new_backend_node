@@ -1,6 +1,5 @@
 const axios = require("axios");
 const sharp = require("sharp");
-const mime = require("mime-types");
 const path = require("path");
 const fs = require("fs");
 const uniqid = require("uniqid");
@@ -17,13 +16,22 @@ const crypto = require("crypto");
  */
 exports.uploadFile = async req => {
   const { file } = req.files;
-  const filetype = file.name.split(".").at(-1);
-  const originalName = file.name.split(".")[0];
+  const parts = file.name.split(".");
+  const filetype = parts.pop();
+  const originalName = parts.join(".");
   const filename = originalName + "_" + uniqid();
   const fullFileName = filename + "." + filetype;
   const folderPath = "./uploads/" + filename;
   const filePath = folderPath + "." + filetype;
   await file.mv(filePath);
+
+  // upload file to db
+  await Uploads.create({
+    name: fullFileName,
+    data: fs.readFileSync(filePath),
+    contentType: file.mimetype
+  });
+
   return "/uploads/" + fullFileName;
 };
 
@@ -35,20 +43,20 @@ exports.uploadFile = async req => {
  * @param {string} file.mimetype - The MIME type of the file.
  * @returns {Promise<Object|null>} - A promise that resolves to the uploaded file object in the database, or null if the file object is invalid.
  */
-exports.uploadFileToDB = async file => {
-  if (!file || !file.originalname || !file.buffer || !file.mimetype) {
-    console.log("Invalid file object");
-    return null;
-  }
+// exports.uploadFileToDB = async file => {
+//   if (!file || !file.originalname || !file.buffer || !file.mimetype) {
+//     console.log("Invalid file object");
+//     return null;
+//   }
 
-  const fileInDB = await Uploads.create({
-    name: file.originalname,
-    data: file.buffer,
-    contentType: file.mimetype
-  });
+//   const fileInDB = await Uploads.create({
+//     name: file.originalname,
+//     data: file.buffer,
+//     contentType: file.mimetype
+//   });
 
-  return fileInDB;
-};
+//   return fileInDB;
+// };
 
 /**
  * Downloads an image from a given URL and saves it to the specified download path.

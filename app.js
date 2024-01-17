@@ -9,10 +9,10 @@ const mongoose = require("mongoose");
 
 const cors = require("cors");
 
-const multer = require("multer");
+// const multer = require("multer");
 
-const storage = multer.memoryStorage(); //store file in memory
-const upload = multer({ storage });
+// const storage = multer.memoryStorage(); //store file in memory
+// const upload = multer({ storage });
 // -- end photo test -----------------------------------
 
 let client;

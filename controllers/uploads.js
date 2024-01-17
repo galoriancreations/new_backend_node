@@ -2,27 +2,33 @@ const fs = require("fs");
 const path = require("path");
 const mime = require("mime");
 const { Uploads } = require("../models/uploads");
+const { uploadFile } = require("../util/functions");
 
 exports.uploadFile = async (req, res) => {
-  console.log("uploading file");
-  const file = req.file;
-  if (!file) {
-    console.log("No file uploaded");
-    return res.status(400).json({ msg: "No file uploaded" });
-  }
+  try {
+    console.log("uploadFile from controller/uploads.js");
 
-  // check if file is already in db
-  console.log(file.originalname);
-  const fileInDB = await Uploads.findOne({ data: file.buffer });
-  if (fileInDB) {
-    console.log("File already exists in db:", fileInDB._id);
-    return res.status(200).send(`/uploads/${fileInDB._id}`);
-  }
+    const file = req.files?.file;
+    if (!file) {
+      console.log("No file uploaded");
+      return res.status(400).json({ msg: "No file uploaded" });
+    }
 
-  const uploadedFile = await uploadFileToDB(file);
-  // create path to file in server and send it
-  console.log("File uploaded successfully:", uploadedFile._id);
-  return res.status(200).send(`/uploads/${uploadedFile._id}`);
+    // check if file is already in db
+    const fileInDB = await Uploads.findOne({ data: file.buffer });
+    if (fileInDB) {
+      console.log("File already exists in db:", fileInDB._id);
+      return res.status(200).send(`/uploads/${fileInDB._id}`);
+    }
+
+    const uploadedFilePath = await uploadFile(req);
+    // create path to file in server and send it
+    console.log("File uploaded successfully:", uploadedFilePath);
+    return res.status(200).send(uploadedFilePath);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ msg: "Server error" });
+  }
 };
 
 exports.getFile = async (req, res) => {
@@ -35,7 +41,7 @@ exports.getFile = async (req, res) => {
   let file;
   const tempFilePath = path.join(__dirname, "temp", req.params.id);
   if (!fs.existsSync(tempFilePath)) {
-    file = await Uploads.findById(req.params.id);
+    file = await Uploads.findOne({ name: req.params.id });
     if (!file || !file.contentType) {
       console.log("File not found:", req.params.id);
       return res.status(404).json({ msg: "File not found" });

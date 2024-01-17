@@ -321,6 +321,8 @@ exports.deleteChallenge = async (req, res) => {
 
 exports.deleteTemplate = async (req, res) => {
   try {
+    console.log("deleteTemplate from controllers/editor.js");
+    
     const { templateId } = req.body;
     const idsFromReq = req.body.templateIds;
     const user = await User.findOne({ _id: req.user._id });

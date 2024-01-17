@@ -76,9 +76,9 @@ const userSchema = new Schema(
       type: Boolean,
       default: false
     },
-    photo: String,
     articleSubscribed: Boolean,
-    telegramId: String
+    telegramId: String,
+    image: String,
   },
   { timestamps: true }
 );

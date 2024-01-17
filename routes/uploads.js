@@ -1,12 +1,10 @@
 const { Router } = require("express");
-const { uploadFile, getFile } = require('../controllers/uploads');
-const multer = require("multer");
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const { uploadFile, getFile } = require("../controllers/uploads");
+const auth = require("../middleware/auth");
 
 const router = Router();
 
-router.post("/", upload.single("file"), uploadFile);
-router.get('/:id', getFile);
+router.post("/", auth, uploadFile);
+router.get("/:id", getFile);
 
 module.exports = router;

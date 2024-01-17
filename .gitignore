@@ -16,3 +16,4 @@ GPT/json/*
 
 # build output
 /temp/*
+/uploads/*

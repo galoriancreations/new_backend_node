@@ -117,12 +117,11 @@ exports.editProfile = async (req, res) => {
     }
 
     // Update user fields
-    Object.keys(req.body).forEach(key => {
+    Object.keys(req.body.editProfile).forEach(key => {
       if (allowedChanges.includes(key)) {
-        user[key] = req.body[key];
+        user[key] = req.body.editProfile[key];
       }
     });
-
     await user.save();
 
     const userData = { ...user.toObject(), drafts: {}, createdChallenges: {} };
