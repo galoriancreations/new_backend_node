@@ -29,13 +29,13 @@ const EventEmitter = require("events");
 const dotenv = require("dotenv");
 const fileUpload = require("express-fileupload");
 
-const { User } = require("./models/user");
-const { Draft } = require("./models/draft");
-const { Challenge } = require("./models/challenge");
-const { Template } = require("./models/template");
-const { Player } = require("./models/player");
-const { Group } = require("./models/group");
-const { ChallengeArray } = require("./models/challenge-array");
+// const { User } = require("./models/user");
+// const { Draft } = require("./models/draft");
+// const { Challenge } = require("./models/challenge");
+// const { Template } = require("./models/template");
+// const { Player } = require("./models/player");
+// const { Group } = require("./models/group");
+// const { ChallengeArray } = require("./models/challenge-array");
 
 dotenv.config();
 
@@ -444,6 +444,8 @@ app.use("/progress", require("./routes/progress"));
 app.use("/uploads", require("./routes/uploads"));
 app.use("/chatbot", require("./routes/chatbot"));
 app.use("/editor", require("./routes/editor"));
+app.use("/group", require("./routes/group"));
+
 
 // ==============================================================================================
 // ----------------------------------------------------------------------------------------------

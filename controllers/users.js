@@ -56,7 +56,7 @@ exports.registerUser = async (req, res) => {
       .json({ user: clonedUser, access_token: token, exp: expiresIn });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ msg: "error accured" });
+    return res.status(500).json({ msg: "error occurred" });
   }
 };
 
@@ -89,9 +89,10 @@ exports.loginUser = async (req, res) => {
     return res.json({ user: clonedUser, access_token: token, exp: expiresIn });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ msg: "error accured" });
+    return res.status(500).json({ msg: "error occurred" });
   }
 };
+
 exports.editProfile = async (req, res) => {
   try {
     console.log("editProfile from controllers/users.js");
@@ -115,72 +116,60 @@ exports.editProfile = async (req, res) => {
       return res.status(404).json({ msg: "User not found" });
     }
 
-    const newData = req.body;
-
-    allowedChanges.forEach(key => {
-      if (newData.hasOwnProperty(key)) {
-        user[key] = newData[key];
+    // Update user fields
+    Object.keys(req.body).forEach(key => {
+      if (allowedChanges.includes(key)) {
+        user[key] = req.body[key];
       }
     });
 
     await user.save();
 
-    const userDoc = user.toObject();
-    const userData = { ...userDoc };
+    const userData = { ...user.toObject(), drafts: {}, createdChallenges: {} };
 
-    const userDrafts = {};
-
-    if (userData.hasOwnProperty("drafts")) {
-      for (let draftID in userData.drafts) {
-        let result = await findDraftInDB(draftID);
-        if (result != null) {
-          userDrafts[draftID] = {
-            _id: result._id,
-            name: result.name,
-            language: result.language
+    // Process drafts
+    if (user.drafts) {
+      for (let draftID in user.drafts) {
+        const draft = await findDraftInDB(draftID);
+        if (draft) {
+          userData.drafts[draftID] = {
+            _id: draft._id,
+            name: draft.name,
+            language: draft.language,
+            challengeId: draft.challengeId || null
           };
-          if (result.hasOwnProperty("challengeId")) {
-            userDrafts[draftID].challengeId = result.challengeId;
-          }
-        }
-      }
-    }
-    userData.drafts = userDrafts;
-
-    userData.challenges = {};
-
-    const createdChallenges = {};
-
-    if (userData.hasOwnProperty("createdChallenges")) {
-      for (let i = 0; i < userData.createdChallenges.length; i++) {
-        const challengeId = userData.createdChallenges[i];
-        const challenge = await Challenge.findOne({ _id: challengeId });
-        if (challenge != null) {
-          const templateId = challenge.template;
-          const template = await Template.findOne({ _id: templateId });
-          if (template != null) {
-            challenge.name = template.name;
-            challenge.language = template.language;
-            if (template.hasOwnProperty("dayMargin")) {
-              challenge.dayMargin = template.dayMargin;
-            }
-            createdChallenges[challengeId] = challenge;
-          }
         }
       }
     }
 
-    userData.createdChallenges = createdChallenges;
+    // Process created challenges
+    if (user.createdChallenges) {
+      for (let challengeId of user.createdChallenges) {
+        let challenge = await Challenge.findOne({ _id: challengeId });
 
-    const final = {
+        if (!challenge) {
+          const template = await Template.findOne({ _id: challengeId });
+          if (template) {
+            challenge = {
+              name: template.name,
+              language: template.language,
+              template: challengeId,
+              dayMargin: template.dayMargin || null
+            };
+          }
+        }
+
+        if (challenge) {
+          userData.createdChallenges[challengeId] = challenge;
+        }
+      }
+    }
+
+    return res.json({
       logged_in_as: req.user._id,
       user: userData
-    };
-
-    console.log("final", final);
-    return res.json(final);
+    });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ msg: "Error occurred" });
   }
 };
@@ -212,6 +201,6 @@ exports.getPublicTemplates = async (req, res) => {
     return res.json({ templates });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ msg: "error accured" });
+    return res.status(500).json({ msg: "error occurred" });
   }
 };

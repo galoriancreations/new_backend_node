@@ -4,7 +4,8 @@ const challengeArraySchema = new Schema(
   {
     _id: String,
     challengeID: {
-      type: Schema.Types.ObjectId,
+      // type: Schema.Types.ObjectId,
+      type: String,
       ref: "Challenge"
     }
   },
