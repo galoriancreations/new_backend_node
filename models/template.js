@@ -8,7 +8,8 @@ const templateSchema = new Schema(
       default: true
     },
     creator: {
-      type: Schema.Types.ObjectId,
+      // type: Schema.Types.ObjectId,
+      type: String,
       ref: "User"
     },
     dayMargin: Number,
@@ -31,7 +32,8 @@ const templateSchema = new Schema(
     preMessages: Array,
     challenges: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Challenge"
       }
     ]

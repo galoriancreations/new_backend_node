@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cloneDeep = require("clone-deep");
 const { Template } = require("../models/template");
+const { Challenge } = require("../models/challenge");
 
 exports.registerUser = async (req, res) => {
   try {
@@ -55,7 +56,7 @@ exports.registerUser = async (req, res) => {
       .json({ user: clonedUser, access_token: token, exp: expiresIn });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: error.message });
+    res.status(500).json({ msg: "error accured" });
   }
 };
 
@@ -88,16 +89,14 @@ exports.loginUser = async (req, res) => {
     res.json({ user: clonedUser, access_token: token, exp: expiresIn });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: error.message });
+    res.status(500).json({ msg: "error accured" });
   }
 };
-
 exports.editProfile = async (req, res) => {
   try {
     console.log("editProfile from controllers/users.js");
 
-    let newData = req.body;
-    let allowedChanges = [
+    const allowedChanges = [
       "username",
       "phone",
       "email",
@@ -116,60 +115,54 @@ exports.editProfile = async (req, res) => {
       return res.status(404).json({ msg: "User not found" });
     }
 
-    for (let key of allowedChanges) {
+    const newData = req.body;
+
+    allowedChanges.forEach(key => {
       if (newData.hasOwnProperty(key)) {
         user[key] = newData[key];
       }
-    }
+    });
 
     await user.save();
 
     const userDoc = user.toObject();
-    const userData = {};
-
-    for (let key in userDoc) {
-      if (userDoc.hasOwnProperty(key)) {
-        userData[key] = userDoc[key];
-      }
-    }
+    const userData = { ...userDoc };
 
     const userDrafts = {};
+
     if (userData.hasOwnProperty("drafts")) {
-      for (let draftID in userData["drafts"]) {
-        console.log("Fetching draft from DB:", draftID);
+      for (let draftID in userData.drafts) {
         let result = await findDraftInDB(draftID);
-        console.log("Receiving draft from DB:", result);
         if (result != null) {
           userDrafts[draftID] = {
-            _id: result["_id"],
-            name: result["name"],
-            language: result["language"]
+            _id: result._id,
+            name: result.name,
+            language: result.language
           };
           if (result.hasOwnProperty("challengeId")) {
-            userDrafts[draftID]["challengeId"] = result["challengeId"];
+            userDrafts[draftID].challengeId = result.challengeId;
           }
         }
       }
     }
-    userData["drafts"] = userDrafts;
+    userData.drafts = userDrafts;
 
-    userData["challenges"] = {};
+    userData.challenges = {};
 
     const createdChallenges = {};
-    let challenge;
 
     if (userData.hasOwnProperty("createdChallenges")) {
-      for (let i = 0; i < userData["createdChallenges"].length; i++) {
-        const challengeId = userData["createdChallenges"][i];
-        challenge = await Challenges.findOne({ _id: challengeId });
+      for (let i = 0; i < userData.createdChallenges.length; i++) {
+        const challengeId = userData.createdChallenges[i];
+        const challenge = await Challenge.findOne({ _id: challengeId });
         if (challenge != null) {
-          const templateId = challenge["template"];
-          template = await findTemplateInDB(templateId);
+          const templateId = challenge.template;
+          const template = await Template.findOne({ _id: templateId });
           if (template != null) {
-            challenge["name"] = template["name"];
-            challenge["language"] = template["language"];
+            challenge.name = template.name;
+            challenge.language = template.language;
             if (template.hasOwnProperty("dayMargin")) {
-              challenge["dayMargin"] = template["dayMargin"];
+              challenge.dayMargin = template.dayMargin;
             }
             createdChallenges[challengeId] = challenge;
           }
@@ -184,28 +177,41 @@ exports.editProfile = async (req, res) => {
       user: userData
     };
 
+    console.log("final", final);
     res.json(final);
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: error.message });
+    res.status(500).json({ msg: "Error occurred" });
   }
 };
 
-exports.loadAvailableTemplates = async (req, res) => {
-  const publicTemplates = await Template.find({ isPublic: true });
-  const user = await User.findOne({ _id: req.user._id });
+exports.getAvailableTemplates = async (req, res) => {
+  try {
+    console.log("getAvailableTemplates from controllers/users.js");
 
-  const privateTemplates = await Template.find({
-    _id: { $in: user.templates },
-    isPublic: false
-  });
+    const user = await User.findOne({ _id: req.user._id });
+    const publicTemplates = await Template.find({ isPublic: true });
+    const userPrivateTemplates = await Template.find({
+      _id: { $in: user.templates },
+      isPublic: false
+    });
 
-  const templates = publicTemplates.concat(privateTemplates).filter(val => val !== null);
-
-  return res.json(templates);
+    const templates = publicTemplates
+      .concat(userPrivateTemplates)
+      .filter(val => val != null);
+    res.json({ templates });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: "error occurred" });
+  }
 };
 
-exports.loadPublicTemplates = async (req, res) => {
-  const templates = await Template.find({ isPublic: true });
-  return res.json(templates);
+exports.getPublicTemplates = async (req, res) => {
+  try {
+    const templates = await Template.find({ isPublic: true });
+    return res.json({ templates });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: "error accured" });
+  }
 };

@@ -4,8 +4,8 @@ const {
   registerUser,
   loginUser,
   editProfile,
-  loadAvailableTemplates,
-  loadPublicTemplates
+  getAvailableTemplates,
+  getPublicTemplates
 } = require("../controllers/users");
 
 const router = Router();
@@ -13,7 +13,7 @@ const router = Router();
 router.post("/register", registerUser);
 router.post("/signIn", loginUser);
 router.post("/editProfile", auth, editProfile);
-router.get("/loadAvailableTemplates", auth, loadAvailableTemplates);
-router.get("/loadPublicTemplates", loadPublicTemplates);
+router.get("/getAvailableTemplates", auth, getAvailableTemplates);
+router.get("/getPublicTemplates", getPublicTemplates);
 
 module.exports = router;

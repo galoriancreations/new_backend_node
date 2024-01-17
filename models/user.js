@@ -46,25 +46,29 @@ const userSchema = new Schema(
     ],
     drafts: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Draft"
       }
     ],
     challenges: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Challenge"
       }
     ],
     createdChallenges: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Challenge"
       }
     ],
     groups: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Group"
       }
     ],
