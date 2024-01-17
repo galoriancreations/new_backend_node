@@ -14,6 +14,6 @@ module.exports = (req, res, next) => {
     next();
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: 'error accured' });
+    return res.status(500).json({ msg: 'error accured' });
   }
 };

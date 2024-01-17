@@ -56,7 +56,7 @@ exports.registerUser = async (req, res) => {
       .json({ user: clonedUser, access_token: token, exp: expiresIn });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: "error accured" });
+    return res.status(500).json({ msg: "error accured" });
   }
 };
 
@@ -86,10 +86,10 @@ exports.loginUser = async (req, res) => {
     });
     const expiresIn = new Date();
     expiresIn.setDate(expiresIn.getDate() + 1);
-    res.json({ user: clonedUser, access_token: token, exp: expiresIn });
+    return res.json({ user: clonedUser, access_token: token, exp: expiresIn });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: "error accured" });
+    return res.status(500).json({ msg: "error accured" });
   }
 };
 exports.editProfile = async (req, res) => {
@@ -178,10 +178,10 @@ exports.editProfile = async (req, res) => {
     };
 
     console.log("final", final);
-    res.json(final);
+    return res.json(final);
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: "Error occurred" });
+    return res.status(500).json({ msg: "Error occurred" });
   }
 };
 
@@ -199,10 +199,10 @@ exports.getAvailableTemplates = async (req, res) => {
     const templates = publicTemplates
       .concat(userPrivateTemplates)
       .filter(val => val != null);
-    res.json({ templates });
+    return res.json({ templates });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: "error occurred" });
+    return res.status(500).json({ msg: "error occurred" });
   }
 };
 
@@ -212,6 +212,6 @@ exports.getPublicTemplates = async (req, res) => {
     return res.json({ templates });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: "error accured" });
+    return res.status(500).json({ msg: "error accured" });
   }
 };

@@ -22,7 +22,7 @@ exports.uploadFile = async (req, res) => {
   const uploadedFile = await uploadFileToDB(file);
   // create path to file in server and send it
   console.log("File uploaded successfully:", uploadedFile._id);
-  res.status(200).send(`/uploads/${uploadedFile._id}`);
+  return res.status(200).send(`/uploads/${uploadedFile._id}`);
 };
 
 exports.getFile = async (req, res) => {
@@ -53,9 +53,9 @@ exports.getFile = async (req, res) => {
 
   if (file) {
     res.setHeader("Content-Type", file.contentType);
-    res.send(file.data);
+    return res.send(file.data);
   } else {
     console.log("File not found:", req.params.id);
-    res.status(404).json({ msg: "File not found" });
+    return res.status(404).json({ msg: "File not found" });
   }
 };

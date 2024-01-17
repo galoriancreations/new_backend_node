@@ -57,7 +57,7 @@ exports.saveTemplate = async (req, res) => {
     return res.json({ logged_in_as: currentUser, templateId });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: "error accured" });
+    return res.status(500).json({ msg: "error accured" });
   }
 };
 
@@ -80,11 +80,16 @@ exports.getTemplateData = async (req, res) => {
       return res.status(404).json({ error: "Template not found" });
     }
 
-    // return template data
+    // return template data with {name, }
+    // const template = {
+    //   _id: templateId,
+    //   name: templateData.name,
+    //   isPublic: templateData.isPublic
+    // };
     return res.json(existingTemplate);
   } catch (error) {
     console.log(error);
-    res.status(500).json({ msg: "error accured" });
+    return res.status(500).json({ msg: "error accured" });
   }
 };
 
@@ -119,7 +124,7 @@ exports.createChallenge = async (req, res) => {
   }
   challengeData.createdOn = Date.now();
   challengeData.creator = current_user;
-  challengeData.scores = {};
+  challengeData.scores = [];
 
   const challengeId = "c_" + generateRandomString();
   challengeData._id = challengeId;
@@ -150,7 +155,9 @@ exports.createChallenge = async (req, res) => {
 
   user.challenges.push(challengeId);
   user.createdChallenges.push(challengeId);
-  await Challenge.insertMany(challengeData);
+  user.save();
+  
+  await Challenge.create(challengeData);
 
   if (verifyNow) {
     console.log(`::: VERIFING Challenge ${challengeId}`);

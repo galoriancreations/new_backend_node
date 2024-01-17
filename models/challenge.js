@@ -39,6 +39,10 @@ const challengeSchema = new Schema(
     verified: {
       type: Boolean,
       default: false
+    },
+    scores: {
+      type: Array,
+      required: true
     }
   },
   { timestamps: true }
