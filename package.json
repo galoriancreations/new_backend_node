@@ -2,12 +2,12 @@
   "name": "new_backend_node",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "server.js",
   "devDependencies": {
     "nodemon": "^3.0.2"
   },
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "nodemon server.js"
   },
   "author": "",
   "license": "ISC",
