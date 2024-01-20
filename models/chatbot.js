@@ -6,7 +6,7 @@ const chatBotSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User"
     },
-    threads: [
+    assistants: [
       {
         id: {
           type: String,
@@ -16,6 +16,21 @@ const chatBotSchema = new Schema(
           type: Number,
           required: true
         },
+        threads: [
+          {
+            id: {
+              type: String,
+              required: true
+            },
+            created_at: {
+              type: Number,
+              required: true
+            },
+            metadata: Object,
+            title: String,
+            object: String
+          }
+        ],
         metadata: Object,
         title: String,
         object: String

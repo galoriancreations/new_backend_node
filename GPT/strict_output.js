@@ -238,7 +238,12 @@ exports.strict_audio = async ({
  * @param {string} instructions - The instructions for the assistant.
  * @returns {Promise<Object>} - A promise that resolves with the message object.
  */
-exports.strict_assistant_send = async (threadId, content, instructions) => {
+exports.strict_assistant_send = async (
+  assistantId,
+  threadId,
+  content,
+  instructions
+) => {
   try {
     // find thread by id
     const thread = await openai.beta.threads.retrieve(threadId);
@@ -252,7 +257,7 @@ exports.strict_assistant_send = async (threadId, content, instructions) => {
     });
 
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: process.env.OPENAI_API_ASSISTANT_MODEL_ID,
+      assistant_id: assistantId,
       instructions
     });
     let retrieve = { status: "queued" };
@@ -304,11 +309,25 @@ exports.strict_assistant_send = async (threadId, content, instructions) => {
  * @param {string} userId - The ID of the user.
  * @returns {Promise<ChatBotUser>} The newly created chatbot user object.
  */
-exports.strict_assistant_create_user = async userId => {
+exports.strict_assistant_create_user = async (userId, assistantId) => {
   // create thread
   const thread = await this.strict_assistant_create_thread();
   // create new user with thread in ChatBot collection
-  const newUser = new ChatBot({ _id: userId, threads: [thread] });
+  const newUser = new ChatBot({
+    _id: userId,
+    assistants: [
+      {
+        id: assistantId,
+        created_at: Date.now(),
+        threads: [
+          {
+            id: thread.id,
+            created_at: Date.now()
+          }
+        ]
+      }
+    ]
+  });
   await newUser.save();
   console.log("create thread", thread.id);
   return newUser;
@@ -360,6 +379,16 @@ exports.strict_assistant_delete_thread = async threadId => {
   try {
     const threadDelete = await openai.beta.threads.del(threadId);
     return threadDelete;
+  } catch (e) {
+    console.log("An exception occurred:", e);
+    return { error: true, msg: e };
+  }
+};
+
+exports.strict_assistant_check = async assistantId => {
+  try {
+    const assistant = await openai.beta.assistants.retrieve(assistantId);
+    return assistant;
   } catch (e) {
     console.log("An exception occurred:", e);
     return { error: true, msg: e };
