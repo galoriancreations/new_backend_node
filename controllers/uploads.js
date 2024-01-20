@@ -15,10 +15,10 @@ exports.uploadFile = async (req, res) => {
     }
 
     // check if file is already in db
-    const fileInDB = await Uploads.findOne({ data: file.buffer });
+    const fileInDB = await Uploads.findOne({ md5: file.md5 });
     if (fileInDB) {
-      console.log("File already exists in db:", fileInDB._id);
-      return res.status(200).send(`/uploads/${fileInDB._id}`);
+      console.log("File already exists in db:", fileInDB.name);
+      return res.status(200).send(`/uploads/${fileInDB.name}`);
     }
 
     const uploadedFilePath = await uploadFile(req);
@@ -33,13 +33,12 @@ exports.uploadFile = async (req, res) => {
 
 exports.getFile = async (req, res) => {
   // check if file exists in temp if not check in db and save in temp
-  const tempDir = path.join(__dirname, "temp");
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir);
+  if (!fs.existsSync("temp")) {
+    fs.mkdirSync("temp");
   }
 
   let file;
-  const tempFilePath = path.join(__dirname, "temp", req.params.id);
+  const tempFilePath = path.join("temp", req.params.id);
   if (!fs.existsSync(tempFilePath)) {
     file = await Uploads.findOne({ name: req.params.id });
     if (!file || !file.contentType) {

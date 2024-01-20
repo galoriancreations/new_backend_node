@@ -21,7 +21,7 @@ exports.uploadFile = async req => {
   const originalName = parts.join(".");
   const filename = originalName + "_" + uniqid();
   const fullFileName = filename + "." + filetype;
-  const folderPath = "./uploads/" + filename;
+  const folderPath = "temp/" + filename;
   const filePath = folderPath + "." + filetype;
   await file.mv(filePath);
 
@@ -29,7 +29,11 @@ exports.uploadFile = async req => {
   await Uploads.create({
     name: fullFileName,
     data: fs.readFileSync(filePath),
-    contentType: file.mimetype
+    contentType: file.mimetype,
+    md5: crypto
+      .createHash("md5")
+      .update(fs.readFileSync(filePath))
+      .digest("hex")
   });
 
   return "/uploads/" + fullFileName;

@@ -12,6 +12,10 @@ const uploadsSchema = new Schema({
   contentType: {
     type: String,
     required: true
+  },
+  md5: {
+    type: String,
+    required: true
   }
 });
 
