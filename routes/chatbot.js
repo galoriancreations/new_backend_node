@@ -6,7 +6,7 @@ const {
   createThread,
   deleteThread,
   editThread,
-  getCouncil
+  getAssistant,
 } = require("../controllers/chatbot");
 const auth = require("../middleware/auth");
 
@@ -19,9 +19,9 @@ router.post("/message/:assistantId/:threadId", sendMessage);
 
 router.get("/:assistantId/threads", getThreads);
 router.post("/thread", createThread);
-router.delete("/thread/:threadId", deleteThread);
+router.delete("/thread/:assistantId/:threadId", deleteThread);
 router.put("/thread/:assistantId/:threadId", editThread);
 
-router.get("/council/:assistantId", getCouncil);
+router.get("/assistant/:assistantId", getAssistant);
 
 module.exports = router;

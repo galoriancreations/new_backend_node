@@ -233,6 +233,7 @@ exports.strict_audio = async ({
 /**
  * Creates a new run using the given thread ID and assistant ID.
  *
+ * @param {string} assistantId - Assistant ID.
  * @param {string} threadId - Thread ID.
  * @param {string} content - The content of the message.
  * @param {string} instructions - The instructions for the assistant.
@@ -307,6 +308,7 @@ exports.strict_assistant_send = async (
 /**
  * Creates a chatbot user with a new thread.
  * @param {string} userId - The ID of the user.
+ * @param {string} assistantId - The ID of the assistant.
  * @returns {Promise<ChatBotUser>} The newly created chatbot user object.
  */
 exports.strict_assistant_create_user = async (userId, assistantId) => {
@@ -318,11 +320,11 @@ exports.strict_assistant_create_user = async (userId, assistantId) => {
     assistants: [
       {
         id: assistantId,
-        created_at: Date.now(),
+        created_at: new Date() / 1000,
         threads: [
           {
-            id: thread.id,
-            created_at: Date.now()
+            ...thread,
+            created_at: new Date() / 1000
           }
         ]
       }
@@ -348,10 +350,6 @@ exports.strict_assistant_create_thread = async () => {
  * @returns {Promise<object>} object of messages.
  */
 exports.strict_assistant_messages = async thread => {
-  if (!thread || !thread?.id) {
-    return { error: true, msg: "No thread found" };
-  }
-
   try {
     const threadMessages = await openai.beta.threads.messages.list(thread.id);
     const messages = threadMessages.data.map(message => {
@@ -385,6 +383,12 @@ exports.strict_assistant_delete_thread = async threadId => {
   }
 };
 
+/**
+ * Edit a thread.
+ * @param {string} threadId - Thread ID.
+ * @param {string} threadName - Thread name.
+ * @returns {Promise<object>} object of thread edit.
+ */
 exports.strict_assistant_check = async assistantId => {
   try {
     const assistant = await openai.beta.assistants.retrieve(assistantId);

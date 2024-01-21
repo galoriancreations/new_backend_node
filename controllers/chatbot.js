@@ -46,6 +46,9 @@ exports.getMessages = async (req, res) => {
 
     // get thread
     const thread = assistant.threads.find(thread => thread.id === threadId);
+    if (!thread) {
+      return res.status(400).json({ msg: "Invalid thread id" });
+    }
     // send messages to client
     const messages = await strict_assistant_messages(thread);
     return res.status(200).json({ messages });
@@ -57,6 +60,8 @@ exports.getMessages = async (req, res) => {
 
 exports.sendMessage = async (req, res) => {
   try {
+    console.log("sendMessage from controller/chatbot.js");
+
     // check if message is provided
     const { message: clientMessage } = req.body;
     const { assistantId, threadId } = req.params;
@@ -79,7 +84,7 @@ exports.sendMessage = async (req, res) => {
     if (!assistantId) {
       return res.status(400).json({ msg: "No assistant id provided" });
     }
-    const assistant = user.assistants.find(
+    let assistant = user.assistants.find(
       assistant => assistant.id === assistantId
     );
     if (!assistant) {
@@ -88,10 +93,11 @@ exports.sendMessage = async (req, res) => {
       if (!response.id) {
         return res.status(400).json({ msg: "Invalid assistant id" });
       }
-      user.assistants.push({
+      assistant = {
         id: assistantId,
         threads: [await strict_assistant_create_thread()]
-      });
+      };
+      user.assistants.push(assistant);
     }
     // check if thread exists
     if (!assistant.threads.length) {
@@ -107,8 +113,8 @@ exports.sendMessage = async (req, res) => {
     }
     const thread = assistant.threads.find(thread => thread.id === threadId);
     if (!thread) {
-      console.log('found thread: ', thread);
-      console.log('found threadId: ', threadId);
+      console.log("found threadId: ", threadId);
+      console.log("found thread: ", thread);
       return res.status(400).json({ msg: "Invalid thread id" });
     }
 
@@ -140,12 +146,18 @@ exports.sendMessage = async (req, res) => {
 
 exports.getThreads = async (req, res) => {
   try {
+    console.log("getThreads from controller/chatbot.js");
+
     const userId = req.user._id;
     const { assistantId } = req.params;
     if (!assistantId) {
       return res.status(400).json({ msg: "No assistant id provided" });
     }
     const user = await ChatBot.findById(userId);
+    if (!user) {
+      await strict_assistant_create_user(userId, assistantId);
+      return res.status(200).json({ threads: [] });
+    }
     const assistant = user.assistants.find(
       assistant => assistant.id === assistantId
     );
@@ -167,8 +179,9 @@ exports.getThreads = async (req, res) => {
 
 exports.createThread = async (req, res) => {
   try {
-    const { assistantId } = req.body;
+    console.log("createThread from controller/chatbot.js");
 
+    const { assistantId } = req.body;
     if (!assistantId) {
       return res.status(400).json({ msg: "No assistant id provided" });
     }
@@ -188,8 +201,9 @@ exports.createThread = async (req, res) => {
       return res.status(400).json({ msg: "Invalid assistant id" });
     }
 
-    assistant.threads.push(thread);
+    assistant.threads.push({ ...thread, created_at: new Date() / 1000 });
     await user.save();
+
     return res.status(200).json({ thread });
   } catch (err) {
     console.log(err);
@@ -199,25 +213,37 @@ exports.createThread = async (req, res) => {
 
 exports.deleteThread = async (req, res) => {
   try {
+    console.log("deleteThread from controller/chatbot.js");
+
     const userId = req.user._id;
     const user = await ChatBot.findById(userId);
     if (!user) {
       return res.status(400).json({ msg: "User not found" });
     }
-    if (!user.threads.length) {
-      return res.status(400).json({ msg: "No thread found" });
+    const { assistantId, threadId } = req.params;
+    if (!assistantId) {
+      return res.status(400).json({ msg: "No assistant id provided" });
     }
-    const { threadId } = req.params;
     if (!threadId) {
       return res.status(400).json({ msg: "No thread id provided" });
     }
-    if (!user.threads.find(thread => thread.id === threadId)) {
-      return res.status(400).json({ msg: "Invalid thread id" });
+    const assistant = user.assistants.find(
+      assistant => assistant.id === assistantId
+    );
+    if (!assistant) {
+      return res.status(400).json({ msg: "Invalid assistant id" });
     }
-    // delete thread
-    user.threads = user.threads.filter(thread => thread.id !== threadId);
+    const thread = assistant.threads.find(thread => thread.id === threadId);
+    if (!thread) {
+      return res.status(400).json({ msg: "Thread not found" });
+    }
+
+    // delete thread from user
+    const index = assistant.threads.indexOf(thread);
+    assistant.threads.splice(index, 1);
     await user.save();
 
+    // delete thread from openai
     const response = await strict_assistant_delete_thread(threadId);
     if (!response.deleted) {
       return res.status(400).json({ msg: "Error deleting thread" });
@@ -232,22 +258,27 @@ exports.deleteThread = async (req, res) => {
 
 exports.editThread = async (req, res) => {
   try {
+    console.log("editThread from controller/chatbot.js");
+    
     const userId = req.user._id;
     const user = await ChatBot.findById(userId);
     if (!user) {
       return res.status(400).json({ msg: "User not found" });
     }
-    if (!user.threads.length) {
-      return res.status(400).json({ msg: "No thread found" });
+    const { assistantId, threadId } = req.params;
+    if (!assistantId) {
+      return res.status(400).json({ msg: "No assistant id provided" });
     }
-    const { threadId } = req.params;
     if (!threadId) {
       return res.status(400).json({ msg: "No thread id provided" });
     }
-    if (!user.threads.find(thread => thread.id === threadId)) {
-      return res.status(400).json({ msg: "Invalid thread id" });
+    const assistant = user.assistants.find(
+      assistant => assistant.id === assistantId
+    );
+    if (!assistant) {
+      return res.status(400).json({ msg: "Invalid assistant id" });
     }
-    const thread = user.threads.find(thread => thread.id === threadId);
+    const thread = assistant.threads.find(thread => thread.id === threadId);
     if (!thread) {
       return res.status(400).json({ msg: "Thread not found" });
     }
@@ -264,22 +295,24 @@ exports.editThread = async (req, res) => {
   }
 };
 
-exports.getCouncil = async (req, res) => {
+exports.getAssistant = async (req, res) => {
   try {
     const { assistantId } = req.params;
     if (!assistantId) {
-      return res.status(400).json({ msg: "No council id provided" });
+      return res.status(400).json({ msg: "No assistant id provided" });
     }
 
     // get user
     const userId = req.user._id;
     const user = await ChatBot.findById(userId);
     if (!user) {
-      return res.status(400).json({ msg: "User not found" });
+      // create user
+      const newUser = await strict_assistant_create_user(userId, assistantId);
+      return res.status(200).json({ assistant: newUser.assistants[0] });
     }
 
     if (!user.assistants.length) {
-      return res.status(400).json({ msg: "No council found" });
+      return res.status(400).json({ msg: "No assistant found" });
     }
 
     let assistant = user.assistants.find(
@@ -293,14 +326,13 @@ exports.getCouncil = async (req, res) => {
       assistant = {
         id: assistantId,
         threads: [await strict_assistant_create_thread()],
-        created_at: new Date()
+        created_at: new Date() / 1000
       };
       user.assistants.push(assistant);
       await user.save();
     }
 
-    console.log({ assistant });
-    return res.status(200).json({ council: assistant });
+    return res.status(200).json({ assistant });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ msg: "Server error" });
