@@ -320,11 +320,11 @@ exports.strict_assistant_create_user = async (userId, assistantId) => {
     assistants: [
       {
         id: assistantId,
-        created_at: new Date() / 1000,
+        created_at: Math.floor(new Date() / 1000),
         threads: [
           {
             ...thread,
-            created_at: new Date() / 1000
+            created_at: Math.floor(new Date() / 1000)
           }
         ]
       }

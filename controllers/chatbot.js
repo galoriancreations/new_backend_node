@@ -201,7 +201,10 @@ exports.createThread = async (req, res) => {
       return res.status(400).json({ msg: "Invalid assistant id" });
     }
 
-    assistant.threads.push({ ...thread, created_at: new Date() / 1000 });
+    assistant.threads.push({
+      ...thread,
+      created_at: Math.floor(new Date() / 1000)
+    });
     await user.save();
 
     return res.status(200).json({ thread });
@@ -259,7 +262,7 @@ exports.deleteThread = async (req, res) => {
 exports.editThread = async (req, res) => {
   try {
     console.log("editThread from controller/chatbot.js");
-    
+
     const userId = req.user._id;
     const user = await ChatBot.findById(userId);
     if (!user) {
@@ -326,7 +329,7 @@ exports.getAssistant = async (req, res) => {
       assistant = {
         id: assistantId,
         threads: [await strict_assistant_create_thread()],
-        created_at: new Date() / 1000
+        created_at: Math.floor(new Date() / 1000)
       };
       user.assistants.push(assistant);
       await user.save();
