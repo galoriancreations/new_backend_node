@@ -1861,15 +1861,17 @@ app.post("/xapi", async (req, res) => {
 				}
 				 else if (data.hasOwnProperty("getAnswer")){
 					let question = data["getAnswer"]["question"]
+					// console.log(question);
 					const answer = {
 						id: 'a_' + generateRandomString(),
 						user: user.fullName,
-						userId: user._id,
 						text: data["getAnswer"]["answer"],
 						likes: 0
 					}
+					// console.log(answer);
 					const findAndUpAnswer = await QuestionModel.findOneAndUpdate(
 						{qnum:question},{$push:{answers:answer}})
+						// console.log(findAndUpAnswer);
 					const findAndUpSingularity = await SingularityMagicGame.findOneAndUpdate(
 						{qnum:question},{$push:{answers:answer}})
 					if(!findAndUpAnswer || !findAndUpSingularity ){
@@ -1883,7 +1885,7 @@ app.post("/xapi", async (req, res) => {
 					if(findAndUpAnswer){
 						const result = await QuestionModel.find()
 						final = result[parseInt(question)-1]
-						// res.json({msg:'the answer added'})
+						res.json({msg:'the answer added'})
 					}
 				}
 				else if(data.hasOwnProperty("updateLikes")){
