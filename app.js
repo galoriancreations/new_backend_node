@@ -173,7 +173,7 @@ const findTemplateInDB = async template => {
   );
 };
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "50mb" }));
 app.use(fileUpload({ createParentPath: true }));
 app.use(cors());
 
@@ -445,6 +445,7 @@ app.use("/uploads", require("./routes/uploads"));
 app.use("/chatbot", require("./routes/chatbot"));
 app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
+app.use("/certifications", require("./routes/certifications"));
 
 
 // ==============================================================================================
