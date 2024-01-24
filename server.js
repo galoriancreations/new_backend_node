@@ -1861,31 +1861,34 @@ app.post("/xapi", async (req, res) => {
 				}
 				 else if (data.hasOwnProperty("getAnswer")){
 					let question = data["getAnswer"]["question"]
-					// console.log(question);
+					let qnum = data["getAnswer"]["qnum"]
+					console.log(question);
 					const answer = {
 						id: 'a_' + generateRandomString(),
 						user: user.fullName,
 						text: data["getAnswer"]["answer"],
 						likes: 0
 					}
-					// console.log(answer);
+					console.log(answer);
 					const findAndUpAnswer = await QuestionModel.findOneAndUpdate(
-						{qnum:question},{$push:{answers:answer}})
-						// console.log(findAndUpAnswer);
+						{_id:question , qnum:qnum },{$push:{answers:answer}})
+						console.log(findAndUpAnswer);
 					const findAndUpSingularity = await SingularityMagicGame.findOneAndUpdate(
-						{qnum:question},{$push:{answers:answer}})
-					if(!findAndUpAnswer || !findAndUpSingularity ){
-						return res.status(400).json({msg:'the question not found'})
-					}
+						{_id:question},{$push:{answers:answer}})
+						console.log(findAndUpSingularity);
+					
 					if(findAndUpSingularity){
 						const result = await SingularityMagicGame.find()
-						final = result[parseInt(question)-1]
+						final = result[parseInt(qnum)-1]
 						// res.json({msg:'the answer singularity added'})
 					}
-					if(findAndUpAnswer){
+					else if(findAndUpAnswer){
 						const result = await QuestionModel.find()
-						final = result[parseInt(question)-1]
-						res.json({msg:'the answer added'})
+						final = result[parseInt(qnum)-1]
+						// res.json({msg:'the answer added'})
+					}
+					else{
+						return res.status(400).json({msg:'the question not found'})
 					}
 				}
 				else if(data.hasOwnProperty("updateLikes")){
