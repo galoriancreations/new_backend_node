@@ -9,7 +9,8 @@ const challengeSchema = new Schema(
     },
     createdOn: Date,
     creator: {
-      type: Schema.Types.ObjectId,
+      // type: Schema.Types.ObjectId,
+      type: String,
       ref: "User"
     },
     date: {
@@ -31,12 +32,17 @@ const challengeSchema = new Schema(
     },
     selections: Array,
     template: {
-      type: Schema.Types.ObjectId,
+      // type: Schema.Types.ObjectId,
+      type: String,
       ref: "Template"
     },
     verified: {
       type: Boolean,
       default: false
+    },
+    scores: {
+      type: Array,
+      required: true
     }
   },
   { timestamps: true }

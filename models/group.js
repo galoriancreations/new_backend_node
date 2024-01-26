@@ -4,7 +4,8 @@ const groupSchema = new Schema(
   {
     _id: String,
     challengeID: {
-      type: Schema.Types.ObjectId,
+      // type: Schema.Types.ObjectId,
+      type: String,
       ref: "Challenge"
     },
     invite: String,
@@ -52,4 +53,4 @@ const groupSchema = new Schema(
   { timestamps: true }
 );
 
-exports.Group = model("tel_groups", groupSchema, "tel_groups");
+exports.Group = model("telGroups", groupSchema, "tel_groups");

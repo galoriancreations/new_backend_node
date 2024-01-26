@@ -39,31 +39,36 @@ const userSchema = new Schema(
     },
     templates: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Template"
       }
     ],
     drafts: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Draft"
       }
     ],
     challenges: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Challenge"
       }
     ],
     createdChallenges: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Challenge"
       }
     ],
     groups: [
       {
-        type: Schema.Types.ObjectId,
+        // type: Schema.Types.ObjectId,
+        type: String,
         ref: "Group"
       }
     ],
@@ -71,9 +76,9 @@ const userSchema = new Schema(
       type: Boolean,
       default: false
     },
-    photo: String,
     articleSubscribed: Boolean,
-    telegramId: String
+    telegramId: String,
+    image: String,
   },
   { timestamps: true }
 );
