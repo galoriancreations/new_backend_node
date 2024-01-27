@@ -17,3 +17,5 @@ GPT/json/*
 # build output
 /temp/*
 /uploads/*
+
+package-lock.json
