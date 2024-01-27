@@ -2,7 +2,7 @@ const { Challenge } = require("../models/challenge");
 const { Template } = require("../models/template");
 const { User } = require("../models/user");
 const { Draft } = require("../models/draft");
-const { Group } = require("../models/Group");
+const { Group } = require("../models/group");
 const { ChallengeArray } = require("../models/challenge-array");
 const { generateRandomString } = require("../util/functions");
 
@@ -322,7 +322,7 @@ exports.deleteChallenge = async (req, res) => {
 exports.deleteTemplate = async (req, res) => {
   try {
     console.log("deleteTemplate from controllers/editor.js");
-    
+
     const { templateId } = req.body;
     const idsFromReq = req.body.templateIds;
     const user = await User.findOne({ _id: req.user._id });

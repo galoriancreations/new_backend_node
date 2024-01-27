@@ -1,4 +1,4 @@
-const { Group } = require("../models/Group");
+const { Group } = require("../models/group");
 const { User } = require("../models/user");
 
 exports.loadGroup = async (req, res) => {
