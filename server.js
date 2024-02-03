@@ -342,6 +342,750 @@ const QuestionModel = db.model("questions", QuestionSchema, "questions")
 
 const SingularityMagicGame = db.model("singularity", QuestionSchema, "singularity")
 
+const RelationshipsMagic = db.model("relationshipsMagicQ", QuestionSchema, "relationshipsMagicQ")
+
+const ValuesMagic = db.model("valuesMagicQ", QuestionSchema, "valuesMagicQ")
+
+const EmaginationMagic = db.model("emaginationMagicQ", QuestionSchema, "emaginationMagicQ")
+
+const EnvironmentMagic = db.model("environmentMagicQ", QuestionSchema, "environmentMagicQ")
+
+const RainbowMagic = db.model("rainbowMagicQ", QuestionSchema, "rainbowMagicQ")
+
+const GlobalGoalsMagic = db.model("globalGoalsMagicQ", QuestionSchema, "globalGoalsMagicQ")
+
+const BGIMagic = db.model("BGIMagicQ", QuestionSchema, "BGIMagicQ")
+
+
+// let relationshipsQuest = [
+// 	{
+// 		_id:'',
+//         qnum: "1",
+//         text: "What is the greatest achievement in your life?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "2",
+//         text: "Give each other a warm hug."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "3",
+//         text: "What do you value most in friendship, & why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "4",
+//         text: "Share a personal challenge and ask for advice."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "5",
+//         text: "In a crisis situation, whom would you call first, & why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "6",
+//         text: "What is your most cherished memory, & why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "7",
+//         text: "Tell the other(s) what you like about them. Be honest!"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "8",
+//         text: "What does friendship mean to you?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "9",
+//         text: "What are the 3 things that make a relationship work?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "10",
+//         text: "What are you most curious to know about each other?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "11",
+//         text: "What do you enjoy doing the most with your family members?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "12",
+//         text: "Present your favorite 3 yoga positions"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "13",
+//         text: "Truth or Dare: ask each other anything 😊"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "14",
+//         text: "What is the most silly thing that you have ever done with a friend?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "15",
+//         text: "Invent a new TikTok challenge"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "16",
+//         text: "Are there people in your life with whom you want to reconnect?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "17",
+//         text: "What is freedom in a relationship?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "18",
+//         text: "List 3 personal boundaries."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "19",
+//         text: `Draft together 3 statements that begin with:"We are feeling..."`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "20",
+//         text: "Take 10 deep breaths together."
+//     },
+// ]
+// relationshipsQuest.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// RelationshipsMagic.insertMany(relationshipsQuest)
+
+// let ValuesQuest = [
+// 	{
+// 		_id:'',
+//         qnum: "1",
+//         text: "What is the most important thing in your life?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "2",
+//         text: "How would changing your gender, nationality, or religion affect you?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "3",
+//         text: "Find 3 things that you have in common with each other."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "4",
+//         text: "What are the 3 things that you think about the most every day?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "5",
+//         text: "Look into each other's eyes in silence for 3 minutes."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "6",
+//         text: "What was the last nice thing you did to someone?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "7",
+//         text: "What are the challenges that the next generation might face?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "8",
+//         text: "What do you feel most grateful for in your life?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "9",
+//         text: "Share your first impression of meeting someone and if it changed."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "10",
+//         text: "What new thing did you learn today? this week? this year?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "11",
+//         text: "Who are the people that truly care for you?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "12",
+//         text: "Find 3 differences that you see between each other."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "13",
+//         text: "Explain the meaning: “living the moment - with respect!”"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "14",
+//         text: "List 5 of your main values, & rank them in order of importance."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "15",
+//         text: "What prejudice would you like to be gone, & why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "16",
+//         text: "What is the importance of rest in your life?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "17",
+//         text: "What's most essential for self-discipline in life?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "18",
+//         text: "What are you willing to strugle for, & why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "19",
+//         text: `Name 3 laws you'd introduce as Minister of Happiness.`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "20",
+//         text: "What would you never compromise on?"
+//     },
+// ]
+// ValuesQuest.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// ValuesMagic.insertMany(ValuesQuest)
+
+// let EmaginationQuest = [
+// 	{
+// 		_id:'',
+//         qnum: "1",
+//         text: "If you could change the world, what would you do 1st ?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "2",
+//         text: "Have you ever made a decision that changed your whole life?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "3",
+//         text: "Make a wish & share it with everyone."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "4",
+//         text: "What would you ask a crystal ball about people around you?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "5",
+//         text: "Describe your dream home, provide 10 adjectives."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "6",
+//         text: "What makes you forget to eat?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "7",
+//         text: "True or False - Share a story!"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "8",
+//         text: "Describe 3 successes of yours, & identify what they have in common."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "9",
+//         text: "Reinvent the 10 commandments with the other(s)."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "10",
+//         text: "Name 5 individuals you admire and their significance to you."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "11",
+//         text: "How to improve your time management? Find solutions together."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "12",
+//         text: "Complete: “If I were King/Queen for a day, I would…”"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "13",
+//         text: "Time Machine: In what era would you like to live, and why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "14",
+//         text: "How do you express love towards yourself?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "15",
+//         text: "What was your most vivid dream?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "16",
+//         text: `Complete the sentence: "I wish I had someone to share..."`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "17",
+//         text: "Let’s create a story together, one sentence each."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "18",
+//         text: "Choose 3 animals of your liking. What is special about them?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "19",
+//         text: `If you could be anyone for a day, who would you be?`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "20",
+//         text: "Close your eyes & tell a story beginning with, “Once upon a time…”"
+//     },
+// ]
+// EmaginationQuest.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// EmaginationMagic.insertMany(EmaginationQuest)
+
+// let EnvironmentQuest = [
+// 	{
+// 		_id:'',
+//         qnum: "1",
+//         text: "What would be the title of your TED talk & book, and why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "2",
+//         text: "True or False: one tells two stories, find the lie."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "3",
+//         text: "What trait of yours would you like to improve the most, & why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "4",
+//         text: "Truth or Dare: ask anything 😊"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "5",
+//         text: "Name a new place that you would like to visit?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "6",
+//         text: "What is most important: the road, the destination or ...?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "7",
+//         text: "Ever planted a tree? What tree would you like to plant?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "8",
+//         text: "Choose an animal each, & talk about the climate."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "9",
+//         text: "If you were an elephant, what would you tell about humans?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "10",
+//         text: "What book or person inspired you the most & how were you affected?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "11",
+//         text: "What makes a strong community?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "12",
+//         text: "If you were rich, to what cause would you donate?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "13",
+//         text: "What would be the most surprising scientific discovery imaginable?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "14",
+//         text: "What's the world like in 10 years? Describe it in a magical way."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "15",
+//         text: "Can AI replace your friends?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "16",
+//         text: `What is the meaning of life?`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "17",
+//         text: "Who are your favorite vloggers?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "18",
+//         text: "How to improve life on earth?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "19",
+//         text: `Complete together: “If only we were...then we could have…”`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "20",
+//         text: "What is the first thing you notice about people?"
+//     },
+// ]
+// EnvironmentQuest.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// EnvironmentMagic.insertMany(EnvironmentQuest)
+
+// let RainbowQuest = [
+// 	{
+// 		_id:'',
+//         qnum: "1",
+//         text: "What is the most fun party you have ever been to?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "2",
+//         text: "What would you do if you won a hundred million $$$?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "3",
+//         text: "Name 3 things that you like the most about the other(s)."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "4",
+//         text: "Truth or Dare: ask anything 😊"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "5",
+//         text: "If there was a warning sign on you, what would it say?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "6",
+//         text: "Find 5 red things around you."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "7",
+//         text: "Who is the most special person in your life?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "8",
+//         text: "What makes you happy?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "9",
+//         text: "Who do you know best & who knows you best?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "10",
+//         text: "Chocolates or flowers for your birthday gift?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "11",
+//         text: "Name 3 things that really make you happy, & why?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "12",
+//         text: "If you could change one thing in your life, what would it be?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "13",
+//         text: "Share: “People who know me think I'm the best at…”"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "14",
+//         text: "Shake hands with people around you & say 'thank you'."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "15",
+//         text: "Which were your happiest moments this year? Ever?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "16",
+//         text: `Say 3 nice things about each other.`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "17",
+//         text: "Take 3 minutes to tell your life story in a stand-up comedy style."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "18",
+//         text: `Say 3X : "Always believe that something wonderful is about to happen".`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "19",
+//         text: `What is your favorite game? toy?`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "20",
+//         text: "Choose a player & ask anything."
+//     },
+// ]
+// RainbowQuest.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// RainbowMagic.insertMany(RainbowQuest)
+
+// let GlobalGoalQuest = [
+// 	{
+// 		_id:'',
+//         qnum: "1",
+//         text: "As a global citizen, what legacy will you leave?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "2",
+//         text: "Imagine humanity sharing the world's abundance. How?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "3",
+//         text: "How can the seeds of compassion feed a world hungry for care?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "4",
+//         text: "What small acts of kindness promote well-being in communities?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "5",
+//         text: "Share a lesson from nature that inspires lifelong learning."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "6",
+//         text: "In a world of unity, how do diverse voices empower?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "7",
+//         text: "What stories do rivers whisper to inspire shared responsibility?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "8",
+//         text: "How can renewable energy connect us with the Earth?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "9",
+//         text: "Describe a job where purpose & passion unite."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "10",
+//         text: "How can technology dance with nature to create harmony?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "11",
+//         text: "What unique strengths can bridge divides & heal communities?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "12",
+//         text: "How can urban spaces breathe life into the environment?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "13",
+//         text: "How can mindful choices forge bonds with the planet?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "14",
+//         text: "In the symphony of nature, how do humans harmonize?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "15",
+//         text: "What secrets do coral reefs share about life's interconnectedness?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "16",
+//         text: `If you were a tree, what wisdom would you share?`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "17",
+//         text: "Describe a world where compassion breaks down walls & builds bridges."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "18",
+//         text: `How can collective dreams trigger change?`
+//     }
+// ]
+// GlobalGoalQuest.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// GlobalGoalsMagic.insertMany(GlobalGoalQuest)
+
+// let BGIQuest = [
+// 	{
+// 		_id:'',
+//         qnum: "1",
+//         text: "How can AGI innovatively foster compassion?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "2",
+//         text: "How might AGI transform the way we experience art or music?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "3",
+//         text: "How could AGI enhance our understanding of the universe?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "4",
+//         text: "Would you connect your brain to an AGI for enhanced abilities?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "5",
+//         text: "What new communication form could AGI invent?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "6",
+//         text: "How would AGI interpret dreams?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "7",
+//         text: "What key principles are vital for AGI ethics?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "8",
+//         text: "If AGI were a tree, what wisdom might it impart?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "9",
+//         text: "What ethical dilemmas are unique to AGI?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "10",
+//         text: "What are the priority areas for risk mitigation in AGI development?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "11",
+//         text: "What AGI research areas should be prioritized for funding?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "12",
+//         text: "Thinking of AGI: “right here, right now I feel…” "
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "13",
+//         text: "Can AGI show us the way of truth? "
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "14",
+//         text: "Share an AGI lesson inspired by nature's wisdom."
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "15",
+//         text: "In unity, how might diverse AGI perspectives empower?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "16",
+//         text: `How can AGI blend technology with nature harmoniously?`
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "17",
+//         text: "What AGI strengths could mend societal divides?"
+//     },
+// 	{
+// 		_id:'',
+//         qnum: "18",
+//         text: `In nature's symphony, what role does AGI play?`
+//     }
+// ]
+// BGIQuest.forEach((val)=>{
+// 	val._id ='q_' + generateRandomString()
+// })
+// BGIMagic.insertMany(BGIQuest)
+
 // let quest=[
 //     {
 // 		_id:'',
