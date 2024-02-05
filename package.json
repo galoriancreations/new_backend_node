@@ -17,6 +17,7 @@
     "multer": "^1.4.5-lts.1",
     "node-schedule": "^2.1.1",
     "nodemailer": "^6.9.5",
+    "nuxt": "^3.9.1",
     "openai": "^4.11.0",
     "puppeteer": "^20.5.0",
     "short-uuid": "^4.2.2",
