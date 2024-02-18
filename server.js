@@ -2574,118 +2574,49 @@ app.post("/xapi", async (req, res) => {
 						}
 						final = templates;
 					}
-				} else if (data.hasOwnProperty("getQuestion")){
+				} 
+				 else if (data.hasOwnProperty("getQuestion")){
 					// console.log(data);
 					const qId = data["qId"]
+					const challenge = data["challenge"]
 					// console.log(qId);
-					let i;
+					let i ;
 					if (qId) {
 						i = qId;
 					}
 					else{
-						i = Math.floor(Math.random() * 94+1)
+						if(challenge === "BGI-mAGIc"){
+							i = Math.floor(Math.random() * 18 +1)
+							console.log("i = " + i);
+							const result = await BGIMagic.findOne({qnum:i})
+						}
+						else if(challenge === "SDG-Magic"){
+							i = Math.floor(Math.random() * 18 +1)
+							console.log("i = " + i);
+							const result = await GlobalGoalsMagic.findOne({qnum:i})
+						}
+						else {
+							i = Math.floor(Math.random() * 20 +1)
+							console.log("i = " + i);
+
+							if(challenge === "Environmagic"){
+								const result = await EnvironmentMagic.findOne({qnum:i})
+							}
+							else if(challenge === "Imagic"){
+								const result = await EmaginationMagic.findOne({qnum:i})
+							}
+							else if(challenge === "Kids-Magic"){
+								const result = await RainbowMagic.findOne({qnum:i})
+							}
+							else if(challenge === "Moral-Magic"){
+								const result = await ValuesMagic.findOne({qnum:i})
+							}
+							else if(challenge === "YouAndI-Magic"){
+								const result = await RelationshipsMagic.findOne({qnum:i})
+							}
+						}
 					}
-					// console.log(i);
-					const result = await QuestionModel.findOne({qnum:i})
-					final = result
-				}else if (data.hasOwnProperty("getSingularity")){
-					// console.log(data);
-					const qId = data["qId"]
-					// console.log(qId);
-					let i;
-					if (qId) {
-						i = qId;
-					}
-					else{
-						i = Math.floor(Math.random() * 20+1)
-					}
-					// console.log(i);
-					const result = await SingularityMagicGame.findOne({qnum:i})
-					final = result
-				}else if (data.hasOwnProperty("getBGI")){
-					// console.log(data);
-					const qId = data["qId"]
-					// console.log(qId);
-					let i;
-					if (qId) {
-						i = qId;
-					}
-					else{
-						i = Math.floor(Math.random() * 18+1)
-					}
-					// console.log(i);
-					const result = await BGIMagic.findOne({qnum:i})
-					final = result
-				}else if (data.hasOwnProperty("getEmagination")){
-					// console.log(data);
-					const qId = data["qId"]
-					// console.log(qId);
-					let i;
-					if (qId) {
-						i = qId;
-					}
-					else{
-						i = Math.floor(Math.random() * 20+1)
-					}
-					// console.log(i);
-					const result = await EmaginationMagic.findOne({qnum:i})
-					final = result
-				}else if (data.hasOwnProperty("getEnvironment")){
-					// console.log(data);
-					const qId = data["qId"]
-					// console.log(qId);
-					let i;
-					if (qId) {
-						i = qId;
-					}
-					else{
-						i = Math.floor(Math.random() * 20+1)
-					}
-					// console.log(i);
-					const result = await EnvironmentMagic.findOne({qnum:i})
-					final = result
-				}else if (data.hasOwnProperty("getGlobalGoals")){
-					// console.log(data);
-					const qId = data["qId"]
-					// console.log(qId);
-					let i;
-					if (qId) {
-						i = qId;
-					}
-					else{
-						i = Math.floor(Math.random() * 18+1)
-					}
-					// console.log(i);
-					const result = await GlobalGoalsMagic.findOne({qnum:i})
-					final = result
-				}else if (data.hasOwnProperty("getRelationships")){
-					// console.log(data);
-					const qId = data["qId"]
-					// console.log(qId);
-					let i;
-					if (qId) {
-						i = qId;
-					}
-					else{
-						i = Math.floor(Math.random() * 20+1)
-					}
-					// console.log(i);
-					const result = await RelationshipsMagic.findOne({qnum:i})
-					final = result
-				}else if (data.hasOwnProperty("getValues")){
-					// console.log(data);
-					const qId = data["qId"]
-					// console.log(qId);
-					let i;
-					if (qId) {
-						i = qId;
-					}
-					else{
-						i = Math.floor(Math.random() * 20+1)
-					}
-					// console.log(i);
-					const result = await ValuesMagic.findOne({qnum:i})
-					final = result
+					final = result;
 				}
 				 else if (data.hasOwnProperty("getAnswer")){
 					let question = data["getAnswer"]["question"]
@@ -2698,70 +2629,62 @@ app.post("/xapi", async (req, res) => {
 						likes: 0
 					}
 					console.log(answer);
-					const findAndUpAnswer = await QuestionModel.findOneAndUpdate(
+					const findAndUpAnsBGI = await BGIMagic.findOneAndUpdate(
 						{_id:question , qnum:qnum },{$push:{answers:answer}})
-						console.log(findAndUpAnswer);
-					const findAndUpSingularity = await SingularityMagicGame.findOneAndUpdate(
-						{_id:question},{$push:{answers:answer}})
-						console.log(findAndUpSingularity);
-					const findAndUpBGI = await BGIMagic.findOneAndUpdate(
-						{_id:question},{$push:{answers:answer}})
-						console.log(findAndUpBGI);
-					const findAndUpEmagination = await EmaginationMagic.findOneAndUpdate(
-						{_id:question},{$push:{answers:answer}})
-						console.log(findAndUpEmagination);
-					const findAndUpEnvironment = await EnvironmentMagic.findOneAndUpdate(
-						{_id:question},{$push:{answers:answer}})
-						console.log(findAndUpEnvironment);
-					const findAndUpGlobalGoals = await GlobalGoalsMagic.findOneAndUpdate(
-						{_id:question},{$push:{answers:answer}})
-						console.log(findAndUpGlobalGoals);
-					const findAndUpRelationships = await RelationshipsMagic.findOneAndUpdate(
-						{_id:question},{$push:{answers:answer}})
-						console.log(findAndUpRelationships);
-					const findAndUpValues = await ValuesMagic.findOneAndUpdate(
-						{_id:question},{$push:{answers:answer}})
-						console.log(findAndUpValues);
+					    console.log(findAndUpAnsBGI);
+					const findAndUpAnsEnviromagic = await EnvironmentMagic.findOneAndUpdate(
+						{_id:question , qnum:qnum },{$push:{answers:answer}})
+					    console.log(findAndUpAnsEnviromagic);
+					const findAndUpAnsImagic = await EmaginationMagic.findOneAndUpdate(
+						{_id:question , qnum:qnum },{$push:{answers:answer}})
+					    console.log(findAndUpAnsImagic);
+					const findAndUpAnsSDG = await GlobalGoalsMagic.findOneAndUpdate(
+						{_id:question , qnum:qnum },{$push:{answers:answer}})
+					console.log(findAndUpAnsSDG);
+					const findAndUpAnsYouAndI = await RelationshipsMagic.findOneAndUpdate(
+						{_id:question , qnum:qnum },{$push:{answers:answer}})
+					    console.log(findAndUpAnsYouAndI);
+					const findAndUpAnsMoral = await ValuesMagic.findOneAndUpdate(
+						{_id:question , qnum:qnum },{$push:{answers:answer}})
+					    console.log(findAndUpAnsMoral);
+					const findAndUpAnsKids = await RainbowMagic.findOneAndUpdate(
+						{_id:question , qnum:qnum },{$push:{answers:answer}})
+					    console.log(findAndUpAnsKids);
 
-					if(findAndUpSingularity){
-						const result = await SingularityMagicGame.find()
-						final = result[parseInt(qnum)-1]
-						// res.json({msg:'the answer singularity added'})
-					}
-					else if(findAndUpAnswer){
-						const result = await QuestionModel.find()
+					if(findAndUpAnsBGI){
+						const result = await BGIMagic.find()
 						final = result[parseInt(qnum)-1]
 						// res.json({msg:'the answer added'})
 					}
-					else if(findAndUpBGI){
-						const result = await BGIMagic.find()
-						final = result[parseInt(qnum)-1]
-						// res.json({msg:'the answer BGI added'})
-					}
-					else if(findAndUpEmagination){
-						const result = await EmaginationMagic.find()
-						final = result[parseInt(qnum)-1]
-						// res.json({msg:'the answer emagination added'})
-					}
-					else if(findAndUpEnvironment){
+					else if(findAndUpAnsEnviromagic){
 						const result = await EnvironmentMagic.find()
 						final = result[parseInt(qnum)-1]
-						// res.json({msg:'the answer environment added'})
+						// res.json({msg:'the answer added'})
 					}
-					else if(findAndUpGlobalGoals){
+					else if(findAndUpAnsImagic){
+						const result = await EmaginationMagic.find()
+						final = result[parseInt(qnum)-1]
+						// res.json({msg:'the answer added'})
+					}
+					else if(findAndUpAnsSDG){
 						const result = await GlobalGoalsMagic.find()
 						final = result[parseInt(qnum)-1]
-						// res.json({msg:'the answer global goals added'})
+						// res.json({msg:'the answer added'})
 					}
-					else if(findAndUpRelationships){
+					else if(findAndUpAnsYouAndI){
 						const result = await RelationshipsMagic.find()
 						final = result[parseInt(qnum)-1]
-						// res.json({msg:'the answer relationships added'})
+						// res.json({msg:'the answer added'})
 					}
-					else if(findAndUpValues){
+					else if(findAndUpAnsMoral){
 						const result = await ValuesMagic.find()
 						final = result[parseInt(qnum)-1]
-						// res.json({msg:'the answer values added'})
+						// res.json({msg:'the answer added'})
+					}
+					else if(findAndUpAnsKids){
+						const result = await RainbowMagic.find()
+						final = result[parseInt(qnum)-1]
+						// res.json({msg:'the answer added'})
 					}
 					else{
 						return res.status(400).json({msg:'the question not found'})
@@ -2771,75 +2694,37 @@ app.post("/xapi", async (req, res) => {
 					let qnum = data["updateLikes"]["qnum"]
 					let id =  data["updateLikes"]["id"]
 					let likes = data["updateLikes"]["likes"]
-					const findAndUpLikes = await QuestionModel.updateOne(
+
+					const findAndUpLikesBGI = await BGIMagic.updateOne(
 						{ qnum: qnum, "answers.id": id },
 						{ $set: { "answers.$.likes": likes } }
 					)
-					const findAndUpSingularityLike = await SingularityMagicGame.updateOne(
+					const findAndUpLikesEnviromagic = await EnvironmentMagic.updateOne(
 						{ qnum: qnum, "answers.id": id },
 						{ $set: { "answers.$.likes": likes } }
 					)
-					const findAndUpBGILikes = await BGIMagic.updateOne(
+					const findAndUpLikesImagic = await EmaginationMagic.updateOne(
 						{ qnum: qnum, "answers.id": id },
 						{ $set: { "answers.$.likes": likes } }
 					)
-					const findAndUpEmaginationLike = await EmaginationMagic.updateOne(
+					const findAndUpLikesSDG = await GlobalGoalsMagic.updateOne(
 						{ qnum: qnum, "answers.id": id },
 						{ $set: { "answers.$.likes": likes } }
 					)
-					const findAndUpEnvironmentLikes = await EnvironmentMagic.updateOne(
+					const findAndUpLikesYouAndI = await RelationshipsMagic.updateOne(
 						{ qnum: qnum, "answers.id": id },
 						{ $set: { "answers.$.likes": likes } }
 					)
-					const findAndUpGlobalGoalsLike = await GlobalGoalsMagic.updateOne(
+					const findAndUpLikesMoral = await ValuesMagic.updateOne(
 						{ qnum: qnum, "answers.id": id },
 						{ $set: { "answers.$.likes": likes } }
 					)
-					const findAndUpRelationshipsLikes = await RelationshipsMagic.updateOne(
-						{ qnum: qnum, "answers.id": id },
-						{ $set: { "answers.$.likes": likes } }
-					)
-					const findAndUpValuesLike = await ValuesMagic.updateOne(
+					const findAndUpLikesKids = await RainbowMagic.updateOne(
 						{ qnum: qnum, "answers.id": id },
 						{ $set: { "answers.$.likes": likes } }
 					)
 
-					if(findAndUpLikes){
-						qnum = "";
-						id = "";
-						likes = 0;
-					}
-					else if(findAndUpSingularityLike){
-						qnum = "";
-						id = "";
-						likes = 0;
-					}
-					else if(findAndUpBGILikes){
-						qnum = "";
-						id = "";
-						likes = 0;
-					}
-					else if(findAndUpEmaginationLike){
-						qnum = "";
-						id = "";
-						likes = 0;
-					}
-					else if(findAndUpEnvironmentLikes){
-						qnum = "";
-						id = "";
-						likes = 0;
-					}
-					else if(findAndUpGlobalGoalsLike){
-						qnum = "";
-						id = "";
-						likes = 0;
-					}
-					else if(findAndUpRelationshipsLikes){
-						qnum = "";
-						id = "";
-						likes = 0;
-					}
-					else if(findAndUpValuesLike){
+					if(findAndUpLikesBGI || findAndUpLikesEnviromagic || findAndUpLikesImagic || findAndUpLikesSDG || findAndUpLikesYouAndI || findAndUpLikesMoral || findAndUpLikesKids){
 						qnum = "";
 						id = "";
 						likes = 0;
