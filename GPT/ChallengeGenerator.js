@@ -1,11 +1,11 @@
-const fs = require('fs');
+const fs = require("fs");
 const {
   strict_output,
   strict_image,
-  strict_audio,
-} = require('./strict_output');
-const { uploadFileToDB } = require('../util/functions');
-const { downloadImage, convertFile } = require('../services/utils');
+  strict_audio
+} = require("./strict_output");
+const { uploadFileToDB } = require("../util/functions");
+const { downloadImage, convertFile } = require("../services/utils");
 // const { progressEmitter } = require('../server');
 
 /**
@@ -28,16 +28,16 @@ const { downloadImage, convertFile } = require('../services/utils');
 async function generateChallenge({
   creator,
   id,
-  topic = 'a topic of your choice',
+  topic = "a topic of your choice",
   days = 2,
   tasks = 5,
   messages = 0,
   preDays = 0,
   preMessages = 0,
-  language = 'English',
-  targetAudience = 'General',
+  language = "English",
+  targetAudience = "General",
   numAttempts = 3,
-  voice = 'alloy',
+  voice = "alloy"
 }) {
   console.log(`Generating challenge about: ${topic}... this may take a few minutes, depending on the parameters.
 (${days} days, ${tasks} tasks per day, ${messages} messages per day, ${preDays} preDays, ${preMessages} messages per preDay, lang: ${language}, target: ${targetAudience})`);
@@ -48,38 +48,38 @@ async function generateChallenge({
   // );
 
   const outputFormat = {
-    name: '<challenge name>',
+    name: "<challenge name>",
     days: [
       {
-        introduction: '<day introduction>',
+        introduction: "<day introduction>",
         tasks: [
           {
-            emoji: '<emoji>',
+            emoji: "<emoji>",
             isBonus: false,
             options: [
               {
-                text: '<task>',
-              },
+                text: "<task>"
+              }
             ],
             points: 1,
-            time: '<HH:MM:SS>',
-          },
+            time: "<HH:MM:SS>"
+          }
         ],
-        time: '<HH:MM:SS>',
-        title: '<title>',
+        time: "<HH:MM:SS>",
+        title: "<title>",
         image:
-          '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">',
-      },
+          '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">'
+      }
     ],
     image:
-      '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">',
+      '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">'
   };
   if (messages) {
     outputFormat.days[0].messages = [
       {
-        content: '<message>',
-        time: '<HH:MM:SS>',
-      },
+        content: "<message>",
+        time: "<HH:MM:SS>"
+      }
     ];
   }
   if (preDays) {
@@ -87,11 +87,11 @@ async function generateChallenge({
       {
         messages: [
           {
-            content: '<message>',
-            time: '<HH:MM:SS>',
-          },
-        ],
-      },
+            content: "<message>",
+            time: "<HH:MM:SS>"
+          }
+        ]
+      }
     ];
   }
 
@@ -104,7 +104,7 @@ async function generateChallenge({
       num_tries: numAttempts,
       // verbose: true,
       model: process.env.OPENAI_API_FINE_TUNE_MODEL_ID, // fine-tuned model
-      temperature: 0.8,
+      temperature: 0.8
     }
   );
 
@@ -112,11 +112,11 @@ async function generateChallenge({
   // const response = JSON.parse(fs.readFileSync('GPT/json/challenge_output.json', 'utf8'));
 
   if (!response || response.error) {
-    console.log('Error generating challenge');
-    return { error: true, msg: response.error || 'Error generating challenge' };
+    console.log("Error generating challenge");
+    return { error: true, msg: response.error || "Error generating challenge" };
   }
 
-  fs.writeFileSync('GPT/json/challenge_output.json', JSON.stringify(response));
+  fs.writeFileSync("GPT/json/challenge_output.json", JSON.stringify(response));
 
   const challenge = {
     _id: id,
@@ -124,20 +124,20 @@ async function generateChallenge({
     creator,
     active: true,
     createdOn: Date.now(),
-    date: new Date().toLocaleDateString('en-GB'),
+    date: new Date().toLocaleDateString("en-GB"),
     declined: false,
     // invite: '', // an invite link to telegram challenge group
     isPublic: false,
     scores: [],
     verified: false,
-    language: 'English', // TODO: add language selection
+    language: "English", // TODO: add language selection
     voice,
-    ...response,
+    ...response
   };
 
   // check if length of challenge is equal to the number of days and tasks, preDays and preMessages, return error if not
   let errorFlag = false;
-  let errorMessage = 'Error: challenge length is not equal to: ';
+  let errorMessage = "Error: challenge length is not equal to: ";
   if (response?.days?.length !== days) {
     errorMessage += `days (${response?.days?.length}), `;
     errorFlag = true;
@@ -163,14 +163,14 @@ async function generateChallenge({
     }
   }
   if (errorFlag) {
-    errorMessage = errorMessage.slice(0, -2) + '.';
+    errorMessage = errorMessage.slice(0, -2) + ".";
     console.log(errorMessage);
     return { error: true, response: challenge };
   }
 
   // add empty messages array if not present to every day in days array to avoid errors in frontend
   if (Array.isArray(challenge.days)) {
-    challenge.days.map((day) => {
+    challenge.days.map(day => {
       if (!day.messages) {
         day.messages = [];
       }
@@ -195,39 +195,39 @@ async function generateDay({
   challengeName,
   challengeIntroduction,
   lastDay,
-  dayIndex,
+  dayIndex
 }) {
-  console.log('Generating day with AI... this may take a while.');
+  console.log("Generating day with AI... this may take a while.");
 
   // save day to file
-  fs.writeFileSync('GPT/json/input_day.json', JSON.stringify(lastDay));
+  fs.writeFileSync("GPT/json/input_day.json", JSON.stringify(lastDay));
 
   const outputFormat = {
-    introduction: '<day introduction>',
+    introduction: "<day introduction>",
     tasks: [
       {
-        emoji: '<emoji>',
+        emoji: "<emoji>",
         isBonus: false,
         options: [
           {
-            text: '<task>',
-          },
+            text: "<task>"
+          }
         ],
         points: 1,
-        time: '<HH:MM:SS>',
-      },
+        time: "<HH:MM:SS>"
+      }
     ],
-    time: '<HH:MM:SS>',
-    title: '<title>',
+    time: "<HH:MM:SS>",
+    title: "<title>",
     image:
-      '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">',
+      '<description of a relative icon, 4 to 6 words. don\'t use the words "icon", "logo", "symbol", "illustration" or "image">'
   };
   if (lastDay.messages) {
     outputFormat.messages = [
       {
-        content: '<day message>',
-        time: '<HH:MM:SS>',
-      },
+        content: "<day message>",
+        time: "<HH:MM:SS>"
+      }
     ];
   }
 
@@ -235,13 +235,13 @@ async function generateDay({
   function removeId(obj) {
     for (const prop in obj) {
       if (
-        prop === 'id' ||
-        prop === 'type' ||
-        prop === 'fileUrl' ||
-        prop === 'image'
+        prop === "id" ||
+        prop === "type" ||
+        prop === "fileUrl" ||
+        prop === "image"
       ) {
         delete obj[prop];
-      } else if (typeof obj[prop] === 'object') {
+      } else if (typeof obj[prop] === "object") {
         removeId(obj[prop]);
       }
     }
@@ -266,18 +266,18 @@ Generated day index is ${dayIndex + 1}`,
       num_tries: 3,
       // verbose: true,
       model: process.env.OPENAI_API_FINE_TUNE_MODEL_ID, // fine-tuned model
-      temperature: 0.8,
+      temperature: 0.8
     }
   );
 
   if (!generatedDay) {
-    console.log('Error generating day');
+    console.log("Error generating day");
     return null;
   }
 
   // console.log(generatedDay);
   // save to file also
-  fs.writeFileSync('GPT/json/generatedDay.json', JSON.stringify(generatedDay));
+  fs.writeFileSync("GPT/json/generatedDay.json", JSON.stringify(generatedDay));
 
   return generatedDay;
 }
@@ -305,29 +305,29 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
   const images = [];
   function countImages(obj) {
     for (const prop in obj) {
-      if (prop === 'image') {
+      if (prop === "image") {
         images.push(obj);
-      } else if (typeof obj[prop] === 'object') {
+      } else if (typeof obj[prop] === "object") {
         countImages(obj[prop]);
       }
     }
   }
   countImages(challenge);
-  console.log('Number of images in challenge:', images.length);
+  console.log("Number of images in challenge:", images.length);
 
   for (let i = 0; i < images.length; i++) {
     const obj = images[i];
-    const prop = 'image';
+    const prop = "image";
     if (callback) {
       callback(i + 1, images.length);
     }
 
     if (!obj[prop]) {
-      console.log('No image to replace');
+      console.log("No image to replace");
       continue;
     }
 
-    console.log('Replacing image:', obj[prop]);
+    console.log("Replacing image:", obj[prop]);
     // if first image, generate with dall-e-3 model, and use the generated image to edit the rest with dall-e-2 model
     // currenlty not working, so just use dall-e-2 model for all images
     // need to find a way to mask the image to be edited automatically
@@ -355,19 +355,19 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
     const useDallE3 = false;
     // if image has 'icon', 'logo', 'symbol' or 'illustration', 'image' in the prompt, remove it
     let prompt = obj[prop];
-    const promptWords = prompt.split(' ');
-    const promptWordsFiltered = promptWords.filter((word) => {
-      const excludedWords = ['icon', 'logo', 'symbol', 'illustration', 'image'];
+    const promptWords = prompt.split(" ");
+    const promptWordsFiltered = promptWords.filter(word => {
+      const excludedWords = ["icon", "logo", "symbol", "illustration", "image"];
       return !excludedWords.includes(word);
     });
-    prompt = promptWordsFiltered.join(' ');
+    prompt = promptWordsFiltered.join(" ");
 
     const image = await strict_image({
       prompt: `minimal art line icon of ${prompt}. in a circle with a yellow background.`,
-      imagePath: './GPT/images/mask_yellow.png',
+      imagePath: "./GPT/images/mask_yellow.png",
       // maskPath: './GPT/images/new-logo-mask2.png',
-      model: 'dall-e-' + (useDallE3 ? 3 : 2),
-      size: useDallE3 ? '1024x1024' : '256x256',
+      model: "dall-e-" + (useDallE3 ? 3 : 2),
+      size: useDallE3 ? "1024x1024" : "256x256"
     });
 
     // use uniq id as filename to avoid overwriting
@@ -377,18 +377,18 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
       imageUrl: image[0].url,
       downloadPath: `./temp/${filename}.jpeg`,
       quality: 50,
-      type: 'jpeg',
+      type: "jpeg"
     });
     if (!imagePath) {
-      console.log('Error downloading image, no image path');
+      console.log("Error downloading image, no image path");
       continue;
     }
     // convert image to meme
     const meme = convertFile(imagePath);
     // upload image to database
-    const fileDB = await uploadFileToDB(meme);
+    const uploadedFilePath = await uploadFileToDB(meme, imagePath);
     // replace image description with image path
-    obj[prop] = `/uploads/${fileDB._id}`;
+    obj[prop] = uploadedFilePath;
   }
 
   // /**
@@ -417,27 +417,26 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
   //   }
 }
 
-
 /**
  * Generates audio for each introduction field in the challenge object.
- * 
+ *
  * @param {Object} challenge - The challenge object.
  * @param {string} [voice='alloy'] - The voice to use for generating audio.
  * @param {Function} [callback=null] - The callback function to be called after generating each audio.
  * @returns {Promise<void>} - A promise that resolves when all audio generation is complete.
  */
-async function generateAudio(challenge, voice = 'alloy', callback = null) {
+async function generateAudio(challenge, voice = "alloy", callback = null) {
   // for each introduction field in challenge message with strict_audio
   // get number of introductions in challenge and insert to array
   const introductions = [];
   function countIntroductions(obj) {
     for (const prop in obj) {
-      if (prop === 'introduction') {
+      if (prop === "introduction") {
         introductions.push(obj);
       }
       // maybe need to delete this. no recursive needed here (?)
       // because introduction is always a property in the first level of the object?
-      else if (typeof obj[prop] === 'object') {
+      else if (typeof obj[prop] === "object") {
         countIntroductions(obj[prop]);
       }
     }
@@ -445,7 +444,7 @@ async function generateAudio(challenge, voice = 'alloy', callback = null) {
 
   countIntroductions(challenge);
 
-  console.log('Number of introductions in challenge:', introductions.length);
+  console.log("Number of introductions in challenge:", introductions.length);
 
   for (let i = 0; i < introductions.length; i++) {
     const obj = introductions[i];
@@ -463,29 +462,29 @@ async function generateAudio(challenge, voice = 'alloy', callback = null) {
     const path = await strict_audio({
       input: obj.introduction,
       voice,
-      path: `./temp/${filename}.mp3`,
+      path: `./temp/${filename}.mp3`
     });
 
     // convert audio
-    console.log('Converting audio:', path);
+    console.log("Converting audio:", path);
     const meme = convertFile(path);
 
     // upload audio to database
-    const fileDB = await uploadFileToDB(meme);
+    const uploadedFilePath = await uploadFileToDB(meme, path);
 
     // save audio to challenge as a message
     obj.messages.unshift({
-      type: 'audio',
-      time: obj.time || '00:00:00',
-      content: '',
+      type: "audio",
+      time: obj.time || "00:00:00",
+      content: "",
       isAudio: true,
-      file: `/uploads/${fileDB._id}`,
-      fileUrl: `/uploads/${fileDB._id}`,
+      file: uploadedFilePath,
+      fileUrl: uploadedFilePath
     });
 
     console.log(
-      'Added introduction audio successfully:',
-      obj.introduction.slice(0, 50) + '...'
+      "Added introduction audio successfully:",
+      obj.introduction.slice(0, 50) + "..."
     );
   }
 }
@@ -494,5 +493,5 @@ module.exports = {
   generateChallenge,
   generateDay,
   replaceImages,
-  generateAudio,
+  generateAudio
 };

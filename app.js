@@ -446,6 +446,7 @@ app.use("/chatbot", require("./routes/chatbot"));
 app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
+app.use("/generate", require("./routes/generate"));
 
 
 // ==============================================================================================

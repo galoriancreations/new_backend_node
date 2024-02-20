@@ -25,8 +25,13 @@ exports.uploadFile = async req => {
   const filePath = folderPath + "." + filetype;
   await file.mv(filePath);
 
-  // upload file to db
-  await Uploads.create({
+  await _upload(fullFileName, filePath, file);
+
+  return "/uploads/" + fullFileName;
+};
+
+async function _upload(fullFileName, filePath, file) {
+  return await Uploads.create({
     name: fullFileName,
     data: fs.readFileSync(filePath),
     contentType: file.mimetype,
@@ -35,9 +40,7 @@ exports.uploadFile = async req => {
       .update(fs.readFileSync(filePath))
       .digest("hex")
   });
-
-  return "/uploads/" + fullFileName;
-};
+}
 
 /**
  * Uploads a file to the database.
@@ -47,20 +50,16 @@ exports.uploadFile = async req => {
  * @param {string} file.mimetype - The MIME type of the file.
  * @returns {Promise<Object|null>} - A promise that resolves to the uploaded file object in the database, or null if the file object is invalid.
  */
-// exports.uploadFileToDB = async file => {
-//   if (!file || !file.originalname || !file.buffer || !file.mimetype) {
-//     console.log("Invalid file object");
-//     return null;
-//   }
+exports.uploadFileToDB = async (file, filePath) => {
+  if (!file || !file.originalname || !file.buffer || !file.mimetype) {
+    console.log("Invalid file object");
+    return null;
+  }
 
-//   const fileInDB = await Uploads.create({
-//     name: file.originalname,
-//     data: file.buffer,
-//     contentType: file.mimetype
-//   });
-
-//   return fileInDB;
-// };
+  const uplodedFile = await _upload(file.originalname, filePath, file);
+  console.log(uplodedFile.name);
+  return "/uploads/" + uplodedFile.name;
+};
 
 /**
  * Downloads an image from a given URL and saves it to the specified download path.
