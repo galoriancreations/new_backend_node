@@ -6,6 +6,7 @@ const uniqid = require("uniqid");
 const { Uploads } = require("../models/uploads");
 const { User } = require("../models/user");
 const crypto = require("crypto");
+const { convertFileToMeme } = require('../services/utils');
 
 /**
  * Uploads a file to the server.
@@ -14,33 +15,35 @@ const crypto = require("crypto");
  * @param {Object} req.files.file - The file to be uploaded.
  * @returns {Promise<string|null>} - A promise that resolves to the path of the uploaded file, or null if there was an error.
  */
-exports.uploadFile = async req => {
+exports.uploadFile = async (req) => {
+  if (!req.files || !req.files.file) {
+    throw new Error('No file provided');
+  }
+
   const { file } = req.files;
-  const parts = file.name.split(".");
-  const filetype = parts.pop();
-  const originalName = parts.join(".");
-  const filename = originalName + "_" + uniqid();
-  const fullFileName = filename + "." + filetype;
-  const folderPath = "temp/" + filename;
-  const filePath = folderPath + "." + filetype;
+  const [originalName, filetype] = file.name.split(".");
+  const filename = `${originalName}_${uniqid()}`;
+  const fullFileName = `${filename}.${filetype}`;
+  const folderPath = `temp/${filename}`;
+  const filePath = `${folderPath}.${filetype}`;
+
   await file.mv(filePath);
+  await uploadToDB(fullFileName, filePath, file);
 
-  await _upload(fullFileName, filePath, file);
-
-  return "/uploads/" + fullFileName;
+  return `/uploads/${fullFileName}`;
 };
 
-async function _upload(fullFileName, filePath, file) {
+const uploadToDB = async (fullFileName, filePath, file) => {
+  const fileData = fs.readFileSync(filePath);
+  const md5 = crypto.createHash('md5').update(fileData).digest('hex');
+
   return await Uploads.create({
     name: fullFileName,
-    data: fs.readFileSync(filePath),
+    data: fileData,
     contentType: file.mimetype,
-    md5: crypto
-      .createHash("md5")
-      .update(fs.readFileSync(filePath))
-      .digest("hex")
+    md5
   });
-}
+};
 
 /**
  * Uploads a file to the database.
@@ -50,15 +53,15 @@ async function _upload(fullFileName, filePath, file) {
  * @param {string} file.mimetype - The MIME type of the file.
  * @returns {Promise<Object|null>} - A promise that resolves to the uploaded file object in the database, or null if the file object is invalid.
  */
-exports.uploadFileToDB = async (file, filePath) => {
-  if (!file || !file.originalname || !file.buffer || !file.mimetype) {
-    console.log("Invalid file object");
-    return null;
+exports.uploadFileToDB = async (filePath) => {
+  const meme = convertFileToMeme(filePath);
+  if (!meme || !meme.originalname || !meme.buffer || !meme.mimetype) {
+    throw new Error('Invalid file object');
   }
 
-  const uplodedFile = await _upload(file.originalname, filePath, file);
-  console.log(uplodedFile.name);
-  return "/uploads/" + uplodedFile.name;
+  const uploadedFile = await uploadToDB(meme.originalname, filePath, meme);
+  
+  return `/uploads/${uploadedFile.name}`;
 };
 
 /**

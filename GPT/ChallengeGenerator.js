@@ -5,7 +5,7 @@ const {
   strict_audio
 } = require("./strict_output");
 const { uploadFileToDB } = require("../util/functions");
-const { downloadImage, convertFile } = require("../services/utils");
+const { downloadImage } = require("../services/utils");
 // const { progressEmitter } = require('../server');
 
 /**
@@ -383,10 +383,7 @@ async function replaceImages({ challenge, callback = null, imageTheme }) {
       console.log("Error downloading image, no image path");
       continue;
     }
-    // convert image to meme
-    const meme = convertFile(imagePath);
-    // upload image to database
-    const uploadedFilePath = await uploadFileToDB(meme, imagePath);
+    const uploadedFilePath = await uploadFileToDB(imagePath);
     // replace image description with image path
     obj[prop] = uploadedFilePath;
   }
@@ -465,12 +462,7 @@ async function generateAudio(challenge, voice = "alloy", callback = null) {
       path: `./temp/${filename}.mp3`
     });
 
-    // convert audio
-    console.log("Converting audio:", path);
-    const meme = convertFile(path);
-
-    // upload audio to database
-    const uploadedFilePath = await uploadFileToDB(meme, path);
+    const uploadedFilePath = await uploadFileToDB(path);
 
     // save audio to challenge as a message
     obj.messages.unshift({

@@ -85,8 +85,10 @@ const downloadImage = async ({
  * @returns {Object|null} - An object containing the file buffer, original name, and mimetype,
  * or null if the conversion fails.
  */
-function convertFile(filePath) {
+function convertFileToMeme(filePath) {
   try {
+    console.log(`Converting file at ${filePath}`);
+    
     const buffer = fs.readFileSync(filePath);
     const originalname = path.basename(filePath);
     const mimetype = mime.lookup(filePath) || 'application/octet-stream';
@@ -98,4 +100,4 @@ function convertFile(filePath) {
   }
 }
 
-module.exports = { downloadImage, convertFile };
+module.exports = { downloadImage, convertFileToMeme };

@@ -98,7 +98,9 @@ exports.generateTemplate = async (req, res) => {
                 )
               : templates[0];
           console.log(
-            `No more attempts left, returning template with the most days (${template?.days?.length})`
+            `No more attempts left, returning template with the most days (#${
+              i + 1
+            }/${maxAttempts})`
           );
         } else {
           console.log("Trying again");
