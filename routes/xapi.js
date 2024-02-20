@@ -2,7 +2,8 @@ const { Router } = require("express");
 const auth = require("../middleware/auth");
 const { User } = require("../models/user");
 const { Template } = require("../models/template");
-const { updateUserInDB, generateRandomString } = require("../util/functions");
+const { updateUserInDB } = require("../utils/database");
+const { generateRandomString } = require("../utils/general");
 
 const router = Router();
 

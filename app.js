@@ -28,6 +28,7 @@ const fs = require("fs");
 const EventEmitter = require("events");
 const dotenv = require("dotenv");
 const fileUpload = require("express-fileupload");
+const { cleanupTempDir } = require("./utils/general");
 
 // const { User } = require("./models/user");
 // const { Draft } = require("./models/draft");
@@ -436,6 +437,10 @@ function isUserLoggedIn(req) {
 
   return { mesg: null, loggedIn: true };
 }
+
+
+// Clean up the temp directory when the application starts
+cleanupTempDir();
 
 app.use("/users", require("./routes/users"));
 // app.use("/api", require("./routes/api"));

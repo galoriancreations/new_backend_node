@@ -4,7 +4,7 @@ const { User } = require("../models/user");
 const { Draft } = require("../models/draft");
 const { Group } = require("../models/group");
 const { ChallengeArray } = require("../models/challenge-array");
-const { generateRandomString } = require("../util/functions");
+const { generateRandomString } = require("../utils/general");
 
 exports.saveTemplate = async (req, res) => {
   try {

@@ -2,7 +2,7 @@ const fs = require("fs");
 const { User } = require("../models/user");
 const { Template } = require("../models/template");
 const { progressEmitter } = require("./progress");
-const { generateRandomString } = require("../util/functions");
+const { generateRandomString } = require("../utils/general");
 const {
   generateChallenge,
   replaceImages,

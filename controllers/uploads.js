@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const mime = require("mime");
 const { Uploads } = require("../models/uploads");
-const { uploadFile } = require("../util/functions");
+const { uploadFile } = require("../utils/files");
 
 exports.uploadFile = async (req, res) => {
   try {
