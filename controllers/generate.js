@@ -51,9 +51,9 @@ exports.generateTemplate = async (req, res) => {
       // cancel if user not in same page
       if (String(current_user) !== req.body.creator) {
         console.log("User not in same page, cancelling");
-        throw "User not in same page, cancelling";        
+        throw "User not in same page, cancelling";
       }
-      
+
       // get data
       const {
         topic,
@@ -164,11 +164,9 @@ exports.generateTemplate = async (req, res) => {
   }
 };
 
-
-//************************************************ */
-exports.generateDay = async (req,res) => {
+exports.generateDay = async (req, res) => {
   const { templateId } = req.body;
-  
+
   const template = await Template.findOne({ _id: templateId });
   if (!template) {
     return res.status(404).json({ msg: "Template not found" });
@@ -186,9 +184,7 @@ exports.generateDay = async (req,res) => {
   });
 
   if (!day || day.error) {
-    return res
-      .status(400)
-      .json({ msg: day.msg || "Failed to generate day" });
+    return res.status(400).json({ msg: day.msg || "Failed to generate day" });
   }
 
   // generate image
@@ -213,10 +209,5 @@ exports.generateDay = async (req,res) => {
     { $set: { imageTheme, [`days.${dayIndex}`]: day } }
   );
 
-  // send day data
-
-  res.status(200).json({day})
-}
-
-
-
+  return res.status(200).json({ day });
+};
