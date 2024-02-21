@@ -2,6 +2,8 @@ const fs = require("fs");
 const axios = require("axios");
 const sharp = require("sharp");
 const uniqid = require("uniqid");
+const { convertFileToMeme } = require('./general');
+const { uploadToDB } = require('./database');
 
 /**
  * Uploads a file to the server.
@@ -43,7 +45,7 @@ exports.uploadFileToDB = async filePath => {
   }
 
   await uploadToDB(meme.originalname, filePath, meme);
-  return `/uploads/filePath`;
+  return `/uploads/${meme.originalname}`;
 };
 
 /**
