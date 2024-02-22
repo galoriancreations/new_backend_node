@@ -6,7 +6,8 @@ const { generateRandomString } = require("../utils/general");
 const {
   generateChallenge,
   replaceImages,
-  generateAudio
+  generateAudio,
+  generateDay
 } = require("../GPT/ChallengeGenerator");
 
 exports.generateTemplate = async (req, res) => {
