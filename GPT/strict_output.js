@@ -3,11 +3,14 @@
  * The output is strictly checked to ensure that it adheres to the output format.
  * @module strict_output
  */
-require("dotenv").config();
+
+const dotenv = require("dotenv");
 const fs = require("fs");
 const OpenAI = require("openai");
 const { jsonrepair } = require("jsonrepair");
 const { ChatBot } = require("../models/chatbot");
+
+dotenv.config();
 
 const openai = new OpenAI({
   // organization: process.env.OPENAI_ORGANIZATION_ID,
