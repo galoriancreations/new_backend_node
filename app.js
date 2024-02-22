@@ -447,7 +447,6 @@ app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
 
-
 // ==============================================================================================
 // ----------------------------------------------------------------------------------------------
 //  ----------------------------------!!-- XAPI --!!---------------------------------------------
@@ -1682,7 +1681,9 @@ app.use("/certifications", require("./routes/certifications"));
 const startServer = async () => {
   const PORT = process.env.PORT || 3000;
   await mongoose.connect(process.env.MONGODB_URI);
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  app.listen(PORT, () =>
+    console.log(`Server running on port ${PORT}`, new Date())
+  );
 };
 
 startServer();
