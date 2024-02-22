@@ -437,6 +437,8 @@ function isUserLoggedIn(req) {
   return { mesg: null, loggedIn: true };
 }
 
+
+
 app.use("/users", require("./routes/users"));
 // app.use("/api", require("./routes/api"));
 // app.use("/xapi", require("./routes/xapi"));
@@ -446,6 +448,7 @@ app.use("/chatbot", require("./routes/chatbot"));
 app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
+app.use("/register", require("./routes/register"));
 
 
 // ==============================================================================================
