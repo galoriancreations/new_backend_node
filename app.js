@@ -22,7 +22,7 @@ let lastSender;
 const jwt = require("jsonwebtoken");
 
 const crypto = require("crypto");
-// const { generateChallenge } = require("./GPT/ChallengeGenerator");
+const { generateChallenge } = require("./GPT/ChallengeGenerator");
 // const { scheduleArticleJob } = require('./GPT/ArticleGenerator');
 const fs = require("fs");
 const EventEmitter = require("events");
