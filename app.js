@@ -175,15 +175,8 @@ const findTemplateInDB = async template => {
 };
 
 app.use(bodyParser.json({ limit: "50mb" }));
-app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(fileUpload({ createParentPath: true }));
-app.use(
-  cors(
-    process.env.NODE_ENV === "production"
-      ? { origin: "https://ting.global/" }
-      : { origin: "*" }
-  )
-);
+app.use(cors());
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
