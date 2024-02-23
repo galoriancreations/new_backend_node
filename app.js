@@ -175,8 +175,15 @@ const findTemplateInDB = async template => {
 };
 
 app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(fileUpload({ createParentPath: true }));
-app.use(cors());
+app.use(
+  cors(
+    process.env.NODE_ENV === "production"
+      ? { origin: "https://ting.global/" }
+      : { origin: "*" }
+  )
+);
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -452,7 +459,6 @@ app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
 app.use("/generate", require("./routes/generate"));
-
 
 // ==============================================================================================
 // ----------------------------------------------------------------------------------------------
@@ -1688,7 +1694,9 @@ app.use("/generate", require("./routes/generate"));
 const startServer = async () => {
   const PORT = process.env.PORT || 3000;
   await mongoose.connect(process.env.MONGODB_URI);
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  app.listen(PORT, () =>
+    console.log(`Server running on port ${PORT}`, new Date())
+  );
 };
 
 startServer();
