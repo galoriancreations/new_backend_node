@@ -36,6 +36,7 @@ const fileUpload = require("express-fileupload");
 // const { Player } = require("./models/player");
 // const { Group } = require("./models/group");
 // const { ChallengeArray } = require("./models/challenge-array");
+const {  BGIMagic, SDGMagic, KidsMagic, MoralMagic, UnIMagic, Environmagic, Imagic  } = require("./models/question");
 
 dotenv.config();
 
@@ -446,6 +447,7 @@ app.use("/chatbot", require("./routes/chatbot"));
 app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
+app.use("/magicgame", require("./routes/magicgame"));
 
 
 // ==============================================================================================
