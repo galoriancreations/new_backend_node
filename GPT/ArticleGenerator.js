@@ -5,7 +5,7 @@ const { UsersTest } = require('../database/indexJS');
 const { sendMessageViaEmail } = require('../services/nodemailer');
 // const { sendMessageViaWhatsApp } = require('../services/twilio');
 const { strict_image, strict_output } = require('./strict_output');
-const { downloadImage } = require('../services/utils');
+const { downloadImage } = require("../utils/files");
 
 /**
  * Generates an article based on the given topic and word count.

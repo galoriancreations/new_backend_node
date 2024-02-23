@@ -28,6 +28,7 @@ const fs = require("fs");
 const EventEmitter = require("events");
 const dotenv = require("dotenv");
 const fileUpload = require("express-fileupload");
+const { cleanupTempDir } = require("./utils/general");
 
 // const { User } = require("./models/user");
 // const { Draft } = require("./models/draft");
@@ -174,8 +175,15 @@ const findTemplateInDB = async template => {
 };
 
 app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(fileUpload({ createParentPath: true }));
-app.use(cors());
+app.use(
+  cors(
+    process.env.NODE_ENV === "production"
+      ? { origin: "https://ting.global/" }
+      : { origin: "*" }
+  )
+);
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -437,6 +445,10 @@ function isUserLoggedIn(req) {
   return { mesg: null, loggedIn: true };
 }
 
+
+// Clean up the temp directory when the application starts
+cleanupTempDir();
+
 app.use("/users", require("./routes/users"));
 // app.use("/api", require("./routes/api"));
 // app.use("/xapi", require("./routes/xapi"));
@@ -446,6 +458,7 @@ app.use("/chatbot", require("./routes/chatbot"));
 app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
+app.use("/generate", require("./routes/generate"));
 
 // ==============================================================================================
 // ----------------------------------------------------------------------------------------------
