@@ -1,72 +1,27 @@
 const { User } = require("../models/user");
 
-exports.checkUsername = async (req, res) => {
+exports.checkAttribute = async (req, res, attribute) => {
   try {
-    let check = await User.findOne({
-      username: `${req.body.data}`
-    });
-    let [result, message] = [false, ""];
-    if (check == null) {
-      [result, message] = [
-        true,
-        `Great! you can register with username: ${req.body.data}`
-      ];
-    } else {
-      [result, message] = [
-        false,
-        "Oops! This username is already taken,\nplease choose another :)"
-      ];
-    }
-    res.status(200).json({ result: result, msg: message });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "Internal server error" });
-  }
-};
+    const { data } = req.body;
 
-exports.checkPhone = async (req, res) => {
-  try {
-    let phoneNum = req.body.data;
-    let check = await User.findOne({ phone: `${phoneNum}` });
-    let [result, message] = [false, ""];
-    if (check == null) {
-      [result, message] = [
-        true,
-        `Great! you can register with this phone: ${req.body.data}`
-      ];
-    } else {
-      [result, message] = [
-        false,
-        "Oops! This phone is already taken,\nplease choose another :)"
-      ];
+    if (!data) {
+      return res.status(400).json({ msg: "No data provided" });
     }
-    res.status(200).json({ result: result, msg: message });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "Internal server error" });
-  }
-};
 
-exports.checkEmail = async (req, res) => {
-  try {
-    let check = await User.findOne({
-      email: `${req.body.data}`
-    });
-    let [result, message] = [false, ""];
-    if (check == null) {
-      [result, message] = [
-        true,
-        `Great! you can register with email: ${req.body.data}`
-      ];
-    } else {
-      [result, message] = [
-        false,
-        "Oops! This email is already taken,\nplease choose another :)"
-      ];
+    const userExists = await User.exists({ [attribute]: data });
+    if (userExists) {
+      return res.status(200).json({
+        result: false,
+        msg: `Sorry, ${attribute} ${data} is already taken, please try another one.`
+      });
     }
-    res.status(200).json({ result: result, msg: message });
+
+    return res.status(200).json({
+      result: true,
+      msg: `Great! you can register with ${attribute}: ${data}`
+    });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "Internal server error" });
+    console.error(error);
+    return res.status(400).json({ msg: "Internal server error" });
   }
 };

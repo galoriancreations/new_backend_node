@@ -1,16 +1,11 @@
 const { Router } = require("express");
 
-const {
-    checkUsername,
-    checkPhone,
-    checkEmail
-} = require("../controllers/register");
+const { checkAttribute } = require("../controllers/register");
 
 const router = Router();
 
-
-router.post("/checkUsername",checkUsername);
-router.post("/checkPhone",checkPhone);
-router.post("/checkEmail",checkEmail);
+router.post("/checkUsername", (req, res) => checkAttribute(req, res, "username"));
+router.post("/checkPhone", (req, res) => checkAttribute(req, res, "phone"));
+router.post("/checkEmail", (req, res) => checkAttribute(req, res, "email"));
 
 module.exports = router;
