@@ -4,9 +4,8 @@ const fs = require("fs");
 const { User } = require("../models/user");
 const crypto = require("crypto");
 
-// Function to clean up the temp directory
 exports.cleanupTempDir = () => {
-  const dirPath = path.join(__dirname, "temp");
+  const dirPath = path.join(__dirname, "..", "temp");
   if (fs.existsSync(dirPath)) {
     fs.readdirSync(dirPath).forEach(file => {
       const filePath = path.join(dirPath, file);
