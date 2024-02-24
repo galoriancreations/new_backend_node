@@ -6,7 +6,8 @@ const { generateRandomString } = require("../utils/general");
 const {
   generateChallenge,
   replaceImages,
-  generateAudio
+  generateAudio,
+  generateDay
 } = require("../GPT/ChallengeGenerator");
 
 exports.generateTemplate = async (req, res) => {
@@ -162,4 +163,52 @@ exports.generateTemplate = async (req, res) => {
     console.error(error);
     return res.status(400).json({ msg: error });
   }
+};
+
+exports.generateDay = async (req, res) => {
+  const { templateId } = req.body;
+
+  const template = await Template.findOne({ _id: templateId });
+  if (!template) {
+    return res.status(404).json({ msg: "Template not found" });
+  }
+  // get last day data
+  const dayIndex = template.days.length;
+  const lastDay = template.days[dayIndex - 1];
+
+  // generate day
+  const day = await generateDay({
+    challengeName: template.name,
+    challengeIntroduction: template.days[0].introduction,
+    lastDay,
+    dayIndex
+  });
+
+  if (!day || day.error) {
+    return res.status(400).json({ msg: day.msg || "Failed to generate day" });
+  }
+
+  // generate image
+  let imageTheme = template.imageTheme;
+  await replaceImages({
+    challenge: day,
+    imageTheme: imageTheme,
+    callback: (i, j, theme) => {
+      if (theme) {
+        console.log("Added imageTheme:", theme);
+        imageTheme = theme;
+      }
+    }
+  });
+
+  // generate audio
+  await generateAudio(day, template.voice || "alloy");
+
+  // update template
+  await Template.updateOne(
+    { _id: templateId },
+    { $set: { imageTheme, [`days.${dayIndex}`]: day } }
+  );
+
+  return res.status(200).json({ day });
 };
