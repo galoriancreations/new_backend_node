@@ -71,7 +71,7 @@ exports.generateTemplate = async (req, res) => {
       // create template
       const templateId = "t_" + generateRandomString();
       let template = await generateChallenge({
-        creator: current_user,
+        creator: user.phone,
         id: templateId,
         topic,
         days,
