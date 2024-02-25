@@ -1,11 +1,9 @@
+const fs = require("fs");
 const axios = require("axios");
 const sharp = require("sharp");
-const path = require("path");
-const fs = require("fs");
 const uniqid = require("uniqid");
-const { Uploads } = require("../models/uploads");
-const { User } = require("../models/user");
-const crypto = require("crypto");
+const { convertFileToMeme } = require('./general');
+const { uploadToDB } = require('./database');
 
 /**
  * Uploads a file to the server.
@@ -15,28 +13,21 @@ const crypto = require("crypto");
  * @returns {Promise<string|null>} - A promise that resolves to the path of the uploaded file, or null if there was an error.
  */
 exports.uploadFile = async req => {
+  if (!req.files || !req.files.file) {
+    throw new Error("No file provided");
+  }
+
   const { file } = req.files;
-  const parts = file.name.split(".");
-  const filetype = parts.pop();
-  const originalName = parts.join(".");
-  const filename = originalName + "_" + uniqid();
-  const fullFileName = filename + "." + filetype;
-  const folderPath = "temp/" + filename;
-  const filePath = folderPath + "." + filetype;
+  const [originalName, filetype] = file.name.split(".");
+  const filename = `${originalName}_${uniqid()}`;
+  const fullFileName = `${filename}.${filetype}`;
+  const folderPath = `temp/${filename}`;
+  const filePath = `${folderPath}.${filetype}`;
+
   await file.mv(filePath);
+  await uploadToDB(fullFileName, filePath, file);
 
-  // upload file to db
-  await Uploads.create({
-    name: fullFileName,
-    data: fs.readFileSync(filePath),
-    contentType: file.mimetype,
-    md5: crypto
-      .createHash("md5")
-      .update(fs.readFileSync(filePath))
-      .digest("hex")
-  });
-
-  return "/uploads/" + fullFileName;
+  return `/uploads/${fullFileName}`;
 };
 
 /**
@@ -47,20 +38,15 @@ exports.uploadFile = async req => {
  * @param {string} file.mimetype - The MIME type of the file.
  * @returns {Promise<Object|null>} - A promise that resolves to the uploaded file object in the database, or null if the file object is invalid.
  */
-// exports.uploadFileToDB = async file => {
-//   if (!file || !file.originalname || !file.buffer || !file.mimetype) {
-//     console.log("Invalid file object");
-//     return null;
-//   }
+exports.uploadFileToDB = async filePath => {
+  const meme = convertFileToMeme(filePath);
+  if (!meme || !meme.originalname || !meme.buffer || !meme.mimetype) {
+    throw new Error("Invalid file object");
+  }
 
-//   const fileInDB = await Uploads.create({
-//     name: file.originalname,
-//     data: file.buffer,
-//     contentType: file.mimetype
-//   });
-
-//   return fileInDB;
-// };
+  await uploadToDB(meme.originalname, filePath, meme);
+  return `/uploads/${meme.originalname}`;
+};
 
 /**
  * Downloads an image from a given URL and saves it to the specified download path.
@@ -135,40 +121,4 @@ exports.downloadImage = async ({
     fs.unlink(downloadPath, () => {});
     return null;
   }
-};
-
-// Function to clean up the temp directory
-function cleanupTempDir(dirPath) {
-  if (fs.existsSync(dirPath)) {
-    fs.readdirSync(dirPath).forEach(file => {
-      const filePath = path.join(dirPath, file);
-      fs.unlinkSync(filePath);
-    });
-  }
-}
-
-// Clean up the temp directory when the application starts
-const tempDir = path.join(__dirname, "temp");
-cleanupTempDir(tempDir);
-
-exports.updateUserInDB = async user => {
-  await User.updateOne({ _id: `${user["_id"]}` }, { $set: user });
-};
-
-exports.generateRandomString = () => {
-  const length = 22;
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let randomString = "";
-
-  for (let i = 0; i < length; i++) {
-    const randomIndex = crypto.randomInt(0, characters.length);
-    randomString += characters.charAt(randomIndex);
-  }
-
-  return randomString;
-};
-
-exports.updateUserInDB = user => {
-  User.updateOne({ _id: user._id }, { $set: user }).exec();
 };

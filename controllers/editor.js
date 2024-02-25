@@ -4,14 +4,13 @@ const { User } = require("../models/user");
 const { Draft } = require("../models/draft");
 const { Group } = require("../models/group");
 const { ChallengeArray } = require("../models/challenge-array");
-const { generateRandomString } = require("../util/functions");
+const { generateRandomString } = require("../utils/general");
 
 exports.saveTemplate = async (req, res) => {
   try {
     console.log("saveTemplate from controllers/editor.js");
 
     const data = req.body;
-    console.log({ data });
     const currentUser = req.user._id;
     const user = await User.findOne({ _id: currentUser });
     const isAdmin = req.user.isAdmin;
@@ -20,7 +19,6 @@ exports.saveTemplate = async (req, res) => {
     let templateId = data.templateId;
 
     templateData.creator = currentUser;
-    console.log({ currentUser });
     templateData.lastSave = new Date();
 
     // if templateId is null, generate a new one
@@ -159,11 +157,11 @@ exports.createChallenge = async (req, res) => {
 
     await Challenge.create(challengeData);
 
-    if (verifyNow) {
-      console.log(`::: VERIFING Challenge ${challengeId}`);
-      //// const [verified, err] = verifyChallenge(challengeId, challengeData.creator, challengeData.name, image, challengeData.date);
-      //// console.log(`::: VERIFIED ${verified}, ${err}`);
-    }
+    // if (verifyNow) {
+    //   console.log(`::: VERIFING Challenge ${challengeId}`);
+    //   const [verified, err] = verifyChallenge(challengeId, challengeData.creator, challengeData.name, image, challengeData.date);
+    //   console.log(`::: VERIFIED ${verified}, ${err}`);
+    // }
 
     const draftId = data.draftId;
 
