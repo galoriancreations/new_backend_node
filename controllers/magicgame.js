@@ -1,6 +1,6 @@
 const mongoose = require("mongoose")
 const { BGIMagic, SDGMagic, KidsMagic, MoralMagic, UnIMagic, Environmagic, Imagic  } = require("../models/question");
-const BGIMagicJSON = require('../mock/SDGMagic.json');
+// const BGIMagicJSON = require('../mock/UnIMagic.json');
 
 // const exist = await BGIMagic.find({})
 // if(!exist){
@@ -48,8 +48,6 @@ const BGIMagicJSON = require('../mock/SDGMagic.json');
 
 exports.getQuestion = async (req, res) => {
     try {
-        await SDGMagic.insertMany(BGIMagicJSON);
-
         let result;
         let i;
         const { challenge } = req.body;
@@ -77,6 +75,7 @@ exports.getQuestion = async (req, res) => {
                 result = await MoralMagic.findOne({ qnum: i });
                 break;
             case "UnIMagic":
+                // await UnIMagic.insertMany(BGIMagicJSON);
                 result = await UnIMagic.findOne({ qnum: i });
                 break;
             default:
@@ -106,7 +105,6 @@ exports.updateAnswer = async (req, res) => {
         for (let i = 0; i < models.length; i++) 
         {
             const model = models[i];
-            console.log(model.modelName);
             if(model.modelName === challenge){
             result = await model.findOneAndUpdate(
                 { qnum: question },
