@@ -1,21 +1,16 @@
 const { Schema, model } = require("mongoose");
 
+const answerSchema = new Schema({
+    user: String,
+    text: String,
+    likes: Number 
+});
+
 const questionSchema = new Schema(
   {
-    qnum: Number,
+    qnum: String,
     text: String,
-    answers: [
-      {
-        id: {
-          type: String,
-          required: true,
-          unique: true
-        },
-        user: String,
-        text: String,
-        likes: Number
-      }
-    ]
+    answers: [answerSchema]
   },
   { timestamps: true }
 );

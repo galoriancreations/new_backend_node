@@ -1,5 +1,5 @@
 const { BGIMagic, SDGMagic, KidsMagic, MoralMagic, UnIMagic, Environmagic, Imagic  } = require("../models/question");
-
+const BGIMagicJSON = require('../mock/Environmagic.json');
 // const exist = await BGIMagic.find({})
 // if(!exist){
 //     const getQuestions = require('../mock/BGIMagic.json');
@@ -44,177 +44,109 @@ const { BGIMagic, SDGMagic, KidsMagic, MoralMagic, UnIMagic, Environmagic, Imagi
 // }
 
 
-
-            
-
 exports.getQuestion = async (req, res) => {
     try {
-        console.log("ok");
-        const qId = req.body.qId;
-        const challenge = req.body.challenge;
-        console.log(challenge);
-        let i ;
-        if (qId) {
-            i = qId;
-        }
-        else{
-            if(challenge === "BGI-mAGIc"){
-                i = Math.floor(Math.random() * 18 +1)
-                console.log("i = " + i);
-                const result = await BGIMagic.findOne({qnum:i})    
-            }
-            else if(challenge === "SDG-Magic"){
-                i = Math.floor(Math.random() * 18 +1)
-                console.log("i = " + i);
-                const result = await SDGMagic.findOne({qnum:i})
-            }
-            else {
-                i = Math.floor(Math.random() * 20 +1)
-                console.log("i = " + i);
+        let result;
+        let i;
+        const { challenge } = req.body;
 
-                if(challenge === "Environmagic"){
-                    const result = await Environmagic.findOne({qnum:i})
-                }
-                else if(challenge === "Imagic"){
-                    const result = await Imagic.findOne({qnum:i})
-                }
-                else if(challenge === "Kids-Magic"){
-                    const result = await KidsMagic.findOne({qnum:i})
-                } 
-                else if(challenge === "Moral-Magic"){
-                    const result = await MoralMagic.findOne({qnum:i})
-                }
-                else if(challenge === "YouAndI-Magic"){
-                    const result = await UnIMagic.findOne({qnum:i})
-                }
-            }
+        switch (challenge) {
+            case "BGI-mAGIc":
+                i = Math.floor(Math.random() * 18 + 1);
+                result = await BGIMagic.findOne({ qnum: i });
+                break;
+            case "Environmagic":
+                // await Environmagic.insertMany(BGIMagicJSON);
+                i = Math.floor(Math.random() * 18 + 1);
+                result = await Environmagic.findOne({ qnum: i });
+                break;
+            case "Imagic":
+                result = await Imagic.findOne({ qnum: i });
+                break;
+            case "Kids-Magic":
+                result = await KidsMagic.findOne({ qnum: i });
+                break;
+            case "Moral-Magic":
+                result = await MoralMagic.findOne({ qnum: i });
+                break;
+            case "YouAndI-Magic":
+                result = await UnIMagic.findOne({ qnum: i });
+                break;
+            default:
+                return res.status(400).json({ msg: "Invalid challenge" });
         }
+
         return res.status(200).json({ result });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ msg: "Server error" });
     }
-}
+};
 
-exports.getAnswer = async (req, res) => {
+
+exports.updateAnswer = async (req, res) => {
     try {
-        let question = req.body.question;
-        let qnum = req.body.qnum;
-        console.log(question);
-        const answer = {
-            id: 'a_' + generateRandomString(),
-            user: user.fullName,
-            text: req.body.answer,
+        const { qnum, question, answer } = req.body;
+        const answers = {
+            id: qnum,
+            text: answer,
             likes: 0
-        }
-        console.log(answer);
-        const findAndUpAnsBGI = await BGIMagic.findOneAndUpdate(
-            {_id:question , qnum:qnum },{$push:{answers:answer}})
-            console.log(findAndUpAnsBGI);
-        const findAndUpAnsEnviromagic = await Environmagic.findOneAndUpdate(
-            {_id:question , qnum:qnum },{$push:{answers:answer}})
-            console.log(findAndUpAnsEnviromagic);
-        const findAndUpAnsImagic = await Imagic.findOneAndUpdate(
-            {_id:question , qnum:qnum },{$push:{answers:answer}})
-            console.log(findAndUpAnsImagic);
-        const findAndUpAnsSDG = await SDGMagic.findOneAndUpdate(
-            {_id:question , qnum:qnum },{$push:{answers:answer}})
-        console.log(findAndUpAnsSDG);
-        const findAndUpAnsYouAndI = await UnIMagic.findOneAndUpdate(
-            {_id:question , qnum:qnum },{$push:{answers:answer}})
-            console.log(findAndUpAnsYouAndI);
-        const findAndUpAnsMoral = await MoralMagic.findOneAndUpdate(
-            {_id:question , qnum:qnum },{$push:{answers:answer}})
-            console.log(findAndUpAnsMoral);
-        const findAndUpAnsKids = await KidsMagic.findOneAndUpdate(
-            {_id:question , qnum:qnum },{$push:{answers:answer}})
-            console.log(findAndUpAnsKids);
+        };
+        let result;
 
-        if(findAndUpAnsBGI){
-            const result = await BGIMagic.find()
-            final = result[parseInt(qnum)-1]
-            // res.json({msg:'the answer added'})
-        }
-        else if(findAndUpAnsEnviromagic){
-            const result = await Environmagic.find()
-            final = result[parseInt(qnum)-1]
-            // res.json({msg:'the answer added'})
-        }
-        else if(findAndUpAnsImagic){
-            const result = await Imagic.find()
-            final = result[parseInt(qnum)-1]
-            // res.json({msg:'the answer added'})
-        }
-        else if(findAndUpAnsSDG){
-            const result = await SDGMagic.find()
-            final = result[parseInt(qnum)-1]
-            // res.json({msg:'the answer added'})
-        }
-        else if(findAndUpAnsYouAndI){
-            const result = await UnIMagic.find()
-            final = result[parseInt(qnum)-1]
-            // res.json({msg:'the answer added'})
-        }
-        else if(findAndUpAnsMoral){
-            const result = await MoralMagic.find()
-            final = result[parseInt(qnum)-1]
-            // res.json({msg:'the answer added'})
-        }
-        else if(findAndUpAnsKids){
-            const result = await KidsMagic.find()
-            final = result[parseInt(qnum)-1]
-            // res.json({msg:'the answer added'})
+        const models = [BGIMagic, Environmagic, Imagic, KidsMagic, MoralMagic, UnIMagic];
+
+        for (let i = 0; i < models.length; i++) 
+        {
+            const model = models[i];
+            result = await model.findOneAndUpdate(
+                { qnum: question },
+                { $push: { answers: answers } },
+                { new: true }
+            );
+            if (result) {
+                break; // Stop looping if the answer is added to a model
+            }
         }
 
-        return res.status(200).json({ final });
+        if (!result) {
+            return res.status(404).json({ msg: "Question not found" });
+        }
 
+        return res.status(200).json({ result });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ msg: "Server error" });
     }
-}
+};
+
 exports.updateLikes = async (req, res) => {
     try {
-        let qnum = req.body.qnum;
-        let id =  req.body.id;
-        let likes = req.body.likes;
+        const { id, likes } = req.body;
+        let result;
 
-        const findAndUpLikesBGI = await BGIMagic.updateOne(
-            { qnum: qnum, "answers.id": id },
-            { $set: { "answers.$.likes": likes } }
-        )
-        const findAndUpLikesEnviromagic = await Environmagic.updateOne(
-            { qnum: qnum, "answers.id": id },
-            { $set: { "answers.$.likes": likes } }
-        )
-        const findAndUpLikesImagic = await Imagic.updateOne(
-            { qnum: qnum, "answers.id": id },
-            { $set: { "answers.$.likes": likes } }
-        )
-        const findAndUpLikesSDG = await SDGMagic.updateOne(
-            { qnum: qnum, "answers.id": id },
-            { $set: { "answers.$.likes": likes } }
-        )
-        const findAndUpLikesYouAndI = await UnIMagic.updateOne(
-            { qnum: qnum, "answers.id": id },
-            { $set: { "answers.$.likes": likes } }
-        )
-        const findAndUpLikesMoral = await MoralMagic.updateOne(
-            { qnum: qnum, "answers.id": id },
-            { $set: { "answers.$.likes": likes } }
-        )
-        const findAndUpLikesKids = await KidsMagic.updateOne(
-            { qnum: qnum, "answers.id": id },
-            { $set: { "answers.$.likes": likes } }
-        )
+        const models = [BGIMagic, Environmagic, Imagic, KidsMagic, MoralMagic, UnIMagic];
 
-        if(findAndUpLikesBGI || findAndUpLikesEnviromagic || findAndUpLikesImagic || findAndUpLikesSDG || findAndUpLikesYouAndI || findAndUpLikesMoral || findAndUpLikesKids){
-            qnum = "";
-            id = "";
-            likes = 0;
+        for (let i = 0; i < models.length; i++) {
+            const model = models[i];
+            console.log(model)
+            result = await Environmagic.findOneAndUpdate(
+                { "answers._id": id },
+                { $set: { "answers.$.likes": likes } },
+                { new: true }
+            );
+            if (result) {
+                break; // Stop looping if the likes are updated in a model
+            }
         }
+
+        if (!result) {
+            return res.status(404).json({ msg: "Answer not found" });
+        }
+
+        return res.status(200).json({ result });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ msg: "Server error" });
     }
-}
+};
