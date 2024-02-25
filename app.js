@@ -5,7 +5,6 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const fileUpload = require("express-fileupload");
 const { cleanupTempDir } = require("./utils/general");
-
 dotenv.config();
 
 const app = express();
@@ -27,6 +26,7 @@ app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
 app.use("/generate", require("./routes/generate"));
+app.use("/magic", require("./routes/magicgame"));
 
 const startServer = async () => {
   const PORT = process.env.PORT || 3000;
