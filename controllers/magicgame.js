@@ -49,39 +49,35 @@ const { BGIMagic, SDGMagic, KidsMagic, MoralMagic, UnIMagic, Environmagic, Imagi
 exports.getQuestion = async (req, res) => {
     try {
         let result;
-        let i;
-        const { challenge } = req.body;
+        let j;
+        const { challenge, qId } = req.body;
+        console.log(req.body);
+        const models = [BGIMagic, Environmagic, SDGMagic, Imagic, KidsMagic, UnIMagic, MoralMagic];
 
-        switch (challenge) {
-            case "BGIMagic":
-                i = Math.floor(Math.random() * 18 + 1);
-                result = await BGIMagic.findOne({ qnum: i });
+        for (let i = 0; i < models.length; i++) 
+        {
+            const model = models[i];
+            console.log(model.modelName);
+            if(model.modelName === challenge){
+                if (qId) {
+                    j = qId;
+                }
+                else{
+                    if(challenge === "BGIMagic" || challenge === "SDGMagic" ){
+                        j = Math.floor(Math.random() * 18 + 1);
+                    }
+                    else{
+                        j = Math.floor(Math.random() * 20 + 1);
+                    }
+                }
+                console.log("j =" + j );
+                result = await model.findOne({ qnum: j });
+            }
+            if (result) {
                 break;
-                case "SDGMagic":
-                i = Math.floor(Math.random() * 18 + 1);
-                result = await SDGMagic.findOne({ qnum: i });
-                break;
-            case "Environmagic":
-                i = Math.floor(Math.random() * 20 + 1);
-                result = await Environmagic.findOne({ qnum: i });
-                break;
-            case "Imagic":
-                result = await Imagic.findOne({ qnum: i });
-                break;
-            case "KidsMagic":
-                result = await KidsMagic.findOne({ qnum: i });
-                break;
-            case "MoralMagic":
-                result = await MoralMagic.findOne({ qnum: i });
-                break;
-            case "UnIMagic":
-                // await UnIMagic.insertMany(BGIMagicJSON);
-                result = await UnIMagic.findOne({ qnum: i });
-                break;
-            default:
-                return res.status(400).json({ msg: "Invalid challenge" });
+            }
         }
-
+        // console.log(result);
         return res.status(200).json({ result });
     } catch (err) {
         console.log(err);
@@ -93,14 +89,14 @@ exports.getQuestion = async (req, res) => {
 exports.updateAnswer = async (req, res) => {
     try {
         const { challenge, question, answer } = req.body;
-        console.log(challenge, question, answer);
+        console.log(req.body);
         const answers = {
             text: answer,
             likes: 0
         };
         let result;
 
-        const models = [BGIMagic, Environmagic, Imagic, KidsMagic, MoralMagic, UnIMagic];
+        const models = [BGIMagic, Environmagic, SDGMagic, Imagic, KidsMagic, UnIMagic, MoralMagic];
 
         for (let i = 0; i < models.length; i++) 
         {
@@ -134,7 +130,7 @@ exports.updateLikes = async (req, res) => {
         console.log(req.body);
         let result;
 
-        const models = [BGIMagic, Environmagic, Imagic, KidsMagic, MoralMagic, UnIMagic];
+        const models = [BGIMagic, Environmagic, SDGMagic, Imagic, KidsMagic, UnIMagic, MoralMagic];
 
         for (let i = 0; i < models.length; i++) {
             const model = models[i];
