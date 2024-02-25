@@ -26,7 +26,7 @@ app.use("/editor", require("./routes/editor"));
 app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
 app.use("/generate", require("./routes/generate"));
-app.use("/magic", require("./routes/magicgame"));
+app.use("/magicgame", require("./routes/magicgame"));
 
 const startServer = async () => {
   const PORT = process.env.PORT || 3000;
