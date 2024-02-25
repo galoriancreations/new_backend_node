@@ -1,5 +1,7 @@
+const mongoose = require("mongoose")
 const { BGIMagic, SDGMagic, KidsMagic, MoralMagic, UnIMagic, Environmagic, Imagic  } = require("../models/question");
-const BGIMagicJSON = require('../mock/Environmagic.json');
+const BGIMagicJSON = require('../mock/SDGMagic.json');
+
 // const exist = await BGIMagic.find({})
 // if(!exist){
 //     const getQuestions = require('../mock/BGIMagic.json');
@@ -46,30 +48,35 @@ const BGIMagicJSON = require('../mock/Environmagic.json');
 
 exports.getQuestion = async (req, res) => {
     try {
+        await SDGMagic.insertMany(BGIMagicJSON);
+
         let result;
         let i;
         const { challenge } = req.body;
 
         switch (challenge) {
-            case "BGI-mAGIc":
+            case "BGIMagic":
                 i = Math.floor(Math.random() * 18 + 1);
                 result = await BGIMagic.findOne({ qnum: i });
                 break;
-            case "Environmagic":
-                // await Environmagic.insertMany(BGIMagicJSON);
+                case "SDGMagic":
                 i = Math.floor(Math.random() * 18 + 1);
+                result = await SDGMagic.findOne({ qnum: i });
+                break;
+            case "Environmagic":
+                i = Math.floor(Math.random() * 20 + 1);
                 result = await Environmagic.findOne({ qnum: i });
                 break;
             case "Imagic":
                 result = await Imagic.findOne({ qnum: i });
                 break;
-            case "Kids-Magic":
+            case "KidsMagic":
                 result = await KidsMagic.findOne({ qnum: i });
                 break;
-            case "Moral-Magic":
+            case "MoralMagic":
                 result = await MoralMagic.findOne({ qnum: i });
                 break;
-            case "YouAndI-Magic":
+            case "UnIMagic":
                 result = await UnIMagic.findOne({ qnum: i });
                 break;
             default:
@@ -86,9 +93,9 @@ exports.getQuestion = async (req, res) => {
 
 exports.updateAnswer = async (req, res) => {
     try {
-        const { qnum, question, answer } = req.body;
+        const { challenge, question, answer } = req.body;
+        console.log(challenge, question, answer);
         const answers = {
-            id: qnum,
             text: answer,
             likes: 0
         };
@@ -99,11 +106,14 @@ exports.updateAnswer = async (req, res) => {
         for (let i = 0; i < models.length; i++) 
         {
             const model = models[i];
+            console.log(model.modelName);
+            if(model.modelName === challenge){
             result = await model.findOneAndUpdate(
                 { qnum: question },
                 { $push: { answers: answers } },
                 { new: true }
             );
+            }
             if (result) {
                 break; // Stop looping if the answer is added to a model
             }
@@ -112,7 +122,7 @@ exports.updateAnswer = async (req, res) => {
         if (!result) {
             return res.status(404).json({ msg: "Question not found" });
         }
-
+        console.log(challenge);
         return res.status(200).json({ result });
     } catch (err) {
         console.log(err);
@@ -122,19 +132,22 @@ exports.updateAnswer = async (req, res) => {
 
 exports.updateLikes = async (req, res) => {
     try {
-        const { id, likes } = req.body;
+        const { id, likes, challenge, question } = req.body;
+        console.log(req.body);
         let result;
 
         const models = [BGIMagic, Environmagic, Imagic, KidsMagic, MoralMagic, UnIMagic];
 
         for (let i = 0; i < models.length; i++) {
             const model = models[i];
-            console.log(model)
-            result = await Environmagic.findOneAndUpdate(
-                { "answers._id": id },
+            console.log(model.modelName)
+            if(model.modelName === challenge){
+            result = await model.findOneAndUpdate(
+                { _id: question, "answers._id": id },
                 { $set: { "answers.$.likes": likes } },
                 { new: true }
             );
+            }
             if (result) {
                 break; // Stop looping if the likes are updated in a model
             }
@@ -143,7 +156,7 @@ exports.updateLikes = async (req, res) => {
         if (!result) {
             return res.status(404).json({ msg: "Answer not found" });
         }
-
+        console.log(result);
         return res.status(200).json({ result });
     } catch (err) {
         console.log(err);
