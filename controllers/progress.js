@@ -1,6 +1,7 @@
 const EventEmitter = require("events");
 
 const progressEmitter = new EventEmitter();
+exports.progressEmitter = progressEmitter;
 
 exports.progressEmit = async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
