@@ -48,10 +48,10 @@ exports.generateTemplate = async (req, res) => {
       );
 
       const user = await User.findById(req.user._id);
-      const current_user = user._id;
+      const current_user = String(user._id);
 
       // cancel if user not in same page
-      if (String(current_user) !== req.body.creator) {
+      if (current_user !== req.body.creator) {
         console.log("User not in same page, cancelling");
         throw "User not in same page, cancelling";
       }
@@ -72,7 +72,7 @@ exports.generateTemplate = async (req, res) => {
       // create template
       const templateId = "t_" + generateRandomString();
       let template = await generateChallenge({
-        creator: user.phone,
+        creator: current_user,
         id: templateId,
         topic,
         days,
