@@ -9,6 +9,7 @@ const {
   generateAudio,
   generateDay
 } = require("../GPT/ChallengeGenerator");
+const { updateUserInDB } = require('../utils/database');
 
 exports.generateTemplate = async (req, res) => {
   console.log("generateTemplate from controller/generate.js");
@@ -151,7 +152,7 @@ exports.generateTemplate = async (req, res) => {
         isPublic: template.isPublic
       };
       user.templates = [...user.templates, temp];
-      //   updateUserInDB(user);
+      updateUserInDB(user);
 
       fs.writeFileSync("GPT/json/failed.json", JSON.stringify(templates));
 
