@@ -76,7 +76,7 @@ exports.loginUser = async (req, res) => {
       if (!isPasswordMatching) {
         return res
           .status(401)
-          .json({ message: "Phone number or password are incorrect" });
+          .json({ msg: "Phone number or password are incorrect" });
       }
     }
     const clonedUser = cloneDeep(user._doc);
