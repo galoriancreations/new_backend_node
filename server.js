@@ -1,5 +1,5 @@
 const express = require("express");
-//test
+
 const app = express();
 const bodyParser = require("body-parser");
 
@@ -141,7 +141,7 @@ const decode_auth_token = (auth_token, secretKey) => {
 const fetchUserFromID = async (id) => {
 	let user = await UsersTest.findOne({ _id: id });
 
-	return user;
+	return user; 
 };
 
 const updateUserInDB = async (user) => {
@@ -315,6 +315,16 @@ const PlayerSchema = new db.Schema(
 	{ versionKey: false }
 );
 
+const QuestionSchema = new db.Schema(
+	{
+		_id: String,
+		qnum:Number,
+		text:String,
+		answers: Array
+	},
+	{ versionKey: false }
+)
+
 ///צריך לרשום לו עוד פרמטר עם אותו השם של הקולקשן כדי להגיד לו שאתה מתכוון למה שאתה מתכוון...
 const WaGroup = db.model("waGroups", waGroupSchema, "waGroups");
 
@@ -327,6 +337,8 @@ const Challenges = db.model("challenges", ChallengeSchema, "challenges");
 const TemplatesDB = db.model("templates", TemplateSchema, "templates");
 
 const PlayersDB = db.model("players", PlayerSchema, "players");
+
+
 
 // function start(client) { ///פונקציית ההתחלה שמקבלת את הקליינט
 
@@ -1231,7 +1243,7 @@ app.post("/xapi", async (req, res) => {
 						}
 						final = templates;
 					}
-				}
+				} 
 				res.status(200).json(final);
 			}
 		}
