@@ -1,24 +1,27 @@
 const { Schema, model } = require("mongoose");
 
+const answerSchema = new Schema({
+    user: String,
+    text: String,
+    likes: Number 
+});
+
 const questionSchema = new Schema(
   {
-    _id: String,
-    qnum: Number,
+    qnum: String,
     text: String,
-    answers: [
-      {
-        id: {
-          type: String,
-          required: true,
-          unique: true
-        },
-        user: String,
-        text: String,
-        likes: Number
-      }
-    ]
+    answers: [answerSchema]
   },
   { timestamps: true }
 );
 
-exports.Question = model("Question", questionSchema, "questions");
+
+// exports.Question = model("Question", questionSchema, "questions");
+
+exports.UnIMagic = model("UnIMagic", questionSchema, "UnIMagic");
+exports.MoralMagic = model("MoralMagic", questionSchema, "MoralMagic");
+exports.Imagic = model("Imagic", questionSchema, "Imagic");
+exports.Environmagic = model("Environmagic", questionSchema, "Environmagic");
+exports.KidsMagic = model("KidsMagic", questionSchema, "KidsMagic");
+exports.SDGMagic = model("SDGMagic", questionSchema, "SDGMagic");
+exports.BGIMagic = model("BGIMagic", questionSchema, "BGIMagic");
