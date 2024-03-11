@@ -70,10 +70,11 @@ exports.getTemplateData = async (req, res) => {
       return res.status(400).json({ error: "Missing templateId" });
     }
     console.log({ templateId });
-    // check if template exists in db
+
     const existingTemplate = await Template.findOne({ _id: templateId });
+    console.log("Query result:", existingTemplate);
+
     if (!existingTemplate) {
-      // return 404 if template not found
       return res.status(404).json({ error: "Template not found" });
     }
 
