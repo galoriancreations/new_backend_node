@@ -72,7 +72,6 @@ exports.getTemplateData = async (req, res) => {
     console.log({ templateId });
 
     const existingTemplate = await Template.findOne({ _id: templateId });
-    console.log("Query result:", existingTemplate);
 
     if (!existingTemplate) {
       return res.status(404).json({ error: "Template not found" });
