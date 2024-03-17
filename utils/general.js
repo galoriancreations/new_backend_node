@@ -48,3 +48,21 @@ exports.convertFileToMeme = filePath => {
     return null;
   }
 };
+
+/**
+ * Calculate the difference between two dates
+ *
+ * @param {String} date The date to calculate the difference from
+ * @returns {Number} The difference in days
+ *
+ * @example
+ * const dayDiff = calculateDayDifference('2021-01-01');
+ * console.log(dayDiff); // 10
+ */
+exports.calculateDayDifference = date => {
+  const today = new Date();
+  const challengeDate = new Date(date);
+  const timeDiff = challengeDate.getTime() - today.getTime();
+  const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+  return dayDiff;
+};
