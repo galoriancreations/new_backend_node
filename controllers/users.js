@@ -128,7 +128,7 @@ exports.editProfile = async (req, res) => {
 
     // Process drafts
     if (user.drafts) {
-      for (let draftID in user.drafts) {
+      const draftPromises = Object.keys(user.drafts).map(async draftID => {
         const draft = await findDraftInDB(draftID);
         if (draft) {
           userData.drafts[draftID] = {
@@ -138,30 +138,34 @@ exports.editProfile = async (req, res) => {
             challengeId: draft.challengeId || null
           };
         }
-      }
+      });
+      await Promise.all(draftPromises);
     }
 
     // Process created challenges
     if (user.createdChallenges) {
-      for (let challengeId of user.createdChallenges) {
-        let challenge = await Challenge.findOne({ _id: challengeId });
+      const challengePromises = user.createdChallenges.map(
+        async challengeId => {
+          let challenge = await Challenge.findOne({ _id: challengeId });
 
-        if (!challenge) {
-          const template = await Template.findOne({ _id: challengeId });
-          if (template) {
-            challenge = {
-              name: template.name,
-              language: template.language,
-              template: challengeId,
-              dayMargin: template.dayMargin || null
-            };
+          if (!challenge) {
+            const template = await Template.findOne({ _id: challengeId });
+            if (template) {
+              challenge = {
+                name: template.name,
+                language: template.language,
+                template: challengeId,
+                dayMargin: template.dayMargin || null
+              };
+            }
+          }
+
+          if (challenge) {
+            userData.createdChallenges[challengeId] = challenge;
           }
         }
-
-        if (challenge) {
-          userData.createdChallenges[challengeId] = challenge;
-        }
-      }
+      );
+      await Promise.all(challengePromises);
     }
 
     return res.json({
@@ -187,6 +191,7 @@ exports.getAvailableTemplates = async (req, res) => {
     const templates = publicTemplates
       .concat(userPrivateTemplates)
       .filter(val => val != null);
+
     return res.json({ templates });
   } catch (error) {
     console.log(error);

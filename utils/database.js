@@ -1,7 +1,8 @@
 const fs = require("fs");
+const crypto = require("crypto");
 const { User } = require("../models/user");
 const { Uploads } = require("../models/uploads");
-const crypto = require("crypto");
+const { Draft } = "../models/draft";
 
 exports.updateUserInDB = async user => {
   await User.updateOne({ _id: `${user["_id"]}` }, { $set: user });
@@ -17,4 +18,11 @@ exports.uploadToDB = async (fullFileName, filePath, file) => {
     contentType: file.mimetype,
     md5
   });
+};
+
+exports.findDraftInDB = async draft => {
+  return await Draft.findOne(
+    { _id: draft },
+    { days: 0, preMessages: 0, preDays: 0 }
+  );
 };
