@@ -111,8 +111,7 @@ exports.createChallenge = async (req, res) => {
       template: templateId,
       selections: data.selections,
       name: data.name,
-      date: data.date,
-      language: user.language
+      date: data.date
     };
 
     challengeData.active = false;
@@ -155,7 +154,7 @@ exports.createChallenge = async (req, res) => {
     user.challenges.push(challengeId);
     user.createdChallenges.push(challengeId);
     user.save();
-    
+
     await Challenge.create(challengeData);
 
     // if (verifyNow) {
