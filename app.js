@@ -41,3 +41,7 @@ startServer();
 
 // start article generator schedule to run every Monday at 9:00
 // scheduleArticleJob(1, 9, 0);
+
+// start the telegram bot service
+const telegramService = require("./services/telegram");
+telegramService.launch();
