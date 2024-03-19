@@ -27,6 +27,7 @@ app.use("/group", require("./routes/group"));
 app.use("/certifications", require("./routes/certifications"));
 app.use("/generate", require("./routes/generate"));
 app.use("/magicgame", require("./routes/magicgame"));
+app.use("/clone",require("./routes/clone"));
 
 const startServer = async () => {
   const PORT = process.env.PORT || 3000;
