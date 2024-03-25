@@ -19,7 +19,8 @@ module.exports = async (ctx, next) => {
       waitForVerificationCode: false,
       currentUser: null,
       selectedChallenge: null,
-      selectedTemplate: null
+      selectedTemplate: null,
+      selectedDay: null
     };
   }
 

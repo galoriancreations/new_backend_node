@@ -1,4 +1,7 @@
-module.exports = async ctx =>
-  ctx.reply(
-    "Hello, I'm the Ting.Global bot!\nType /connect to connect your account to the bot."
-  );
+module.exports = async ctx => {
+  const dayData = ctx.state.selectedDay;
+
+  if (!dayData) {
+    return ctx.reply("Please select a day first by typing /challenges.");
+  }
+};

@@ -1,3 +1,5 @@
+const { getFile } = require("../utils/files");
+
 exports.sendPoll = async (ctx, chatId, question, options) => {
   try {
     await ctx.telegram.sendPoll(chatId, question, options);
@@ -28,3 +30,6 @@ exports.formatChallengeData = challenge => {
 
   return { question, options };
 };
+
+exports.getFileNoPath = async file =>
+  await getFile(file.replace("/uploads/", ""));

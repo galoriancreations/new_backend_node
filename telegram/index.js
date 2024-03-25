@@ -6,11 +6,9 @@ const state = require("./middleware/state");
 const help = require("./commands/help");
 const start = require("./commands/start");
 const connect = require("./commands/connect");
-const {
-  botCommandChallenge,
-  botActionChallenge,
-  botActionDay
-} = require("./commands/challenges");
+const { botCommandChallenge } = require("./commands/challenges");
+const { botActionChallenge } = require("./actions/challenges");
+const { botActionDay } = require("./actions/day");
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
