@@ -4,13 +4,11 @@
  * @module strict_output
  */
 
-const dotenv = require("dotenv");
+require("dotenv").config();
 const fs = require("fs");
 const OpenAI = require("openai");
 const { jsonrepair } = require("jsonrepair");
 const { ChatBot } = require("../models/chatbot");
-
-dotenv.config();
 
 const openai = new OpenAI({
   // organization: process.env.OPENAI_ORGANIZATION_ID,

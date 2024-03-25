@@ -1,11 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const fileUpload = require("express-fileupload");
 const { cleanupTempDir } = require("./utils/general");
-dotenv.config();
+const bot = require("./services/telegram");
 
 const app = express();
 
@@ -43,5 +43,4 @@ startServer();
 // scheduleArticleJob(1, 9, 0);
 
 // start the telegram bot service
-const telegramService = require("./services/telegram");
-telegramService.launch();
+bot.launch();
