@@ -14,8 +14,12 @@ exports.cleanupTempDir = () => {
   }
 };
 
-exports.generateRandomString = () => {
-  const length = 22;
+/**
+ * Generate a random string of a specified length.
+ * @param {number} length - The length of the string to generate.
+ * @returns {string} - The generated string.
+ */
+exports.generateRandomString = (length = 22) => {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let randomString = "";
@@ -26,6 +30,23 @@ exports.generateRandomString = () => {
   }
 
   return randomString;
+};
+
+/**
+ * Generate a random code of a specified length.
+ * @param {number} length - The length of the code to generate.
+ * @returns {string} - The generated code.
+ */
+exports.generateRandomCode = (length = 6) => {
+  const characters = "0123456789";
+  let code = "";
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = crypto.randomInt(0, characters.length);
+    code += characters.charAt(randomIndex);
+  }
+
+  return code;
 };
 
 /**

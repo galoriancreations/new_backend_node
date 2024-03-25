@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
 const { cleanupTempDir } = require("./utils/general");
-const bot = require("./services/telegram");
+const bot = require("./telegram");
 
 const app = express();
 
