@@ -4,6 +4,7 @@ const { User } = require("../models/user");
 const { Uploads } = require("../models/uploads");
 const { Draft } = require("../models/draft");
 const { Challenge } = require("../models/challenge");
+const { Template } = require("../models/template");
 
 exports.updateUserInDB = async user => {
   await User.updateOne({ _id: `${user["_id"]}` }, { $set: user });
@@ -21,13 +22,12 @@ exports.uploadToDB = async (fullFileName, filePath, file) => {
   });
 };
 
-exports.findDraftInDB = async draft => {
-  return await Draft.findOne(
-    { _id: draft },
-    { days: 0, preMessages: 0, preDays: 0 }
-  );
-};
+exports.findDraftInDB = async id =>
+  await Draft.findOne({ _id: id }, { days: 0, preMessages: 0, preDays: 0 });
 
-exports.getPublicChallenges = async () => {
-  return await Challenge.find({ isPublic: true });
-};
+exports.getPublicChallenges = async () =>
+  await Challenge.find({ isPublic: true });
+
+exports.getChallengeById = async id => await Challenge.findById(id);
+
+exports.getTemplateById = async id => await Template.findById(id);

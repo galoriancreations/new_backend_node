@@ -1,9 +1,16 @@
 require("dotenv").config();
 const { Telegraf } = require("telegraf");
+const { handleUserConnection, handleVerificationCode } = require("./handlers");
+
+const state = require("./middleware/state");
+const help = require("./commands/help");
+const start = require("./commands/start");
+const connect = require("./commands/connect");
 const {
-  handleUserConnection,
-  handleVerificationCode
-} = require("./handlers");
+  botCommandChallenge,
+  botActionChallenge,
+  botActionDay
+} = require("./commands/challenges");
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
@@ -15,12 +22,14 @@ bot.use(require("./middleware/state"));
 // Middleware to authenticate the user
 // bot.use(require("./middleware/auth"));
 
-// Commands
-bot.command("state", require("./commands/state")); // Debugging
-bot.help(require("./commands/help"));
-bot.start(require("./commands/start"));
-bot.command("connect", require("./commands/connect"));
-bot.command("challenges", require("./commands/challenges"));
+bot.help(help);
+bot.start(start);
+bot.command("state", state); // Debugging
+bot.command("connect", connect);
+bot.command("challenges", botCommandChallenge);
+
+bot.action(/challenge_(.+)/, botActionChallenge);
+bot.action(/day_(.+)/, botActionDay);
 
 // Handle all messages
 bot.hears(/.*/, async ctx => {
@@ -33,7 +42,7 @@ bot.hears(/.*/, async ctx => {
   } else if (ctx.state.waitForVerificationCode) {
     await handleVerificationCode(ctx, message);
   } else if (!ctx.state.selectedChallenge) {
-    // await 
+    ctx.reply("Please select a challenge first by typing /challenges.");
   }
 });
 

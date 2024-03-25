@@ -2,8 +2,10 @@ const fs = require("fs");
 const axios = require("axios");
 const sharp = require("sharp");
 const uniqid = require("uniqid");
-const { convertFileToMeme } = require('./general');
-const { uploadToDB } = require('./database');
+const mime = require("mime");
+const path = require("path");
+const { uploadToDB } = require("./database");
+const { Uploads } = require("../models/uploads");
 
 /**
  * Uploads a file to the server.
@@ -39,7 +41,7 @@ exports.uploadFile = async req => {
  * @returns {Promise<Object|null>} - A promise that resolves to the uploaded file object in the database, or null if the file object is invalid.
  */
 exports.uploadFileToDB = async filePath => {
-  const meme = convertFileToMeme(filePath);
+  const meme = this.convertFileToBuffer(filePath);
   if (!meme || !meme.originalname || !meme.buffer || !meme.mimetype) {
     throw new Error("Invalid file object");
   }
@@ -68,6 +70,11 @@ exports.downloadImage = async ({
   type = "jpeg",
   tranparency = 1
 }) => {
+  if (fs.existsSync(downloadPath)) {
+    console.log(`Image already exists at ${downloadPath}`);
+    return downloadPath;
+  }
+
   // download image and compress with sharp
   try {
     const response = await axios({
@@ -121,4 +128,84 @@ exports.downloadImage = async ({
     fs.unlink(downloadPath, () => {});
     return null;
   }
+};
+
+/**
+ * Converts a file to a buffer and retrieves its metadata.
+ * @param {string} filePath - The path of the file to be converted.
+ * @returns {Object|null} - An object containing the file buffer, original name, and mimetype,
+ * or null if the conversion fails.
+ */
+exports.convertFileToBuffer = filePath => {
+  try {
+    const buffer = fs.readFileSync(filePath);
+    const originalname = path.basename(filePath);
+    const mimetype = mime.getType(filePath) || "application/octet-stream";
+
+    return { buffer, originalname, mimetype };
+  } catch (error) {
+    console.error(`Failed to convert file at ${filePath}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Retrieves the data of a file from the database or the temp directory.
+ * @param {string} name - The ID of the file to retrieve.
+ * @returns {Object|null} - The file data object containing the file content and content type,
+ * or null if the file is not found.
+ */
+exports.getFileData = async name => {
+  const tempDir = path.resolve(__dirname, "..", "temp");
+  const tempFilePath = path.join(tempDir, name);
+
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir);
+  }
+
+  if (fs.existsSync(tempFilePath)) {
+    console.log("File found in temp directory:", name);
+    return {
+      data: fs.readFileSync(tempFilePath),
+      contentType: mime.getType(tempFilePath) || "application/octet-stream"
+    };
+  }
+
+  const file = await Uploads.findOne({ name: name });
+  if (!file || !file.data) {
+    console.log("File not found:", name);
+    return null;
+  }
+
+  console.log("File found in database:", name);
+  fs.writeFileSync(tempFilePath, file.data);
+
+  return {
+    data: file.data,
+    contentType: file.contentType
+  };
+};
+
+exports.getFile = async fileId => {
+  // check if file exists in temp if not check in db and save in temp
+  if (!fs.existsSync("temp")) {
+    fs.mkdirSync("temp");
+  }
+
+  let fileData;
+  const tempFilePath = path.join("temp", fileId);
+  if (!fs.existsSync(tempFilePath)) {
+    const file = await Uploads.findOne({ name: fileId });
+    if (!file || !file.data) {
+      console.log("File not found:", fileId);
+      return null;
+    }
+    fs.writeFileSync(tempFilePath, file.data);
+    fileData = file.data;
+  } else {
+    // read the file from the temp directory
+    fileData = fs.readFileSync(tempFilePath);
+  }
+
+  return fileData;
 };

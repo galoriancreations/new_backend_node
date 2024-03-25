@@ -18,7 +18,8 @@ module.exports = async (ctx, next) => {
     dataStore[userId] = {
       waitForVerificationCode: false,
       currentUser: null,
-      selectedChallenge: null
+      selectedChallenge: null,
+      selectedTemplate: null
     };
   }
 

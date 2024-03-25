@@ -50,27 +50,6 @@ exports.generateRandomCode = (length = 6) => {
 };
 
 /**
- * Converts a file to a buffer and retrieves its metadata.
- * @param {string} filePath - The path of the file to be converted.
- * @returns {Object|null} - An object containing the file buffer, original name, and mimetype,
- * or null if the conversion fails.
- */
-exports.convertFileToMeme = filePath => {
-  try {
-    console.log(`Converting file at ${filePath}`);
-
-    const buffer = fs.readFileSync(filePath);
-    const originalname = path.basename(filePath);
-    const mimetype = mime.lookup(filePath) || "application/octet-stream";
-
-    return { buffer, originalname, mimetype };
-  } catch (error) {
-    console.error(`Failed to convert file at ${filePath}:`, error);
-    return null;
-  }
-};
-
-/**
  * Calculate the difference between two dates
  *
  * @param {String} date The date to calculate the difference from

@@ -1,8 +1,5 @@
-const fs = require("fs");
-const path = require("path");
-const mime = require("mime");
 const { Uploads } = require("../models/uploads");
-const { uploadFile } = require("../utils/files");
+const { uploadFile, getFileData } = require("../utils/files");
 
 exports.uploadFile = async (req, res) => {
   try {
@@ -32,29 +29,7 @@ exports.uploadFile = async (req, res) => {
 };
 
 exports.getFile = async (req, res) => {
-  // check if file exists in temp if not check in db and save in temp
-  if (!fs.existsSync("temp")) {
-    fs.mkdirSync("temp");
-  }
-
-  let file;
-  const tempFilePath = path.join("temp", req.params.id);
-  if (!fs.existsSync(tempFilePath)) {
-    file = await Uploads.findOne({ name: req.params.id });
-    if (!file || !file.contentType) {
-      console.log("File not found:", req.params.id);
-      return res.status(404).json({ msg: "File not found" });
-    }
-    fs.writeFileSync(tempFilePath, file.data);
-  } else {
-    // read the file from the temp directory
-    const contentType =
-      mime.getType(tempFilePath) || "application/octet-stream";
-    file = {
-      data: fs.readFileSync(tempFilePath),
-      contentType
-    };
-  }
+  const file = await getFileData(req.params.id);
 
   if (file) {
     res.setHeader("Content-Type", file.contentType);
