@@ -18,7 +18,8 @@ exports.registerUser = async (req, res) => {
       email,
       language,
       accountType,
-      password
+      password,
+      image
     } = req.body;
     
     const existingUsername = await User.findOne({ username });
@@ -41,7 +42,8 @@ exports.registerUser = async (req, res) => {
       memberRole,
       email,
       language,
-      accountType
+      accountType,
+      image,
     });
     user.password = await bcrypt.hash(password, 12);
     const createdUser = await user.save();
