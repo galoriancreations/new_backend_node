@@ -1,7 +1,7 @@
 const { Markup } = require("telegraf");
 const { getPublicChallenges } = require("../../utils/database");
 
-exports.botCommandChallenge = async ctx => {
+module.exports = async ctx => {
   const challenges = await getPublicChallenges();
 
   if (!challenges.length) {

@@ -2,14 +2,6 @@ require("dotenv").config();
 const { Telegraf } = require("telegraf");
 const { handleUserConnection, handleVerificationCode } = require("./handlers");
 
-const state = require("./middleware/state");
-const help = require("./commands/help");
-const start = require("./commands/start");
-const connect = require("./commands/connect");
-const { botCommandChallenge } = require("./commands/challenges");
-const { botActionChallenge } = require("./actions/challenges");
-const { botActionDay } = require("./actions/day");
-
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
 console.log("Starting the telegram bot service...");
@@ -20,20 +12,19 @@ bot.use(require("./middleware/state"));
 // Middleware to authenticate the user
 // bot.use(require("./middleware/auth"));
 
-bot.help(help);
-bot.start(start);
-bot.command("state", state); // Debugging
-bot.command("connect", connect);
-bot.command("challenges", botCommandChallenge);
+bot.help(require("./commands/help"));
+bot.start(require("./commands/start"));
+bot.command("state", require("./commands/state")); // Debugging
+bot.command("connect", require("./commands/connect"));
+bot.command("challenges", require("./commands/challenges"));
 
-bot.action(/challenge_(.+)/, botActionChallenge);
-bot.action(/day_(.+)/, botActionDay);
+bot.action(/challenge_(.+)/, require("./actions/challenges"));
+bot.action(/day_(.+)/, require("./actions/day"));
+bot.action(/start_(.+)/, require("./actions/start"));
 
 // Handle all messages
 bot.hears(/.*/, async ctx => {
   const message = ctx.message.text;
-
-  console.log(ctx.state);
 
   if (!ctx.state.currentUser) {
     await handleUserConnection(ctx, message);

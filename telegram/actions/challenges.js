@@ -2,7 +2,7 @@ const { Markup } = require("telegraf");
 const { getChallengeById, getTemplateById } = require("../../utils/database");
 const { getFileNoPath } = require("../helpers");
 
-exports.botActionChallenge = async ctx => {
+module.exports = async ctx => {
   const challengeId = ctx.match[1];
   const challenge = await getChallengeById(challengeId);
 
@@ -23,10 +23,10 @@ exports.botActionChallenge = async ctx => {
     await ctx.replyWithPhoto({ source: image }, { caption: challenge.name });
   }
 
-  await this.promptDaySelection(ctx, template.days);
+  await promptDaySelection(ctx, template.days);
 };
 
-exports.promptDaySelection = async (ctx, days) => {
+const promptDaySelection = async (ctx, days) => {
   const inlineKeyboard = days.map((day, i) => [
     Markup.button.callback(day.title, `day_${i}`)
   ]);
